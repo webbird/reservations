@@ -42,3 +42,10 @@
 .mod_reservations:not(#rsv):not(#rsv) .rsv-form textarea { width: 100%; box-sizing: border-box; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-form small { display: block; color: #4b5563; margin-top: .2em; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-buttons { display: flex; gap: 1em; align-items: center; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-toolbar { margin: 0 0 1em; text-align: right; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form .rsv-choice { border: 0; padding: 0; margin: 0 0 .8em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form .rsv-choice legend { padding: 0; margin-bottom: .3em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form .rsv-choice p { margin: 0 0 .2em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form .rsv-choice label,
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form label[for^="rsv-labels"] { display: inline; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form input[type="number"] { width: 6em; }

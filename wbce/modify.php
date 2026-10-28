@@ -34,6 +34,27 @@ $rsvVars = [
     'url_list'   => ReservationsWbce::modifyUrl($rsvPage, $rsvSection),
 ];
 
+if ($rsvParam('rsv_settings') === 1) {
+    $rsvSettings = ReservationsWbce::settings()->find($rsvSection) ?? new Reservations\Core\Domain\Settings($rsvSection);
+    $rsvActive = ReservationsWbce::resources()->listBySection($rsvSection, true);
+    $rsvForm = $rsvOld ?? [
+        'display_mode'  => $rsvSettings->displayMode->value,
+        'resource_id'   => $rsvSettings->resourceId ?? 0,
+        'default_view'  => $rsvSettings->defaultView->value,
+        'plan_range'    => $rsvSettings->planRange,
+        'show_labels'   => $rsvSettings->showLabels,
+        'past_months'   => $rsvSettings->pastMonths,
+        'future_months' => $rsvSettings->futureMonths,
+    ];
+    ReservationsWbce::twig()->display('modify_settings.twig', $rsvVars + [
+        'form'      => $rsvForm,
+        'resources' => array_map(static fn ($r) => ['id' => $r->id, 'title' => $r->title], ReservationsWbce::resources()->listBySection($rsvSection)),
+        'first'     => $rsvActive[0]->title ?? null,
+        'months_max' => Reservations\Core\Service\SettingsService::MONTHS_MAX,
+    ]);
+    return;
+}
+
 $rsvResource = ReservationsWbce::resources()->find($rsvSection, $rsvParam('rsv_bookings'));
 
 if ($rsvResource !== null) {
@@ -118,7 +139,8 @@ $rsvForm = $rsvOld ?? [
 ];
 
 ReservationsWbce::twig()->display('modify_resources.twig', $rsvVars + [
-    'resources' => $rsvRows,
-    'types'     => array_map(static fn ($t) => ['id' => $t->id, 'title' => $t->title], array_values($rsvTypes)),
-    'form'      => $rsvForm,
+    'resources'    => $rsvRows,
+    'types'        => array_map(static fn ($t) => ['id' => $t->id, 'title' => $t->title], array_values($rsvTypes)),
+    'form'         => $rsvForm,
+    'url_settings' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_settings' => 1]),
 ]);

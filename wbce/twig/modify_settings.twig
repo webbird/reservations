@@ -1,0 +1,79 @@
+{#
+    reservations/twig/modify_settings.twig – display settings of a section
+#}
+<div class="mod_reservations">
+    <p><a href="{{ url_list }}">« {{ t('BACK_TO_RESOURCES') }}</a></p>
+    {% include '_messages.twig' %}
+
+    <form class="rsv-form" action="{{ action }}" method="post">
+        <input type="hidden" name="page_id" value="{{ page_id }}">
+        <input type="hidden" name="section_id" value="{{ section_id }}">
+        <input type="hidden" name="rsv_action" value="settings_save">
+        {{ FTAN|raw }}
+
+        <fieldset>
+            <legend>{{ t('SETTINGS') }}</legend>
+
+            <fieldset class="rsv-choice">
+                <legend>{{ t('DISPLAY_MODE') }}</legend>
+                <p>
+                    <input id="rsv-mode-multi-{{ section_id }}" type="radio" name="display_mode" value="multi"{% if form.display_mode == 'multi' %} checked{% endif %}>
+                    <label for="rsv-mode-multi-{{ section_id }}">{{ t('MODE_MULTI') }}</label>
+                </p>
+                <p>
+                    <input id="rsv-mode-single-{{ section_id }}" type="radio" name="display_mode" value="single"{% if form.display_mode == 'single' %} checked{% endif %}>
+                    <label for="rsv-mode-single-{{ section_id }}">{{ t('MODE_SINGLE') }}</label>
+                </p>
+            </fieldset>
+
+            <p>
+                <label for="rsv-resource-{{ section_id }}">{{ t('SINGLE_RESOURCE') }}</label>
+                <select id="rsv-resource-{{ section_id }}" name="resource_id" aria-describedby="rsv-resource-hint-{{ section_id }}">
+                    <option value="0">{{ t('FIRST_ACTIVE') }}</option>
+                    {% for r in resources %}
+                        <option value="{{ r.id }}"{% if r.id == form.resource_id %} selected{% endif %}>{{ r.title }}</option>
+                    {% endfor %}
+                </select>
+                <small id="rsv-resource-hint-{{ section_id }}">{{ t('SINGLE_RESOURCE_HINT') }}{% if first %} {{ t('FIRST_ACTIVE_IS', first) }}{% endif %}</small>
+            </p>
+
+            <p>
+                <label for="rsv-view-{{ section_id }}">{{ t('DEFAULT_VIEW') }}</label>
+                <select id="rsv-view-{{ section_id }}" name="default_view">
+                    <option value="plan"{% if form.default_view == 'plan' %} selected{% endif %}>{{ t('VIEW_PLAN') }} ({{ t('ONLY_MULTI') }})</option>
+                    <option value="month"{% if form.default_view == 'month' %} selected{% endif %}>{{ t('VIEW_MONTH') }} ({{ t('ONLY_SINGLE') }})</option>
+                    <option value="list"{% if form.default_view == 'list' %} selected{% endif %}>{{ t('VIEW_LIST') }}</option>
+                </select>
+            </p>
+
+            <fieldset class="rsv-choice">
+                <legend>{{ t('PLAN_RANGE') }}</legend>
+                {% for months in [1, 3] %}
+                    <p>
+                        <input id="rsv-range-{{ months }}-{{ section_id }}" type="radio" name="plan_range" value="{{ months }}"{% if form.plan_range == months %} checked{% endif %}>
+                        <label for="rsv-range-{{ months }}-{{ section_id }}">{{ t(months == 1 ? 'ONE_MONTH' : 'THREE_MONTHS') }}</label>
+                    </p>
+                {% endfor %}
+            </fieldset>
+
+            <p>
+                <input id="rsv-labels-{{ section_id }}" type="checkbox" name="show_labels" value="1"{% if form.show_labels %} checked{% endif %}>
+                <label for="rsv-labels-{{ section_id }}">{{ t('SHOW_LABELS') }}</label>
+            </p>
+
+            <p>
+                <label for="rsv-past-{{ section_id }}">{{ t('PAST_MONTHS') }}</label>
+                <input id="rsv-past-{{ section_id }}" type="number" name="past_months" value="{{ form.past_months }}" min="0" max="{{ months_max }}" required>
+            </p>
+            <p>
+                <label for="rsv-future-{{ section_id }}">{{ t('FUTURE_MONTHS') }}</label>
+                <input id="rsv-future-{{ section_id }}" type="number" name="future_months" value="{{ form.future_months }}" min="1" max="{{ months_max }}" required>
+            </p>
+
+            <p class="rsv-buttons">
+                <button type="submit" class="button ico-save">{{ L_('TEXT:SAVE') }}</button>
+                <a href="{{ url_list }}">{{ L_('TEXT:CANCEL') }}</a>
+            </p>
+        </fieldset>
+    </form>
+</div>

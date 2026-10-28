@@ -1,0 +1,31 @@
+{#
+    reservations/twig/view_month.twig – month calendar of a single object
+#}
+{% extends '_view_layout.twig' %}
+{% block content %}
+    <table class="rsv-month-table">
+        <caption>{{ title }}, {{ period }}</caption>
+        <thead>
+            <tr>
+                {% for wd in weekdays %}<th scope="col" abbr="{{ wd.long }}">{{ wd.short }}</th>{% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for week in weeks %}
+            <tr>
+                {% for cell in week %}
+                    {% if cell %}
+                        <td class="rsv-cell{{ cell.weekend ? ' rsv-weekend' }}"{% if cell.am or cell.pm %} title="{{ cell.text }}"{% endif %}>
+                            <span class="rsv-num" aria-hidden="true">{{ cell.number }}</span>
+                            <span class="rsv-sr">{{ cell.long }}: </span>
+                            {%- include '_cell.twig' -%}
+                        </td>
+                    {% else %}
+                        <td class="rsv-blank"></td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

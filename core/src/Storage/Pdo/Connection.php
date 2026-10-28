@@ -238,6 +238,24 @@ final class Connection
         }
     }
 
+    /**
+     * Column names of a table, read from the result metadata (portable across platforms).
+     *
+     * @return list<string>
+     */
+    public function columns(string $name): array
+    {
+        $stmt = $this->pdo->query(sprintf('SELECT * FROM %s LIMIT 0', $this->table($name)));
+        $columns = [];
+        for ($i = 0; $stmt !== false && $i < $stmt->columnCount(); $i++) {
+            $meta = $stmt->getColumnMeta($i);
+            if ($meta !== false) {
+                $columns[] = $meta['name'];
+            }
+        }
+        return $columns;
+    }
+
     public function exec(string $sql): void
     {
         if ($this->logger !== null) {

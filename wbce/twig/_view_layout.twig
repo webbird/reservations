@@ -1,0 +1,36 @@
+{#
+    reservations/twig/_view_layout.twig – frame of all public views:
+    view switcher, period navigation, content, legend
+#}
+{# empty jump target: templates may hide or offset :target elements (sticky-nav trick) #}
+<span id="rsv-{{ section_id }}" class="rsv-anchor"></span>
+<div class="mod_reservations">
+    <div class="rsv-head">
+        {% if views|length > 1 %}
+            <ul class="rsv-views" aria-label="{{ t('VIEWS') }}">
+                {% for v in views %}
+                    <li><a href="{{ v.url }}"{% if v.current %} aria-current="page"{% endif %}>{{ t(v.key) }}</a></li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        <div class="rsv-nav">
+            {% if url_prev %}<a href="{{ url_prev }}" rel="prev">‹ <span class="rsv-sr">{{ t('PREV_MONTH') }}</span></a>{% endif %}
+            <span class="rsv-month">{{ period }}</span>
+            {% if url_next %}<a href="{{ url_next }}" rel="next"><span class="rsv-sr">{{ t('NEXT_MONTH') }}</span> ›</a>{% endif %}
+        </div>
+    </div>
+
+    {% if has_resources %}
+        {% block content %}{% endblock %}
+        {% if legend %}
+            <ul class="rsv-legend" aria-label="{{ t('LEGEND') }}">
+                <li><span class="rsv-swatch" aria-hidden="true"></span> {{ t('FREE') }}</li>
+                {% for item in legend %}
+                    <li><span class="rsv-swatch rsv-pattern-{{ item.pattern }}" style="--rsv-color:{{ item.color }}" aria-hidden="true"></span> {{ item.text }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% else %}
+        <p>{{ t('NO_RESOURCE') }}</p>
+    {% endif %}
+</div>

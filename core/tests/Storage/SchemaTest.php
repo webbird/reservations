@@ -38,6 +38,20 @@ final class SchemaTest extends TestCase
         self::assertSame([], Schema::install($this->db));
     }
 
+    public function testInstallAddsColumnsMissingInOlderTables(): void
+    {
+        $old = Schema::tables()['settings'];
+        unset($old['columns']['resource_id']);
+        foreach (Schema::statements('sqlite', $this->db->table('settings'), $old) as $sql) {
+            $this->db->exec($sql);
+        }
+        $this->db->insert('settings', ['section_id' => 1, 'page_id' => 10]);
+
+        self::assertNotContains('settings', Schema::install($this->db));
+        self::assertContains('resource_id', $this->db->columns('settings'));
+        self::assertNull($this->db->fetchValue('SELECT resource_id FROM ' . $this->db->table('settings')));
+    }
+
     public function testUninstallDropsTables(): void
     {
         Schema::install($this->db);

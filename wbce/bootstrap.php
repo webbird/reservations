@@ -12,6 +12,8 @@ use Reservations\Core\Port\Clock;
 use Reservations\Core\Result\Result;
 use Reservations\Core\Service\BookingService;
 use Reservations\Core\Service\ResourceService;
+use Reservations\Core\Service\SettingsService;
+use Reservations\Core\Storage\Pdo\SettingsRepository;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
@@ -95,6 +97,16 @@ final class ReservationsWbce
     public static function bookings(): BookingRepository
     {
         return self::$services['bookings'] ??= new BookingRepository(self::db());
+    }
+
+    public static function settings(): SettingsRepository
+    {
+        return self::$services['settings'] ??= new SettingsRepository(self::db());
+    }
+
+    public static function settingsService(): SettingsService
+    {
+        return new SettingsService(self::settings(), self::resources());
     }
 
     public static function sectionSetup(): SectionSetup

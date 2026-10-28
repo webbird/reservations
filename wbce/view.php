@@ -1,8 +1,10 @@
 <?php
 /**
  * Reservations – view.php
- * Frontend: occupancy plan of one month, objects as rows and days as columns.
- * @module reservations  @version 0.1.0  @author Bianka Martinovic
+ * Frontend: occupancy plan (several objects), month calendar (single object)
+ * or list. Day cells come from the core (Calendar\Occupancy) with half days
+ * for arrival and departure.
+ * @module reservations  @version 0.2.0  @author Bianka Martinovic
  * @license GNU General Public License   @platform WBCE 1.7.0+
  */
 
@@ -10,23 +12,56 @@ defined('WB_PATH') or die('This file cannot be accessed directly!');
 
 require_once __DIR__ . '/bootstrap.php';
 
+use Reservations\Core\Calendar\Day;
+use Reservations\Core\Calendar\Occupancy;
+use Reservations\Core\Domain\Booking;
+use Reservations\Core\Domain\BookingMode;
+use Reservations\Core\Domain\CalendarView;
+use Reservations\Core\Domain\DisplayMode;
+use Reservations\Core\Domain\Settings;
+use Reservations\Core\Domain\TimeRange;
+use Reservations\Core\Domain\Visibility;
+
 $rsvSection = (int) $section_id;
 $rsvTz = ReservationsWbce::timezone();
-$rsvDb = ReservationsWbce::db();
-$rsvSettings = $rsvDb->fetchOne('SELECT * FROM ' . $rsvDb->table('settings') . ' WHERE section_id = ?', [$rsvSection]) ?? [];
-$rsvShowLabels = (bool) ($rsvSettings['show_labels'] ?? true);
+$rsvSettings = ReservationsWbce::settings()->find($rsvSection) ?? new Settings($rsvSection);
+$rsvSingle = $rsvSettings->displayMode === DisplayMode::Single;
+// URL parameters carry the section id, so several sections on one page stay independent
+$rsvGet = static fn (string $name): string => is_string($_GET[$name . '_' . $rsvSection] ?? null) ? $_GET[$name . '_' . $rsvSection] : '';
+$rsvView = $rsvSettings->view(CalendarView::tryFrom($rsvGet('rsv_view')));
 
-// month navigation is limited to the configured window; the parameter is per section
 $rsvThisMonth = new DateTimeImmutable('first day of this month midnight', $rsvTz);
-$rsvFirst = $rsvThisMonth->modify('-' . (int) ($rsvSettings['past_months'] ?? 12) . ' months');
-$rsvLast = $rsvThisMonth->modify('+' . (int) ($rsvSettings['future_months'] ?? 24) . ' months');
-$rsvParam = 'rsv_month_' . $rsvSection;
+$rsvFirst = $rsvThisMonth->modify('-' . $rsvSettings->pastMonths . ' months');
+$rsvLast = $rsvThisMonth->modify('+' . $rsvSettings->futureMonths . ' months');
 $rsvMonth = $rsvThisMonth;
-if (is_string($_GET[$rsvParam] ?? null) && preg_match('/^\d{4}-\d{2}$/', $_GET[$rsvParam]) === 1) {
-    $rsvMonth = DateTimeImmutable::createFromFormat('!Y-m', $_GET[$rsvParam], $rsvTz) ?: $rsvThisMonth;
+if (preg_match('/^\d{4}-\d{2}$/', $rsvGet('rsv_month')) === 1) {
+    $rsvMonth = DateTimeImmutable::createFromFormat('!Y-m', $rsvGet('rsv_month'), $rsvTz) ?: $rsvThisMonth;
 }
 $rsvMonth = max($rsvFirst, min($rsvLast, $rsvMonth));
-$rsvNext = $rsvMonth->modify('+1 month');
+$rsvMonthCount = $rsvSingle ? 1 : $rsvSettings->planRange;
+$rsvEnd = $rsvMonth->modify('+' . $rsvMonthCount . ' months');
+
+// objects: all active ones, or the chosen (else the first active) one in single mode
+$rsvResources = ReservationsWbce::resources()->listBySection($rsvSection, true);
+if ($rsvSingle) {
+    $rsvChosen = array_values(array_filter($rsvResources, static fn ($r) => $r->id === $rsvSettings->resourceId));
+    $rsvResources = array_slice($rsvChosen !== [] ? $rsvChosen : $rsvResources, 0, 1);
+}
+$rsvTypes = [];
+foreach (ReservationsWbce::types()->listBySection($rsvSection) as $rsvType) {
+    $rsvTypes[$rsvType->id] = $rsvType;
+}
+$rsvWholeDays = static fn ($r): bool => ($rsvTypes[$r->typeId]->bookingMode ?? BookingMode::Day) === BookingMode::Day;
+
+$rsvStatuses = [];
+foreach (ReservationsWbce::statuses()->listBySection($rsvSection) as $rsvStatus) {
+    $rsvStatuses[(int) $rsvStatus->id] = $rsvStatus;
+}
+$rsvBookings = [];
+$rsvAll = ReservationsWbce::bookings()->listInRange($rsvSection, new TimeRange($rsvMonth, $rsvEnd));
+foreach (Occupancy::publicBookings($rsvAll, $rsvStatuses) as $rsvBooking) {
+    $rsvBookings[$rsvBooking->resourceId][] = $rsvBooking;
+}
 
 $rsvLocale = strtolower(LANGUAGE);
 $rsvFmt = static fn (string $pattern): IntlDateFormatter => new IntlDateFormatter($rsvLocale, IntlDateFormatter::NONE, IntlDateFormatter::NONE, $rsvTz, null, $pattern);
@@ -34,71 +69,147 @@ $rsvMonthFmt = $rsvFmt('LLLL yyyy');
 $rsvWeekdayFmt = $rsvFmt('EEEEEE');
 $rsvDateFmt = new IntlDateFormatter($rsvLocale, IntlDateFormatter::FULL, IntlDateFormatter::NONE, $rsvTz);
 
-$rsvDays = [];
-for ($rsvD = $rsvMonth; $rsvD < $rsvNext; $rsvD = $rsvD->modify('+1 day')) {
-    $rsvDays[] = [
-        'date'    => $rsvD,
-        'number'  => (int) $rsvD->format('j'),
-        'weekday' => $rsvWeekdayFmt->format($rsvD),
-        'long'    => $rsvDateFmt->format($rsvD),
-        'weekend' => (int) $rsvD->format('N') >= 6,
-    ];
-}
-
-$rsvStatuses = [];
-foreach (ReservationsWbce::statuses()->listBySection($rsvSection) as $rsvStatus) {
-    if ($rsvStatus->active && $rsvStatus->visibility !== Reservations\Core\Domain\Visibility::Hidden) {
-        $rsvStatuses[$rsvStatus->id] = $rsvStatus;
+$rsvStatusText = static function (Booking $b) use ($rsvStatuses, $rsvSettings): string {
+    $status = $rsvStatuses[$b->statusId];
+    if ($status->visibility !== Visibility::Label) {
+        return ReservationsWbce::t('OCCUPIED');
     }
-}
-
-$rsvBookings = [];
-foreach (ReservationsWbce::bookings()->listInRange($rsvSection, new Reservations\Core\Domain\TimeRange($rsvMonth, $rsvNext)) as $rsvBooking) {
-    if (isset($rsvStatuses[$rsvBooking->statusId])) {
-        $rsvBookings[$rsvBooking->resourceId][] = $rsvBooking;
-    }
-}
-
-$rsvRows = [];
-foreach (ReservationsWbce::resources()->listBySection($rsvSection, true) as $rsvResource) {
-    $rsvCells = [];
-    foreach ($rsvDays as $rsvDay) {
-        $rsvDayRange = new Reservations\Core\Domain\TimeRange($rsvDay['date'], $rsvDay['date']->modify('+1 day'));
-        $rsvCell = ['weekend' => $rsvDay['weekend'], 'long' => $rsvDay['long'], 'text' => ReservationsWbce::t('FREE'), 'status' => null];
-        foreach ($rsvBookings[$rsvResource->id] ?? [] as $rsvBooking) {
-            if (!$rsvBooking->range->overlaps($rsvDayRange)) {
-                continue;
-            }
-            $rsvStatus = $rsvStatuses[$rsvBooking->statusId];
-            $rsvIsLabel = $rsvStatus->visibility === Reservations\Core\Domain\Visibility::Label;
-            $rsvCell['status'] = $rsvStatus->id;
-            $rsvCell['text'] = $rsvIsLabel ? $rsvStatus->title : ReservationsWbce::t('OCCUPIED');
-            $rsvCell['label'] = $rsvIsLabel && $rsvShowLabels ? $rsvBooking->label : '';
-            break;
+    return $status->title . ($rsvSettings->showLabels && $b->label !== '' ? ' (' . $b->label . ')' : '');
+};
+$rsvHalf = static fn (?Booking $b): ?array => $b === null ? null : [
+    'pattern' => $rsvStatuses[$b->statusId]->pattern->value,
+    'color'   => $rsvStatuses[$b->statusId]->color,
+];
+// one table cell: two halves plus the complete text for screen readers
+$rsvCell = static function (Day $day, bool $wholeDays) use ($rsvStatusText, $rsvHalf, $rsvDateFmt): array {
+    $full = $day->am !== null && $day->am->id === $day->pm?->id;
+    $text = ReservationsWbce::t('FREE');
+    if ($full) {
+        $text = $rsvStatusText($day->am);
+    } elseif (!$day->isFree()) {
+        $parts = [];
+        if ($day->am !== null) {
+            $parts[] = ReservationsWbce::t($wholeDays ? 'SR_DEPARTURE' : 'SR_MORNING', $rsvStatusText($day->am));
         }
-        $rsvCells[] = $rsvCell;
+        if ($day->pm !== null) {
+            $parts[] = ReservationsWbce::t($wholeDays ? 'SR_ARRIVAL' : 'SR_AFTERNOON', $rsvStatusText($day->pm));
+        }
+        $text = implode(', ', $parts);
     }
-    $rsvRows[] = ['title' => $rsvResource->title, 'cells' => $rsvCells];
-}
+    return [
+        'number'  => (int) $day->date->format('j'),
+        'long'    => (string) $rsvDateFmt->format($day->date),
+        'weekend' => (int) $day->date->format('N') >= 6,
+        'full'    => $full,
+        'am'      => $rsvHalf($day->am),
+        'pm'      => $rsvHalf($day->pm),
+        'text'    => $text,
+    ];
+};
 
 $rsvLegend = [];
 foreach ($rsvStatuses as $rsvStatus) {
-    $rsvLegend[$rsvStatus->id] = [
-        'text'       => $rsvStatus->visibility === Reservations\Core\Domain\Visibility::Label ? $rsvStatus->title : ReservationsWbce::t('OCCUPIED'),
-        'color'      => $rsvStatus->color,
-        'text_color' => Reservations\Core\Support\Color::contrastText($rsvStatus->color),
-        'pattern'    => $rsvStatus->pattern->value,
-    ];
+    if ($rsvStatus->active && $rsvStatus->visibility !== Visibility::Hidden) {
+        $rsvLegend[] = [
+            'text'    => $rsvStatus->visibility === Visibility::Label ? $rsvStatus->title : ReservationsWbce::t('OCCUPIED'),
+            'color'   => $rsvStatus->color,
+            'pattern' => $rsvStatus->pattern->value,
+        ];
+    }
 }
 
-$rsvUrl = static fn (DateTimeImmutable $month): string => '?' . http_build_query([$rsvParam => $month->format('Y-m')]) . '#rsv-' . $rsvSection;
+$rsvUrl = static function (DateTimeImmutable $month, CalendarView $view) use ($rsvSection): string {
+    return '?' . http_build_query(['rsv_month_' . $rsvSection => $month->format('Y-m'), 'rsv_view_' . $rsvSection => $view->value]) . '#rsv-' . $rsvSection;
+};
+$rsvVars = [
+    'section_id'    => $rsvSection,
+    'period'        => $rsvMonthFmt->format($rsvMonth) . ($rsvMonthCount > 1 ? ' – ' . $rsvMonthFmt->format($rsvEnd->modify('-1 month')) : ''),
+    'url_prev'      => $rsvMonth > $rsvFirst ? $rsvUrl($rsvMonth->modify('-1 month'), $rsvView) : null,
+    'url_next'      => $rsvMonth < $rsvLast ? $rsvUrl($rsvMonth->modify('+1 month'), $rsvView) : null,
+    'views'         => array_map(static fn (CalendarView $v): array => [
+        'key'     => strtoupper('VIEW_' . $v->value),
+        'url'     => $rsvUrl($rsvMonth, $v),
+        'current' => $v === $rsvView,
+    ], array_values(array_filter(CalendarView::cases(), static fn (CalendarView $v): bool => $v->fits($rsvSettings->displayMode)))),
+    'legend'        => $rsvLegend,
+    'has_resources' => $rsvResources !== [],
+];
 
-ReservationsWbce::twig()->display('view_plan.twig', [
-    'section_id' => $rsvSection,
-    'month'      => $rsvMonthFmt->format($rsvMonth),
-    'days'       => $rsvDays,
-    'rows'       => $rsvRows,
-    'legend'     => $rsvLegend,
-    'url_prev'   => $rsvMonth > $rsvFirst ? $rsvUrl($rsvMonth->modify('-1 month')) : null,
-    'url_next'   => $rsvMonth < $rsvLast ? $rsvUrl($rsvNext) : null,
-]);
+// debug aid for admins: ?rsv_debug=1 prints the computed half days as an HTML comment
+if (isset($_GET['rsv_debug']) && isset($wb) && $wb->isAdmin()) {
+    foreach ($rsvResources as $rsvResource) {
+        $rsvDays = Occupancy::days($rsvBookings[$rsvResource->id] ?? [], $rsvMonth, $rsvEnd, $rsvWholeDays($rsvResource));
+        echo "\n<!-- rsv #", (int) $rsvResource->id, ' ', implode(' ', array_map(static fn (Day $d): string => ($d->am->id ?? '.') . '/' . ($d->pm->id ?? '.'), $rsvDays)), " -->\n";
+    }
+}
+
+if ($rsvView === CalendarView::List) {
+    $rsvGroups = [];
+    foreach ($rsvResources as $rsvResource) {
+        $rsvEntries = [];
+        foreach ($rsvBookings[$rsvResource->id] ?? [] as $rsvBooking) {
+            $rsvEntries[] = [
+                'range' => ReservationsWbce::formatRange($rsvBooking->range->start, $rsvBooking->range->end, $rsvWholeDays($rsvResource)),
+                'text'  => $rsvStatusText($rsvBooking),
+                'half'  => $rsvHalf($rsvBooking),
+            ];
+        }
+        $rsvGroups[] = ['title' => $rsvResource->title, 'entries' => $rsvEntries];
+    }
+    ReservationsWbce::twig()->display('view_list.twig', $rsvVars + ['groups' => $rsvGroups]);
+    return;
+}
+
+if ($rsvView === CalendarView::Month) {
+    $rsvResource = $rsvResources[0] ?? null;
+    $rsvWeeks = [];
+    $rsvWeekdays = [];
+    if ($rsvResource !== null) {
+        // ICU counts 1 = Sunday … 7 = Saturday; converted to ISO 1 = Monday … 7 = Sunday
+        $rsvIcu = IntlCalendar::createInstance($rsvTz, $rsvLocale)?->getFirstDayOfWeek();
+        $rsvFirstDay = is_int($rsvIcu) ? ($rsvIcu + 5) % 7 + 1 : 1;
+        $rsvCells = array_fill(0, ((int) $rsvMonth->format('N') - $rsvFirstDay + 7) % 7, null);
+        foreach (Occupancy::days($rsvBookings[$rsvResource->id] ?? [], $rsvMonth, $rsvEnd, $rsvWholeDays($rsvResource)) as $rsvDay) {
+            $rsvCells[] = $rsvCell($rsvDay, $rsvWholeDays($rsvResource));
+        }
+        $rsvWeeks = array_chunk(array_pad($rsvCells, (int) ceil(count($rsvCells) / 7) * 7, null), 7);
+        $rsvLongFmt = $rsvFmt('EEEE');
+        for ($i = 0; $i < 7; $i++) {
+            // 2024-01-01 was a Monday
+            $rsvWeekday = new DateTimeImmutable('2024-01-0' . (($rsvFirstDay - 1 + $i) % 7 + 1), $rsvTz);
+            $rsvWeekdays[] = ['short' => $rsvWeekdayFmt->format($rsvWeekday), 'long' => $rsvLongFmt->format($rsvWeekday)];
+        }
+    }
+    ReservationsWbce::twig()->display('view_month.twig', $rsvVars + [
+        'title'    => $rsvResource?->title,
+        'weekdays' => $rsvWeekdays,
+        'weeks'    => $rsvWeeks,
+    ]);
+    return;
+}
+
+$rsvTables = [];
+for ($rsvM = $rsvMonth; $rsvM < $rsvEnd; $rsvM = $rsvM->modify('+1 month')) {
+    $rsvNext = $rsvM->modify('+1 month');
+    $rsvHeads = [];
+    for ($rsvD = $rsvM; $rsvD < $rsvNext; $rsvD = $rsvD->modify('+1 day')) {
+        $rsvHeads[] = [
+            'number'  => (int) $rsvD->format('j'),
+            'weekday' => $rsvWeekdayFmt->format($rsvD),
+            'long'    => $rsvDateFmt->format($rsvD),
+            'weekend' => (int) $rsvD->format('N') >= 6,
+        ];
+    }
+    $rsvRows = [];
+    foreach ($rsvResources as $rsvResource) {
+        $rsvRows[] = [
+            'title' => $rsvResource->title,
+            'cells' => array_map(
+                static fn (Day $d): array => $rsvCell($d, $rsvWholeDays($rsvResource)),
+                Occupancy::days($rsvBookings[$rsvResource->id] ?? [], $rsvM, $rsvNext, $rsvWholeDays($rsvResource)),
+            ),
+        ];
+    }
+    $rsvTables[] = ['caption' => $rsvMonthFmt->format($rsvM), 'days' => $rsvHeads, 'rows' => $rsvRows];
+}
+ReservationsWbce::twig()->display('view_plan.twig', $rsvVars + ['tables' => $rsvTables]);

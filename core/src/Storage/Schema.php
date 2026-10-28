@@ -35,6 +35,7 @@ final class Schema
                     'retention_days' => 'small=90',
                     'past_months' => 'small=12',
                     'future_months' => 'small=24',
+                    'resource_id' => 'int?',
                 ],
                 'primary' => ['section_id'],
             ],
@@ -140,7 +141,9 @@ final class Schema
     }
 
     /**
-     * Creates all missing tables. Existing tables are left untouched.
+     * Creates missing tables and adds missing columns to existing ones, so it
+     * serves as install and upgrade. Columns added later must be nullable or
+     * have a default (SQLite cannot add NOT NULL columns without one).
      *
      * @return list<string> names of the tables that were created
      */
@@ -149,6 +152,13 @@ final class Schema
         $created = [];
         foreach (self::tables() as $name => $def) {
             if ($db->tableExists($name)) {
+                $existing = $db->columns($name);
+                foreach (array_diff_key($def['columns'], array_flip($existing)) as $column => $spec) {
+                    if (!str_contains($spec, '?') && !str_contains($spec, '=')) {
+                        throw new \LogicException(sprintf('Column %s.%s must be nullable or have a default to be added later.', $name, $column));
+                    }
+                    $db->exec(sprintf('ALTER TABLE %s ADD COLUMN %s %s', $db->table($name), $column, self::columnSql($db->platform(), $spec)));
+                }
                 continue;
             }
             foreach (self::statements($db->platform(), $db->table($name), $def) as $sql) {

@@ -15,6 +15,9 @@ require_once __DIR__ . '/bootstrap.php';
 
 use Reservations\Core\Domain\BookableResource;
 use Reservations\Core\Domain\BookingMode;
+use Reservations\Core\Domain\CalendarView;
+use Reservations\Core\Domain\DisplayMode;
+use Reservations\Core\Domain\Settings;
 use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Result\Result;
 
@@ -110,6 +113,33 @@ switch ($post('rsv_action')) {
             ? $service->update($sectionId, $bookingId, $resourceId, $range, $old['status_id'], $old['label'], $old['note'], $userId)
             : $service->create($sectionId, $resourceId, $range, $old['status_id'], $old['label'], $old['note'], $userId);
         $finish($result, $result->ok ? ['rsv_bookings' => $resourceId] : $params, $old, ReservationsWbce::t('MSG_BOOKING_SAVED'));
+
+    case 'settings_save':
+        $old = [
+            'display_mode'  => $post('display_mode'),
+            'resource_id'   => (int) $post('resource_id'),
+            'default_view'  => $post('default_view'),
+            'plan_range'    => (int) $post('plan_range'),
+            'show_labels'   => $post('show_labels') === '1',
+            'past_months'   => (int) $post('past_months'),
+            'future_months' => (int) $post('future_months'),
+        ];
+        $mode = DisplayMode::tryFrom($old['display_mode']);
+        $view = CalendarView::tryFrom($old['default_view']);
+        if ($mode === null || $view === null) {
+            $finish(Result::fail('settings.invalid_value'), ['rsv_settings' => 1], $old, '');
+        }
+        $result = ReservationsWbce::settingsService()->save(new Settings(
+            sectionId: $sectionId,
+            displayMode: $mode,
+            defaultView: $view,
+            planRange: $old['plan_range'],
+            showLabels: $old['show_labels'],
+            pastMonths: $old['past_months'],
+            futureMonths: $old['future_months'],
+            resourceId: $old['resource_id'] > 0 ? $old['resource_id'] : null,
+        ));
+        $finish($result, $result->ok ? [] : ['rsv_settings' => 1], $old, ReservationsWbce::t('MSG_SETTINGS_SAVED'));
 
     case 'booking_delete':
         $resourceId = (int) $post('resource_id');

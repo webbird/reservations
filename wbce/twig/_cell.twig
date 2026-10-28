@@ -1,0 +1,12 @@
+{#
+    reservations/twig/_cell.twig – visual halves of a day (morning/afternoon) plus screen-reader text
+#}
+<span class="rsv-day" aria-hidden="true">
+    {%- if cell.full -%}
+        <span class="rsv-half rsv-whole rsv-pattern-{{ cell.am.pattern }}" style="--rsv-color:{{ cell.am.color }}"></span>
+    {%- else -%}
+        {%- for half in [cell.am, cell.pm] -%}
+            <span class="rsv-half{% if half %} rsv-pattern-{{ half.pattern }}{% endif %}"{% if half %} style="--rsv-color:{{ half.color }}"{% endif %}></span>
+        {%- endfor -%}
+    {%- endif -%}
+</span><span class="rsv-sr">{{ cell.text }}</span>

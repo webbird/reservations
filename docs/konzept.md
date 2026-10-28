@@ -448,3 +448,6 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 - Ablage: ein Repository mit Kern und Wrappern.
 - Tests: PHPUnit für den Kern.
 - Entwicklung in WBCE: Verzeichnisverknüpfung von `modules/reservations` auf `reservations/wbce`.
+- Einzelobjekt: das angezeigte Objekt wird in den Einstellungen gewählt (Spalte `settings.resource_id`), ohne Auswahl das erste aktive.
+- Belegungsplan über 3 Monate: drei Monatstabellen untereinander statt einer breiten Tabelle.
+- Wochenansicht mit Stundenraster (Objekte mit Uhrzeiten): eigener Schritt nach der Darstellung; bis dahin zeigt der Plan solche Objekte als Vormittag/Nachmittag.

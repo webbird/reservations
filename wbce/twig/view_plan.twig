@@ -1,55 +1,36 @@
 {#
-    reservations/twig/view_plan.twig – occupancy plan of one month
+    reservations/twig/view_plan.twig – occupancy plan, one table per month
 #}
-{# empty jump target: templates may hide or offset :target elements (sticky-nav trick) #}
-<span id="rsv-{{ section_id }}" class="rsv-anchor"></span>
-<div class="mod_reservations">
-    <div class="rsv-nav">
-        {% if url_prev %}<a href="{{ url_prev }}" rel="prev">‹ <span class="rsv-sr">{{ t('PREV_MONTH') }}</span></a>{% endif %}
-        <span class="rsv-month">{{ month }}</span>
-        {% if url_next %}<a href="{{ url_next }}" rel="next"><span class="rsv-sr">{{ t('NEXT_MONTH') }}</span> ›</a>{% endif %}
-    </div>
-
-    <div class="rsv-scroll" tabindex="0" role="region" aria-label="{{ t('PLAN') }} {{ month }}">
-        <table class="rsv-plan">
-            <caption class="rsv-sr">{{ t('PLAN') }} {{ month }}</caption>
-            <thead>
-                <tr>
-                    <th scope="col">{{ t('RESOURCE') }}</th>
-                    {% for day in days %}
-                        <th scope="col" class="{{ day.weekend ? 'rsv-weekend' }}" abbr="{{ day.long }}">
-                            <span aria-hidden="true">{{ day.weekday }}<br>{{ day.number }}</span>
-                            <span class="rsv-sr">{{ day.long }}</span>
-                        </th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-            {% for row in rows %}
-                <tr>
-                    <th scope="row">{{ row.title }}</th>
-                    {% for cell in row.cells %}
-                        {% if cell.status %}
-                            {% set s = legend[cell.status] %}
-                            <td class="rsv-cell rsv-pattern-{{ s.pattern }}" style="--rsv-color:{{ s.color }}"{% if cell.label %} title="{{ cell.label }}"{% endif %}>
-                                <span class="rsv-sr">{{ cell.text }}{% if cell.label %}: {{ cell.label }}{% endif %}</span>
+{% extends '_view_layout.twig' %}
+{% block content %}
+    {% for table in tables %}
+        <div class="rsv-scroll" tabindex="0" role="region" aria-label="{{ t('PLAN') }} {{ table.caption }}">
+            <table class="rsv-plan">
+                <caption>{{ table.caption }}</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">{{ t('RESOURCE') }}</th>
+                        {% for day in table.days %}
+                            <th scope="col"{% if day.weekend %} class="rsv-weekend"{% endif %} abbr="{{ day.long }}">
+                                <span aria-hidden="true">{{ day.weekday }}<br>{{ day.number }}</span>
+                                <span class="rsv-sr">{{ day.long }}</span>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                {% for row in table.rows %}
+                    <tr>
+                        <th scope="row">{{ row.title }}</th>
+                        {% for cell in row.cells %}
+                            <td class="rsv-cell{{ cell.weekend ? ' rsv-weekend' }}"{% if cell.am or cell.pm %} title="{{ cell.text }}"{% endif %}>
+                                {%- include '_cell.twig' -%}
                             </td>
-                        {% else %}
-                            <td class="rsv-cell{{ cell.weekend ? ' rsv-weekend' }}"><span class="rsv-sr">{{ cell.text }}</span></td>
-                        {% endif %}
-                    {% endfor %}
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    {% if legend %}
-        <ul class="rsv-legend" aria-label="{{ t('LEGEND') }}">
-            <li><span class="rsv-swatch" aria-hidden="true"></span> {{ t('FREE') }}</li>
-            {% for item in legend %}
-                <li><span class="rsv-swatch rsv-pattern-{{ item.pattern }}" style="--rsv-color:{{ item.color }}" aria-hidden="true"></span> {{ item.text }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-</div>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endfor %}
+{% endblock %}

@@ -23,7 +23,7 @@ PHP ab 8.2 mit `pdo`, `intl` und `mbstring`. Datenbank: MySQL/MariaDB oder SQLit
 Im Ordner `core/`:
 
 ```bash
-php D:/00_Development/Tools/composer.phar install
+php composer.phar install
 ```
 
 ```bash
@@ -46,7 +46,7 @@ Das Modulverzeichnis in WBCE ist eine Verzeichnisverknüpfung auf `wbce/`. Den K
 `wbce/bootstrap.php` dann über `../core/src`, im gebauten Modul über `core/src`:
 
 ```bash
-cmd /c mklink /J "D:\00_Development\WBCE-Portable\htdocs\wbce\modules\reservations" "D:\00_Development\Development\reservations\wbce"
+cmd /c mklink /J "path\to\modules\reservations" "path\to\reservations\wbce"
 ```
 
 Danach in WBCE unter Erweiterungen → Module → „Manuell installieren“ das Modul `reservations`

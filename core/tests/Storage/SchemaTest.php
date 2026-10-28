@@ -1,0 +1,98 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Reservations\Core\Tests\Storage;
+
+use DateTimeZone;
+use PDO;
+use PDOException;
+use PHPUnit\Framework\TestCase;
+use Reservations\Core\Domain\Pattern;
+use Reservations\Core\Domain\Status;
+use Reservations\Core\Domain\StatusRole;
+use Reservations\Core\Domain\Visibility;
+use Reservations\Core\Storage\Pdo\Connection;
+use Reservations\Core\Storage\Pdo\StatusRepository;
+use Reservations\Core\Storage\Pdo\TypeRepository;
+use Reservations\Core\Storage\Schema;
+use Reservations\Core\Storage\SectionSetup;
+
+final class SchemaTest extends TestCase
+{
+    private Connection $db;
+    private StatusRepository $statuses;
+    private SectionSetup $setup;
+
+    protected function setUp(): void
+    {
+        $pdo = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $this->db = new Connection($pdo, 'test_mod_reservations_', new DateTimeZone('Europe/Berlin'));
+        $this->statuses = new StatusRepository($this->db);
+        $this->setup = new SectionSetup($this->db, $this->statuses, new TypeRepository($this->db));
+    }
+
+    public function testInstallCreatesAllTablesOnce(): void
+    {
+        self::assertSame(['settings', 'types', 'statuses', 'resources', 'hours', 'bookings', 'requests'], Schema::install($this->db));
+        self::assertSame([], Schema::install($this->db));
+    }
+
+    public function testUninstallDropsTables(): void
+    {
+        Schema::install($this->db);
+        Schema::uninstall($this->db);
+        self::assertFalse($this->db->tableExists('bookings'));
+    }
+
+    public function testMysqlDdlRendersPlatformSpecifics(): void
+    {
+        $sql = implode("\n", Schema::statements('mysql', 'wbce_mod_reservations_bookings', Schema::tables()['bookings']));
+        self::assertStringContainsString('AUTO_INCREMENT', $sql);
+        self::assertStringContainsString('ENGINE=InnoDB', $sql);
+        self::assertStringContainsString('start_at DATETIME NOT NULL', $sql);
+        self::assertStringContainsString('CREATE INDEX wbce_mod_reservations_bookings_range', $sql);
+        self::assertStringNotContainsString('ENUM', $sql);
+    }
+
+    public function testConnectionRejectsSilentErrorMode(): void
+    {
+        $this->expectException(\LogicException::class);
+        new Connection(new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT]), 'x_');
+    }
+
+    public function testSectionSetupSeedsDefaultsOnce(): void
+    {
+        Schema::install($this->db);
+        self::assertTrue($this->setup->run(1, 10, ['booked' => 'gebucht']));
+        self::assertFalse($this->setup->run(1, 10));
+
+        $statuses = $this->statuses->listBySection(1);
+        self::assertCount(6, $statuses);
+        self::assertSame('gebucht', $this->statuses->findByRole(1, StatusRole::RequestConfirmed)?->title);
+        foreach (StatusRole::cases() as $role) {
+            self::assertNotNull($this->statuses->findByRole(1, $role), $role->value);
+        }
+        self::assertCount(1, (new TypeRepository($this->db))->listBySection(1));
+        self::assertSame(1, $this->db->fetchInt('SELECT COUNT(*) FROM ' . $this->db->table('settings')));
+    }
+
+    public function testRoleIsUniquePerSectionInTheDatabase(): void
+    {
+        Schema::install($this->db);
+        $this->setup->run(1, 10);
+        $this->setup->run(2, 20);
+        $this->expectException(PDOException::class);
+        $this->statuses->insert(new Status(null, 1, 'Second', true, Visibility::Label, '#000000', Pattern::Solid, StatusRole::RequestNew));
+    }
+
+    public function testRemoveClearsOnlyThatSection(): void
+    {
+        Schema::install($this->db);
+        $this->setup->run(1, 10);
+        $this->setup->run(2, 20);
+        $this->setup->remove(1);
+        self::assertCount(0, $this->statuses->listBySection(1));
+        self::assertCount(6, $this->statuses->listBySection(2));
+    }
+}

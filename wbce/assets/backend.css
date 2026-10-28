@@ -1,0 +1,44 @@
+/*
+ * Same approach as frontend.css: reset the structural elements, then style them
+ * with two-id specificity via ":not(#rsv):not(#rsv)". Form controls and links are
+ * not reset, so they keep the look of the backend theme.
+ */
+.mod_reservations:not(#rsv):not(#rsv),
+.mod_reservations:not(#rsv):not(#rsv) :where(div, span, p, small, table, caption, thead, tbody, tr, th, td, ul, li, fieldset, legend, label) {
+    all: revert;
+}
+
+.mod_reservations:not(#rsv):not(#rsv) .rsv-sr {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+}
+.mod_reservations:not(#rsv):not(#rsv) .rsv-msg { padding: .6em 1em; margin: 0 0 1em; border-left: 4px solid; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-msg ul { margin: 0; padding-left: 1.2em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-msg--error { background: #fbeaea; border-color: #a32d2d; color: #5c1414; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-msg--success { background: #e8f3ea; border-color: #2d7a3e; color: #173d1f; }
+
+.mod_reservations:not(#rsv):not(#rsv) .rsv-table { width: 100%; border-collapse: collapse; margin: 0 0 1.5em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-table caption { text-align: left; font-weight: bold; font-size: 1.1em; padding: .4em 0; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-table th,
+.mod_reservations:not(#rsv):not(#rsv) .rsv-table td { text-align: left; padding: .4em .6em; border-bottom: 1px solid #d6dae0; vertical-align: top; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-table thead th { border-bottom-width: 2px; font-weight: bold; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-table tbody th { font-weight: normal; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-table .rsv-num { text-align: right; font-variant-numeric: tabular-nums; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-table .rsv-inactive,
+.mod_reservations:not(#rsv):not(#rsv) .rsv-table .rsv-past { color: #6b7280; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-table .rsv-actions { white-space: nowrap; text-align: right; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-actions a,
+.mod_reservations:not(#rsv):not(#rsv) .rsv-actions .rsv-inline { margin-left: .8em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-inline { display: inline; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-link { background: none; border: 0; padding: 0; color: #a32d2d; text-decoration: underline; cursor: pointer; font: inherit; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-badge { display: inline-block; padding: .1em .5em; border-radius: 3px; font-size: .9em; }
+
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form fieldset { border: 1px solid #d6dae0; padding: 1em; margin: 0; max-width: 40em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form legend { font-weight: bold; padding: 0 .4em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form p { margin: 0 0 .8em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form label:not([for^="rsv-active"]) { display: block; margin-bottom: .2em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form input[type="text"],
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form select,
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form textarea { width: 100%; box-sizing: border-box; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form small { display: block; color: #4b5563; margin-top: .2em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-buttons { display: flex; gap: 1em; align-items: center; }

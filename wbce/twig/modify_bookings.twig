@@ -1,0 +1,87 @@
+{#
+    reservations/twig/modify_bookings.twig – bookings of one object
+#}
+<div class="mod_reservations">
+    <p><a href="{{ url_list }}">« {{ t('BACK_TO_RESOURCES') }}</a></p>
+    {% include '_messages.twig' %}
+
+    <table class="rsv-table">
+        <caption>{{ t('BOOKINGS') }}: {{ resource.title }}</caption>
+        <thead>
+            <tr>
+                <th scope="col">{{ whole_days ? t('ARRIVAL_DEPARTURE') : t('PERIOD') }}</th>
+                <th scope="col">{{ t('STATUS') }}</th>
+                <th scope="col">{{ t('LABEL') }}</th>
+                <th scope="col">{{ t('NOTE') }}</th>
+                <th scope="col"><span class="rsv-sr">{{ t('ACTIONS') }}</span></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for b in bookings %}
+            <tr{% if b.past %} class="rsv-past"{% endif %}>
+                <th scope="row">{{ b.range }}</th>
+                <td><span class="rsv-badge" style="background:{{ b.color }};color:{{ b.text_color }}">{{ b.status }}</span></td>
+                <td>{{ b.label }}</td>
+                <td>{{ b.note|length > 80 ? b.note|slice(0, 80) ~ '…' : b.note }}</td>
+                <td class="rsv-actions">
+                    <a href="{{ b.url_edit }}">{{ t('EDIT') }}<span class="rsv-sr">: {{ b.range }}</span></a>
+                    <form action="{{ action }}" method="post" class="rsv-inline" onsubmit="return confirm('{{ t('CONFIRM_DELETE')|e('js') }}')">
+                        <input type="hidden" name="page_id" value="{{ page_id }}">
+                        <input type="hidden" name="section_id" value="{{ section_id }}">
+                        <input type="hidden" name="rsv_action" value="booking_delete">
+                        <input type="hidden" name="resource_id" value="{{ resource.id }}">
+                        <input type="hidden" name="booking_id" value="{{ b.id }}">
+                        {{ FTAN|raw }}
+                        <button type="submit" class="rsv-link">{{ t('DELETE') }}<span class="rsv-sr">: {{ b.range }}</span></button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5">{{ t('NO_BOOKINGS') }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <form class="rsv-form" action="{{ action }}" method="post">
+        <input type="hidden" name="page_id" value="{{ page_id }}">
+        <input type="hidden" name="section_id" value="{{ section_id }}">
+        <input type="hidden" name="rsv_action" value="booking_save">
+        <input type="hidden" name="resource_id" value="{{ resource.id }}">
+        <input type="hidden" name="booking_id" value="{{ form.booking_id }}">
+        {{ FTAN|raw }}
+
+        <fieldset>
+            <legend>{{ form.booking_id ? t('EDIT_BOOKING') : t('NEW_BOOKING') }}</legend>
+            <p>
+                <label for="rsv-start-{{ section_id }}">{{ whole_days ? t('ARRIVAL') : t('START') }}</label>
+                <input id="rsv-start-{{ section_id }}" type="{{ whole_days ? 'date' : 'datetime-local' }}" name="start" value="{{ form.start }}" required>
+            </p>
+            <p>
+                <label for="rsv-end-{{ section_id }}">{{ whole_days ? t('DEPARTURE') : t('END') }}</label>
+                <input id="rsv-end-{{ section_id }}" type="{{ whole_days ? 'date' : 'datetime-local' }}" name="end" value="{{ form.end }}" required>
+            </p>
+            <p>
+                <label for="rsv-status-{{ section_id }}">{{ t('STATUS') }}</label>
+                <select id="rsv-status-{{ section_id }}" name="status_id">
+                    {% for s in statuses %}
+                        <option value="{{ s.id }}"{% if s.id == form.status_id %} selected{% endif %}>{{ s.title }}</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p>
+                <label for="rsv-label-{{ section_id }}">{{ t('LABEL') }}</label>
+                <input id="rsv-label-{{ section_id }}" type="text" name="label" value="{{ form.label }}" maxlength="255" aria-describedby="rsv-label-hint-{{ section_id }}">
+                <small id="rsv-label-hint-{{ section_id }}">{{ t('LABEL_HINT') }}</small>
+            </p>
+            <p>
+                <label for="rsv-note-{{ section_id }}">{{ t('NOTE') }}</label>
+                <textarea id="rsv-note-{{ section_id }}" name="note" rows="3" aria-describedby="rsv-note-hint-{{ section_id }}">{{ form.note }}</textarea>
+                <small id="rsv-note-hint-{{ section_id }}">{{ t('NOTE_HINT') }}</small>
+            </p>
+            <p class="rsv-buttons">
+                <button type="submit" class="button ico-save">{{ L_('TEXT:SAVE') }}</button>
+                {% if form.booking_id %}<a href="{{ url_new }}">{{ L_('TEXT:CANCEL') }}</a>{% endif %}
+            </p>
+        </fieldset>
+    </form>
+</div>

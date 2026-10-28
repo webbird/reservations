@@ -1,0 +1,44 @@
+/*
+ * Templates style tables, lists and containers globally. Two measures keep the
+ * module independent of that:
+ * 1. Reset: "all: revert" drops every author style (template included) on the
+ *    module container and its structural elements; font and colour are still
+ *    inherited. Links are left out so they keep the template's link colour.
+ * 2. Specificity: ":not(#rsv)" matches every element but counts like an id;
+ *    used twice, our rules also win against template rules like
+ *    "#content table tr:nth-child(even) td". Template rules with !important
+ *    still win - nothing but !important could beat those.
+ */
+.mod_reservations:not(#rsv):not(#rsv),
+.mod_reservations:not(#rsv):not(#rsv) :where(div, span, table, caption, thead, tbody, tr, th, td, ul, li) {
+    all: revert;
+}
+
+.mod_reservations:not(#rsv):not(#rsv) .rsv-sr {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+}
+.mod_reservations:not(#rsv):not(#rsv) .rsv-nav { display: flex; align-items: center; gap: 1rem; margin: 0 0 .5rem; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-nav a { text-decoration: none; font-size: 1.4em; line-height: 1; padding: 0 .4em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-nav a:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-month { font-weight: bold; min-width: 10em; text-align: center; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-scroll { display: block; overflow-x: auto; position: relative; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-scroll:focus-visible { outline: 2px solid currentColor; }
+
+.mod_reservations:not(#rsv):not(#rsv) .rsv-plan { border-collapse: collapse; font-size: .85em; line-height: 1.3; margin: 0; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-plan th,
+.mod_reservations:not(#rsv):not(#rsv) .rsv-plan td { border: 1px solid #c8ccd2; padding: 0; text-align: center; vertical-align: middle; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-plan thead th { padding: .2em; min-width: 1.8em; font-weight: normal; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-plan tbody th { padding: .2em .6em; text-align: left; white-space: nowrap; font-weight: bold; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-plan .rsv-weekend { background-color: #f1f3f5; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-plan .rsv-cell { height: 1.8em; }
+
+/* status colours: the pattern carries the meaning together with the screen-reader text */
+.mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-solid { background: var(--rsv-color); }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-striped { background: repeating-linear-gradient(135deg, var(--rsv-color) 0 4px, #fff 4px 7px); }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-dotted { background: radial-gradient(var(--rsv-color) 1.5px, #fff 1.6px) 0 0 / 5px 5px; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-outline { background: #fff; box-shadow: inset 0 0 0 2px var(--rsv-color); }
+
+.mod_reservations:not(#rsv):not(#rsv) .rsv-legend { display: flex; flex-wrap: wrap; gap: .4em 1.4em; list-style: none; padding: 0; margin: .6em 0 0; font-size: .9em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-legend li { display: flex; align-items: center; gap: .4em; margin: 0; padding: 0; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-swatch { display: inline-block; width: 1.2em; height: 1.2em; border: 1px solid #c8ccd2; }

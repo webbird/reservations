@@ -1,0 +1,67 @@
+{#
+    reservations/twig/modify_resources.twig – objects of a section
+#}
+<div class="mod_reservations">
+    {% include '_messages.twig' %}
+
+    <table class="rsv-table">
+        <caption>{{ t('RESOURCES') }}</caption>
+        <thead>
+            <tr>
+                <th scope="col">{{ t('TITLE') }}</th>
+                <th scope="col">{{ t('TYPE') }}</th>
+                <th scope="col">{{ t('ACTIVE') }}</th>
+                <th scope="col" class="rsv-num">{{ t('BOOKINGS') }}</th>
+                <th scope="col"><span class="rsv-sr">{{ t('ACTIONS') }}</span></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in resources %}
+            <tr{% if not r.active %} class="rsv-inactive"{% endif %}>
+                <th scope="row">{{ r.title }}</th>
+                <td>{{ r.type }}</td>
+                <td>{{ r.active ? t('YES') : t('NO') }}</td>
+                <td class="rsv-num">{{ r.bookings }}</td>
+                <td class="rsv-actions">
+                    <a href="{{ r.url_bookings }}">{{ t('BOOKINGS') }}<span class="rsv-sr">: {{ r.title }}</span></a>
+                    <a href="{{ r.url_edit }}">{{ t('EDIT') }}<span class="rsv-sr">: {{ r.title }}</span></a>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5">{{ t('NO_RESOURCES') }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <form class="rsv-form" action="{{ action }}" method="post">
+        <input type="hidden" name="page_id" value="{{ page_id }}">
+        <input type="hidden" name="section_id" value="{{ section_id }}">
+        <input type="hidden" name="rsv_action" value="resource_save">
+        <input type="hidden" name="resource_id" value="{{ form.resource_id }}">
+        {{ FTAN|raw }}
+
+        <fieldset>
+            <legend>{{ form.resource_id ? t('EDIT_RESOURCE') : t('NEW_RESOURCE') }}</legend>
+            <p>
+                <label for="rsv-title-{{ section_id }}">{{ t('TITLE') }}</label>
+                <input id="rsv-title-{{ section_id }}" type="text" name="title" value="{{ form.title }}" maxlength="255" required>
+            </p>
+            <p>
+                <label for="rsv-type-{{ section_id }}">{{ t('TYPE') }}</label>
+                <select id="rsv-type-{{ section_id }}" name="type_id">
+                    {% for type in types %}
+                        <option value="{{ type.id }}"{% if type.id == form.type_id %} selected{% endif %}>{{ type.title }}</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p>
+                <input id="rsv-active-{{ section_id }}" type="checkbox" name="active" value="1"{% if form.active %} checked{% endif %}>
+                <label for="rsv-active-{{ section_id }}">{{ t('ACTIVE') }}</label>
+            </p>
+            <p class="rsv-buttons">
+                <button type="submit" class="button ico-save">{{ L_('TEXT:SAVE') }}</button>
+                {% if form.resource_id %}<a href="{{ url_list }}">{{ L_('TEXT:CANCEL') }}</a>{% endif %}
+            </p>
+        </fieldset>
+    </form>
+</div>

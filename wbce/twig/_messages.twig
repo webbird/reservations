@@ -1,0 +1,7 @@
+{% if errors %}
+    <div class="rsv-msg rsv-msg--error" role="alert">
+        <ul>{% for message in errors %}<li>{{ message }}</li>{% endfor %}</ul>
+    </div>
+{% elseif success %}
+    <div class="rsv-msg rsv-msg--success" role="status">{{ success }}</div>
+{% endif %}

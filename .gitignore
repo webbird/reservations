@@ -1,0 +1,5 @@
+/core/vendor/
+/core/composer.lock
+/core/.phpunit.cache/
+/build/dist/
+/core/.phpstan.cache/

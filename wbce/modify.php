@@ -46,12 +46,14 @@ if ($rsvParam('rsv_settings') === 1) {
         'past_months'   => $rsvSettings->pastMonths,
         'future_months' => $rsvSettings->futureMonths,
         'booking_mode'  => $rsvSettings->bookingMode->value,
+        'news_section'  => ReservationsNewsImg::idOf($rsvSettings->presentationSource) ?? 0,
     ];
     ReservationsWbce::twig()->display('modify_settings.twig', $rsvVars + [
         'form'      => $rsvForm,
         'resources' => array_map(static fn ($r) => ['id' => $r->id, 'title' => $r->title], ReservationsWbce::resources()->listBySection($rsvSection)),
         'first'     => $rsvActive[0]->title ?? null,
         'months_max' => Reservations\Core\Service\SettingsService::MONTHS_MAX,
+        'news_sections' => ReservationsNewsImg::sections(),
     ]);
     return;
 }

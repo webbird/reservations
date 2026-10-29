@@ -81,6 +81,23 @@
                 <input id="rsv-future-{{ section_id }}" type="number" name="future_months" value="{{ form.future_months }}" min="1" max="{{ months_max }}" required>
             </p>
 
+            {# only offered when news_img sections exist #}
+            {% if news_sections or form.news_section %}
+                <p>
+                    <label for="rsv-news-{{ section_id }}">{{ t('NEWS_SECTION') }}</label>
+                    <select id="rsv-news-{{ section_id }}" name="news_section" aria-describedby="rsv-news-hint-{{ section_id }}">
+                        <option value="0">{{ t('NONE') }}</option>
+                        {% for id, label in news_sections %}
+                            <option value="{{ id }}"{% if id == form.news_section %} selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                        {% if form.news_section and news_sections[form.news_section] is not defined %}
+                            <option value="{{ form.news_section }}" selected>{{ t('NEWS_SECTION_MISSING', form.news_section) }}</option>
+                        {% endif %}
+                    </select>
+                    <small id="rsv-news-hint-{{ section_id }}">{{ t('NEWS_SECTION_HINT') }}</small>
+                </p>
+            {% endif %}
+
             <p class="rsv-buttons">
                 <button type="submit" class="button ico-save">{{ L_('TEXT:SAVE') }}</button>
                 <a href="{{ url_list }}">{{ L_('TEXT:CANCEL') }}</a>

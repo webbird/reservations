@@ -42,6 +42,7 @@ spl_autoload_register(static function (string $class): void {
 });
 
 Lang::loadLanguage(__DIR__);
+require_once __DIR__ . '/news_img.php';
 
 final class ReservationsWbce
 {

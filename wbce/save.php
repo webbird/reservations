@@ -129,12 +129,14 @@ switch ($post('rsv_action')) {
             'past_months'   => (int) $post('past_months'),
             'future_months' => (int) $post('future_months'),
             'booking_mode'  => $post('booking_mode'),
+            'news_section'  => (int) $post('news_section'),
         ];
         $mode = DisplayMode::tryFrom($old['display_mode']);
         $view = CalendarView::tryFrom($old['default_view']);
         $bookingMode = BookingMode::tryFrom($old['booking_mode']);
         // appointments follow in 1.1
-        if ($mode === null || $view === null || $bookingMode === null || $bookingMode === BookingMode::Appointment) {
+        $newsSectionValid = $old['news_section'] === 0 || isset(ReservationsNewsImg::sections()[$old['news_section']]);
+        if ($mode === null || $view === null || $bookingMode === null || $bookingMode === BookingMode::Appointment || !$newsSectionValid) {
             $finish(Result::fail('settings.invalid_value'), ['rsv_settings' => 1], $old, '');
         }
         $result = ReservationsWbce::settingsService()->save(new Settings(
@@ -147,6 +149,7 @@ switch ($post('rsv_action')) {
             futureMonths: $old['future_months'],
             resourceId: $old['resource_id'] > 0 ? $old['resource_id'] : null,
             bookingMode: $bookingMode,
+            presentationSource: $old['news_section'] > 0 ? ReservationsNewsImg::PREFIX . $old['news_section'] : null,
         ));
         $finish($result, $result->ok ? [] : ['rsv_settings' => 1], $old, ReservationsWbce::t('MSG_SETTINGS_SAVED'));
 

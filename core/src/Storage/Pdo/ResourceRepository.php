@@ -34,6 +34,31 @@ final class ResourceRepository
     }
 
     /**
+     * Across all sections, for callers that only know the id (e.g. a droplet).
+     */
+    public function findById(int $resourceId): ?BookableResource
+    {
+        $row = $this->db->fetchOne('SELECT * FROM ' . $this->db->table(self::TABLE) . ' WHERE resource_id = ?', [$resourceId]);
+        return $row === null ? null : $this->hydrate($row);
+    }
+
+    /**
+     * The first active resource that points to this presentation, across all sections.
+     *
+     * shortcut: several resources may point to the same presentation and only the first
+     * is found; enforce uniqueness on save if that turns out to confuse editors.
+     */
+    public function findByPresentationRef(string $ref): ?BookableResource
+    {
+        $row = $this->db->fetchOne(
+            'SELECT * FROM ' . $this->db->table(self::TABLE) . ' WHERE presentation_ref = ? AND active = 1'
+            . ' ORDER BY section_id, position, resource_id LIMIT 1',
+            [$ref],
+        );
+        return $row === null ? null : $this->hydrate($row);
+    }
+
+    /**
      * @return list<BookableResource>
      */
     public function listBySection(int $sectionId, bool $activeOnly = false): array

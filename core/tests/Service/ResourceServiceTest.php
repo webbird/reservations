@@ -54,6 +54,22 @@ final class ResourceServiceTest extends TestCase
         self::assertSame('resource.title_too_long', $this->service->create(new BookableResource(null, 1, $this->type, str_repeat('ü', 256)))->firstErrorKey());
         self::assertSame('resource.invalid_color', $this->service->create(new BookableResource(null, 1, $this->type, 'X', 'blue'))->firstErrorKey());
         self::assertSame('type.not_found', $this->service->create(new BookableResource(null, 1, $this->foreignType, 'X'))->firstErrorKey());
+        self::assertSame(
+            'resource.presentation_ref_too_long',
+            $this->service->create(new BookableResource(null, 1, $this->type, 'X', presentationRef: str_repeat('x', 101)))->firstErrorKey(),
+        );
+    }
+
+    public function testFindAcrossSections(): void
+    {
+        $inactive = $this->resources->insert(new BookableResource(null, 1, $this->type, 'Alt', active: false, presentationRef: 'news_img:12'));
+        $flat = $this->resources->insert(new BookableResource(null, 2, $this->foreignType, 'FeWo', presentationRef: 'news_img:12'));
+
+        self::assertSame('Alt', $this->resources->findById($inactive)?->title);
+        self::assertNull($this->resources->findById(999));
+        // inactive objects are skipped, the section does not matter
+        self::assertSame($flat, $this->resources->findByPresentationRef('news_img:12')?->id);
+        self::assertNull($this->resources->findByPresentationRef('news_img:13'));
     }
 
     public function testUpdateOfForeignResourceFails(): void

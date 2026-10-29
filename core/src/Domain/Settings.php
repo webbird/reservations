@@ -7,7 +7,9 @@ namespace Reservations\Core\Domain;
 /**
  * Settings of a section. resourceId picks the object shown in single mode;
  * null means the first active object. The booking mode applies to all objects
- * of the section; sections do not mix modes.
+ * of the section; sections do not mix modes. presentationSource is a neutral
+ * reference to where the object descriptions live (e.g. "news_img:5"); the
+ * core never interprets it.
  */
 final readonly class Settings
 {
@@ -21,7 +23,27 @@ final readonly class Settings
         public int $futureMonths = 24,
         public ?int $resourceId = null,
         public BookingMode $bookingMode = BookingMode::Day,
+        public ?string $presentationSource = null,
     ) {
+    }
+
+    /**
+     * The same section shown as month calendar of one object, e.g. inside its description.
+     */
+    public function forResource(int $resourceId): self
+    {
+        return new self(
+            $this->sectionId,
+            DisplayMode::Single,
+            CalendarView::Month,
+            $this->planRange,
+            $this->showLabels,
+            $this->pastMonths,
+            $this->futureMonths,
+            $resourceId,
+            $this->bookingMode,
+            $this->presentationSource,
+        );
     }
 
     /**

@@ -17,6 +17,7 @@ use Reservations\Core\Support\Color;
 final class ResourceService
 {
     public const TITLE_MAX = 255;
+    public const PRESENTATION_REF_MAX = 100;
 
     public function __construct(
         private readonly ResourceRepository $resources,
@@ -50,6 +51,9 @@ final class ResourceService
         }
         if (mb_strlen($title) > self::TITLE_MAX) {
             return Result::fail('resource.title_too_long', ['max' => self::TITLE_MAX], 'title');
+        }
+        if ($resource->presentationRef !== null && mb_strlen($resource->presentationRef) > self::PRESENTATION_REF_MAX) {
+            return Result::fail('resource.presentation_ref_too_long', ['max' => self::PRESENTATION_REF_MAX], 'presentation_ref');
         }
         if ($resource->color !== null && !Color::isValidHex($resource->color)) {
             return Result::fail('resource.invalid_color', ['color' => $resource->color], 'color');

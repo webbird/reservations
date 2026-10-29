@@ -61,7 +61,7 @@ final class SettingsServiceTest extends TestCase
 
     public function testSaveRoundTrip(): void
     {
-        $settings = new Settings(1, DisplayMode::Single, CalendarView::Month, 3, false, 0, 6, $this->flat, BookingMode::Period);
+        $settings = new Settings(1, DisplayMode::Single, CalendarView::Month, 3, false, 0, 6, $this->flat, BookingMode::Period, 'news_img:5');
         self::assertTrue($this->service->save($settings)->ok);
         self::assertEquals($settings, $this->settings->find(1));
     }
@@ -87,6 +87,7 @@ final class SettingsServiceTest extends TestCase
             'settings.view_not_available' => new Settings(1, DisplayMode::Single, CalendarView::Plan),
             'resource.not_found' => new Settings(1, resourceId: $this->foreignFlat),
             'settings.not_found' => new Settings(99),
+            'settings.presentation_source_too_long' => new Settings(1, presentationSource: str_repeat('x', 101)),
         ];
         foreach ($cases as $key => $settings) {
             self::assertSame($key, $this->service->save($settings)->firstErrorKey());
@@ -101,5 +102,14 @@ final class SettingsServiceTest extends TestCase
         self::assertSame(CalendarView::Month, $single->view(CalendarView::Month));
         self::assertSame(CalendarView::List, $single->view(CalendarView::Plan));
         self::assertSame(CalendarView::Plan, (new Settings(1, defaultView: CalendarView::Month))->view(null));
+    }
+
+    public function testForResourceShowsOneObjectAsMonth(): void
+    {
+        $plan = new Settings(1, planRange: 3, showLabels: false, bookingMode: BookingMode::Period, presentationSource: 'news_img:5');
+        self::assertEquals(
+            new Settings(1, DisplayMode::Single, CalendarView::Month, 3, false, 12, 24, 7, BookingMode::Period, 'news_img:5'),
+            $plan->forResource(7),
+        );
     }
 }

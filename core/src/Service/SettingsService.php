@@ -14,6 +14,7 @@ final class SettingsService
 {
     public const PLAN_RANGES = [1, 3];
     public const MONTHS_MAX = 60;
+    public const PRESENTATION_SOURCE_MAX = 100;
 
     public function __construct(
         private readonly SettingsRepository $settings,
@@ -43,6 +44,9 @@ final class SettingsService
         }
         if (!$s->defaultView->fits($s->displayMode)) {
             return Result::fail('settings.view_not_available', [], 'default_view');
+        }
+        if ($s->presentationSource !== null && mb_strlen($s->presentationSource) > self::PRESENTATION_SOURCE_MAX) {
+            return Result::fail('settings.presentation_source_too_long', ['max' => self::PRESENTATION_SOURCE_MAX], 'presentation_source');
         }
         if ($s->resourceId !== null && $this->resources->find($s->sectionId, $s->resourceId) === null) {
             return Result::fail('resource.not_found', ['id' => $s->resourceId], 'resource_id');

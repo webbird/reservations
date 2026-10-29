@@ -38,6 +38,7 @@ final class SettingsRepository
             futureMonths: Row::int($row, 'future_months'),
             resourceId: Row::nullableInt($row, 'resource_id'),
             bookingMode: BookingMode::tryFrom(Row::string($row, 'booking_mode')) ?? BookingMode::Day,
+            presentationSource: Row::nullableString($row, 'presentation_source'),
         );
     }
 
@@ -52,6 +53,7 @@ final class SettingsRepository
             'future_months' => $s->futureMonths,
             'resource_id' => $s->resourceId,
             'booking_mode' => $s->bookingMode,
-        ],['section_id' => $s->sectionId]);
+            'presentation_source' => $s->presentationSource,
+        ], ['section_id' => $s->sectionId]);
     }
 }

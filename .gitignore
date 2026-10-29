@@ -3,3 +3,4 @@
 /core/.phpunit.cache/
 /build/dist/
 /core/.phpstan.cache/
+/demo

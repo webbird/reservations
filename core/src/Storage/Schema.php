@@ -38,6 +38,7 @@ final class Schema
                     'future_months' => 'small=24',
                     'resource_id' => 'int?',
                     'booking_mode' => "str:20='day'",
+                    'presentation_source' => 'str?:100',
                 ],
                 'primary' => ['section_id'],
             ],

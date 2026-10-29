@@ -10,3 +10,5 @@ defined('WB_PATH') or die('This file cannot be accessed directly!');
 require_once __DIR__ . '/bootstrap.php';
 
 Reservations\Core\Storage\Schema::install(ReservationsWbce::db());
+
+ReservationsWbce::installDroplet();

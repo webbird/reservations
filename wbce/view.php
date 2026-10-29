@@ -24,6 +24,10 @@ use Reservations\Core\Domain\Visibility;
 $rsvSection = (int) $section_id;
 $rsvTz = ReservationsWbce::timezone();
 $rsvSettings = ReservationsWbce::settings()->find($rsvSection) ?? new Settings($rsvSection);
+// set by ReservationsWbce::droplet(): one object as month calendar
+if (isset($rsvOnlyResource)) {
+    $rsvSettings = $rsvSettings->forResource($rsvOnlyResource);
+}
 $rsvSingle = $rsvSettings->displayMode === DisplayMode::Single;
 // URL parameters carry the section id, so several sections on one page stay independent
 $rsvGet = static fn (string $name): string => is_string($_GET[$name . '_' . $rsvSection] ?? null) ? $_GET[$name . '_' . $rsvSection] : '';
@@ -48,9 +52,9 @@ if ($rsvSingle) {
 }
 $rsvWholeDays = ReservationsWbce::wholeDays($rsvSection);
 
-// object names link to their description, resolved in one query
+// object names link to their description, resolved in one query; not inside that description itself
 $rsvNews = ReservationsNewsImg::idOf($rsvSettings->presentationSource);
-$rsvPosts = $rsvNews === null ? [] : ReservationsNewsImg::resolveMany($rsvNews, array_values(array_filter(array_map(static fn ($r) => $r->presentationRef, $rsvResources))));
+$rsvPosts = $rsvNews === null || !empty($rsvNoLinks) ? [] : ReservationsNewsImg::resolveMany($rsvNews, array_values(array_filter(array_map(static fn ($r) => $r->presentationRef, $rsvResources))));
 $rsvLink = static fn ($r): ?string => $rsvPosts[$r->presentationRef ?? '']['url'] ?? null;
 
 $rsvStatuses = [];
@@ -120,7 +124,8 @@ foreach ($rsvStatuses as $rsvStatus) {
 }
 
 $rsvUrl = static function (DateTimeImmutable $month, CalendarView $view) use ($rsvSection): string {
-    return '?' . http_build_query(['rsv_month_' . $rsvSection => $month->format('Y-m'), 'rsv_view_' . $rsvSection => $view->value]) . '#rsv-' . $rsvSection;
+    // explicit separator: news_img sets arg_separator.output to '&amp;' for the whole request
+    return '?' . http_build_query(['rsv_month_' . $rsvSection => $month->format('Y-m'), 'rsv_view_' . $rsvSection => $view->value], '', '&') . '#rsv-' . $rsvSection;
 };
 $rsvVars = [
     'section_id'    => $rsvSection,

@@ -132,6 +132,64 @@ final class ReservationsWbce
             $titles[$key] = self::t('SEED_' . strtoupper($key));
         }
         self::sectionSetup()->run($sectionId, $pageId, $titles);
+        $droplets = is_file(WB_PATH . '/modules/droplets/functions.inc.php');
+        if ($droplets && $GLOBALS['database']->fetchValue("SELECT `id` FROM `{TP}mod_droplets` WHERE `name` = 'reservations'") === '') {
+            self::installDroplet();
+        }
+    }
+
+    /**
+     * Imports droplets/reservations.php into the droplets module; replaces an
+     * older version of the droplet with the same name.
+     */
+    public static function installDroplet(): void
+    {
+        $functions = WB_PATH . '/modules/droplets/functions.inc.php';
+        if (!is_file($functions)) {
+            return;
+        }
+        // included here, its file-level variables ($module_directory …) stay local to this method
+        require_once $functions;
+        importDropletFromFile(__DIR__ . '/droplets/reservations.php');
+    }
+
+    /**
+     * [[reservations]]: the object whose description is the current news_img post;
+     * ?resource=ID: one object as month calendar; ?section=ID: a whole section.
+     * Returns '' when nothing fits; admins get the reason as an HTML comment.
+     */
+    public static function droplet(?int $section, ?int $resource): string
+    {
+        $item = null;
+        if ($resource !== null) {
+            $item = self::resources()->findById($resource);
+        } elseif ($section === null && defined('POST_ID')) {
+            $item = self::resources()->findByPresentationRef(ReservationsNewsImg::PREFIX . (int) POST_ID);
+        }
+        $sectionId = $item->sectionId ?? $section;
+        $reason = match (true) {
+            $resource === null && $section === null && !defined('POST_ID') => 'no resource, section or news_img post',
+            $sectionId === null || ($item !== null && !$item->active) => 'no active object found',
+            self::settings()->find($sectionId) === null => 'section ' . $sectionId . ' is not a reservations section',
+            default => null,
+        };
+        if ($reason !== null) {
+            $admin = isset($GLOBALS['wb']) && $GLOBALS['wb']->isAdmin();
+            return $admin ? '<!-- reservations droplet: ' . htmlspecialchars($reason) . ' -->' : '';
+        }
+
+        I::insertCssFile(WB_URL . '/modules/reservations/assets/frontend.css', 'head_late', [], 'mod_reservations_frontend');
+        $section_id = $sectionId;
+        $rsvOnlyResource = $item?->id;
+        // inside its own description a link to that description would lead nowhere new
+        $rsvNoLinks = $item !== null && defined('POST_ID') && $item->presentationRef === ReservationsNewsImg::PREFIX . (int) POST_ID;
+        ob_start();
+        try {
+            require __DIR__ . '/view.php';
+        } finally {
+            $html = (string) ob_get_clean();
+        }
+        return $html;
     }
 
     public static function resourceService(): ResourceService
@@ -253,7 +311,8 @@ final class ReservationsWbce
     {
         $query = ['page_id' => $pageId] + ($params === [] ? [] : ['rsv_section' => $sectionId] + $params);
         $anchor = defined('SEC_ANCHOR') && SEC_ANCHOR !== '' ? '#' . SEC_ANCHOR . $sectionId : '';
-        return ADMIN_URL . '/pages/modify.php?' . http_build_query($query) . $anchor;
+        // explicit separator: news_img sets arg_separator.output to '&amp;' for the whole request
+        return ADMIN_URL . '/pages/modify.php?' . http_build_query($query, '', '&') . $anchor;
     }
 
     /**

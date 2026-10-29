@@ -21,6 +21,8 @@ use Reservations\Core\Support\Color;
  */
 final class StatusService
 {
+    public const TITLE_MAX = 100;
+
     public function __construct(
         private readonly Connection $db,
         private readonly StatusRepository $statuses,
@@ -135,6 +137,10 @@ final class StatusService
     {
         if (trim($status->title) === '') {
             return Result::fail('status.title_required', [], 'title');
+        }
+        // the database may run without strict mode and would truncate silently
+        if (mb_strlen(trim($status->title)) > self::TITLE_MAX) {
+            return Result::fail('status.title_too_long', ['max' => self::TITLE_MAX], 'title');
         }
         if (!Color::isValidHex($status->color)) {
             return Result::fail('status.invalid_color', ['color' => $status->color], 'color');

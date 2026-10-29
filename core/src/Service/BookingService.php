@@ -22,6 +22,8 @@ use Reservations\Core\Storage\Pdo\TypeRepository;
 final class BookingService
 {
     public const LABEL_MAX = 255;
+    /** bytes; the size of a MySQL TEXT column */
+    public const NOTE_MAX = 65535;
 
     public function __construct(
         private readonly Connection $db,
@@ -98,6 +100,9 @@ final class BookingService
         // the database may run without strict mode and would truncate silently
         if (mb_strlen($booking->label) > self::LABEL_MAX) {
             return Result::fail('booking.label_too_long', ['max' => self::LABEL_MAX], 'label');
+        }
+        if (strlen($booking->note) > self::NOTE_MAX) {
+            return Result::fail('booking.note_too_long', [], 'note');
         }
         $resource = $this->resources->find($booking->sectionId, $booking->resourceId);
         if ($resource === null) {

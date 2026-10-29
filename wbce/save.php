@@ -14,7 +14,6 @@ require WB_PATH . '/modules/admin.php';
 require_once __DIR__ . '/bootstrap.php';
 
 use Reservations\Core\Domain\BookableResource;
-use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\CalendarView;
 use Reservations\Core\Domain\DisplayMode;
 use Reservations\Core\Domain\Settings;
@@ -100,7 +99,7 @@ switch ($post('rsv_action')) {
         if ($resource === null) {
             $finish(Result::fail('resource.not_found'), [], $old, '');
         }
-        $wholeDays = ReservationsWbce::types()->find($sectionId, $resource->typeId)?->bookingMode === BookingMode::Day;
+        $wholeDays = ReservationsWbce::wholeDays(ReservationsWbce::types()->find($sectionId, $resource->typeId));
         try {
             $range = $wholeDays
                 ? TimeRange::fromLocal($old['start'] . ' 00:00', $old['end'] . ' 00:00', ReservationsWbce::timezone())

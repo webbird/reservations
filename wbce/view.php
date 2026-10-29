@@ -15,7 +15,6 @@ require_once __DIR__ . '/bootstrap.php';
 use Reservations\Core\Calendar\Day;
 use Reservations\Core\Calendar\Occupancy;
 use Reservations\Core\Domain\Booking;
-use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\CalendarView;
 use Reservations\Core\Domain\DisplayMode;
 use Reservations\Core\Domain\Settings;
@@ -51,7 +50,7 @@ $rsvTypes = [];
 foreach (ReservationsWbce::types()->listBySection($rsvSection) as $rsvType) {
     $rsvTypes[$rsvType->id] = $rsvType;
 }
-$rsvWholeDays = static fn ($r): bool => ($rsvTypes[$r->typeId]->bookingMode ?? BookingMode::Day) === BookingMode::Day;
+$rsvWholeDays = static fn ($r): bool => ReservationsWbce::wholeDays($rsvTypes[$r->typeId] ?? null);
 
 $rsvStatuses = [];
 foreach (ReservationsWbce::statuses()->listBySection($rsvSection) as $rsvStatus) {
@@ -82,16 +81,17 @@ $rsvHalf = static fn (?Booking $b): ?array => $b === null ? null : [
 ];
 // one table cell: two halves plus the complete text for screen readers
 $rsvCell = static function (Day $day, bool $wholeDays) use ($rsvStatusText, $rsvHalf, $rsvDateFmt): array {
-    $full = $day->am !== null && $day->am->id === $day->pm?->id;
+    // occupied, but neither arrival nor departure: the same booking covers the whole day
+    $full = !$day->isFree() && !$day->isArrival() && !$day->isDeparture();
     $text = ReservationsWbce::t('FREE');
     if ($full) {
         $text = $rsvStatusText($day->am);
     } elseif (!$day->isFree()) {
         $parts = [];
-        if ($day->am !== null) {
+        if ($day->isDeparture()) {
             $parts[] = ReservationsWbce::t($wholeDays ? 'SR_DEPARTURE' : 'SR_MORNING', $rsvStatusText($day->am));
         }
-        if ($day->pm !== null) {
+        if ($day->isArrival()) {
             $parts[] = ReservationsWbce::t($wholeDays ? 'SR_ARRIVAL' : 'SR_AFTERNOON', $rsvStatusText($day->pm));
         }
         $text = implode(', ', $parts);

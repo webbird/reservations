@@ -153,6 +153,7 @@ final class StatusServiceTest extends TestCase
     {
         $status = new Status(null, 1, ' ', true, Visibility::Label, '#123456', Pattern::Solid);
         self::assertSame('status.title_required', $this->service->create($status)->firstErrorKey());
+        self::assertSame('status.title_too_long', $this->service->create($this->with($status, ['title' => str_repeat('ö', 101)]))->firstErrorKey());
         self::assertSame('status.invalid_color', $this->service->create($this->with($status, ['title' => 'X', 'color' => 'red']))->firstErrorKey());
     }
 

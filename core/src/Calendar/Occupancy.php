@@ -42,9 +42,13 @@ final class Occupancy
     {
         $ranges = [];
         foreach ($bookings as $i => $booking) {
-            $ranges[$i] = $wholeDays
-                ? new TimeRange($booking->range->start->setTime(12, 0), $booking->range->end->setTime(12, 0))
-                : $booking->range;
+            $ranges[$i] = $booking->range;
+            $start = $booking->range->start->setTime(12, 0);
+            $end = $booking->range->end->setTime(12, 0);
+            // a same-day booking left over from period mode would become empty; keep its real times
+            if ($wholeDays && $end > $start) {
+                $ranges[$i] = new TimeRange($start, $end);
+            }
         }
 
         $days = [];

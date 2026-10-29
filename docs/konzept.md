@@ -53,6 +53,15 @@ Erweiterung `intl`. Datenbank: MySQL/MariaDB oder SQLite (beides unterstützt WB
 | später | Stückzahl pro Ressource („noch 2 von 3 Beamern frei“) |
 | später | Bestätigungslink für Anfragen (Double-Opt-in) |
 | später | Weitere Sprachen (DA, FR, NL, NO, SK wie in v2) |
+| später | **Serienbuchungen** (z. B. feste Trainingszeiten wöchentlich) – Voraussetzung für Kontingente und Auto-Stornierung |
+| später | **Kapazität nach Personenzahl (PAX):** eine Buchung belegt so viele Einheiten, wie für die Personenzahl nötig sind (z. B. 2 Plätze für 30 Personen). Braucht Buchungen über mehrere Ressourcen; verwandt mit „Stückzahl“ |
+| später | **Teilnehmer und Kontingente:** Anmeldungen zu einer Buchung, Auslastung fester Trainingszeiten überwachen |
+| später | **Auto-Stornierung:** Freigabe zum Zeitpunkt T−X, wenn die Mindest-Teilnehmerzahl fehlt. Braucht Teilnehmer und einen zeitgesteuerten Auslöser (WBCE hat keinen eigenen Cron) |
+| später | **Benachrichtigungs-Ereignisse:** bei jeder Statusänderung Mails an Teilnehmer und externe Stellen (Anlagenbetreiber), ggf. Webhooks. 1.0 kennt nur die Mails zu Anfragen |
+
+Herkunft der letzten fünf Zeilen: Vorschläge eines Interessenten (2026-10-29), Zielgruppe
+Vereinssport/Sportanlagen. „Abstrakte Ressourcen unabhängig von der Sportart“ deckt das
+Konzept mit generischen Objekten und Objekttypen bereits ab.
 
 ### Bewusst gestrichen
 - Gruppen aus v2. Die Unterscheidung übernehmen jetzt die Objekte.

@@ -58,8 +58,7 @@ if ($rsvParam('rsv_settings') === 1) {
 $rsvResource = ReservationsWbce::resources()->find($rsvSection, $rsvParam('rsv_bookings'));
 
 if ($rsvResource !== null) {
-    $rsvMode = $rsvTypes[$rsvResource->typeId]->bookingMode ?? Reservations\Core\Domain\BookingMode::Day;
-    $rsvWholeDays = $rsvMode === Reservations\Core\Domain\BookingMode::Day;
+    $rsvWholeDays = ReservationsWbce::wholeDays($rsvTypes[$rsvResource->typeId] ?? null);
     $rsvInputFormat = $rsvWholeDays ? 'Y-m-d' : 'Y-m-d\TH:i';
 
     $rsvStatuses = [];
@@ -69,7 +68,8 @@ if ($rsvResource !== null) {
 
     $rsvToday = new DateTimeImmutable('today', ReservationsWbce::timezone());
     $rsvRows = [];
-    $rsvWindow = new Reservations\Core\Domain\TimeRange($rsvToday->modify('-12 months'), $rsvToday->modify('+36 months'));
+    // no upper limit: a booking typed with a wrong year must stay visible and deletable
+    $rsvWindow = new Reservations\Core\Domain\TimeRange($rsvToday->modify('-12 months'), $rsvToday->modify('+100 years'));
     foreach (ReservationsWbce::bookings()->listInRange($rsvSection, $rsvWindow, (int) $rsvResource->id) as $rsvBooking) {
         $rsvStatus = $rsvStatuses[$rsvBooking->statusId] ?? null;
         $rsvRows[] = [

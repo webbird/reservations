@@ -60,7 +60,7 @@ final class OccupancyTest extends TestCase
         self::assertTrue($days[1]->isArrival());
         self::assertFalse($days[1]->isDeparture());
         self::assertFalse($days[2]->isArrival() || $days[2]->isDeparture());
-        self::assertTrue($days[5]->isChangeover());
+        self::assertTrue($days[5]->isArrival() && $days[5]->isDeparture());
         self::assertTrue($days[8]->isDeparture());
         self::assertFalse($days[8]->isArrival());
     }
@@ -85,6 +85,10 @@ final class OccupancyTest extends TestCase
 
         self::assertSame('1/- -/2 3/3', $this->notation($days));
         self::assertFalse($days[2]->isArrival() || $days[2]->isDeparture());
+
+        // the object switched to day mode later: the old same-day booking must not break the view
+        $days = $this->days([$this->booking(1, '2026-11-02 09:00', '2026-11-02 11:00')], '2026-11-02', '2026-11-03');
+        self::assertSame('1/-', $this->notation($days));
     }
 
     public function testPublicBookingsHideHiddenInactiveAndUnknownStatuses(): void

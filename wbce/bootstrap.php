@@ -8,6 +8,9 @@
 
 defined('WB_PATH') or die('This file cannot be accessed directly!');
 
+use Reservations\Core\Domain\BookingMode;
+use Reservations\Core\Domain\TimeRange;
+use Reservations\Core\Domain\Type;
 use Reservations\Core\Port\Clock;
 use Reservations\Core\Result\Result;
 use Reservations\Core\Service\BookingService;
@@ -154,12 +157,22 @@ final class ReservationsWbce
             }
             foreach ((array) ($error['params']['conflicts'] ?? []) as $conflict) {
                 if (is_array($conflict) && is_string($conflict['start'] ?? null) && is_string($conflict['end'] ?? null)) {
-                    $message .= ' ' . self::formatRange(self::db()->fromDb($conflict['start']), self::db()->fromDb($conflict['end']), true);
+                    $range = new TimeRange(self::db()->fromDb($conflict['start']), self::db()->fromDb($conflict['end']));
+                    $message .= ' ' . self::formatRange($range->start, $range->end, $range->startsAndEndsAtMidnight());
                 }
             }
             $messages[] = $message;
         }
         return $messages;
+    }
+
+    /**
+     * Whole days (date only) or period (date and time). A missing type counts as
+     * day mode, the default type of every new section.
+     */
+    public static function wholeDays(?Type $type): bool
+    {
+        return ($type->bookingMode ?? BookingMode::Day) === BookingMode::Day;
     }
 
     /**

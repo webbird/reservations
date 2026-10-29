@@ -40,6 +40,12 @@ vendor/bin/phpstan analyse --memory-limit=512M
 Die Tests laufen gegen SQLite im Speicher. Mit der Umgebungsvariablen
 `RESERVATIONS_DEBUG=1` schreibt der Kern jede SQL-Abfrage samt Parametern ins `error_log`.
 
+Die MySQL-spezifischen Teile (Tabellen anlegen und ergänzen, Sperre mit `SELECT … FOR UPDATE`)
+prüft `tests/Storage/MysqlIntegrationTest.php` gegen einen echten Server. Der Test läuft nur, wenn
+`RESERVATIONS_TEST_MYSQL_DSN` gesetzt ist (z. B. `mysql:host=127.0.0.1;port=3306;dbname=test;charset=utf8mb4`),
+dazu `RESERVATIONS_TEST_MYSQL_USER` und `RESERVATIONS_TEST_MYSQL_PASSWORD`. Er nutzt ein zufälliges
+Tabellenpräfix und löscht seine Tabellen danach wieder. PHP braucht dafür `pdo_mysql`.
+
 ## Entwicklung (WBCE-Modul)
 
 Das Modulverzeichnis in WBCE ist eine Verzeichnisverknüpfung auf `wbce/`. Den Kern findet

@@ -34,9 +34,4 @@ final readonly class Day
     {
         return $this->am !== null && $this->pm?->id !== $this->am->id;
     }
-
-    public function isChangeover(): bool
-    {
-        return $this->isArrival() && $this->isDeparture();
-    }
 }

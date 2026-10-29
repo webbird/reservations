@@ -35,7 +35,7 @@ return [
             'CONFIRM_DELETE'    => 'Really delete this booking?',
 
             'BOOKINGS'          => 'Bookings',
-            'NO_BOOKINGS'       => 'No bookings in the last 12 and the next 36 months.',
+            'NO_BOOKINGS'       => 'No bookings (bookings that ended more than 12 months ago are not listed).',
             'NEW_BOOKING'       => 'New booking',
             'EDIT_BOOKING'      => 'Edit booking',
             'ARRIVAL_DEPARTURE' => 'Arrival – departure',
@@ -64,6 +64,8 @@ return [
             'ERR_BOOKING_INVALID_RANGE'               => 'Please enter a valid period; the end must be after the start.',
             'ERR_BOOKING_DAY_MODE_REQUIRES_WHOLE_DAYS' => 'This object can only be booked for whole days.',
             'ERR_BOOKING_LABEL_TOO_LONG'              => 'The label may have at most %d characters.',
+            'ERR_BOOKING_NOTE_TOO_LONG'               => 'The internal note is too long.',
+            'ERR_STATUS_TITLE_TOO_LONG'               => 'The status name may have at most %d characters.',
             'ERR_BOOKING_OVERLAP'                     => 'The period overlaps with an existing booking:',
 
             'SETTINGS'             => 'Settings',
@@ -139,7 +141,7 @@ return [
             'CONFIRM_DELETE'    => 'Diese Buchung wirklich löschen?',
 
             'BOOKINGS'          => 'Buchungen',
-            'NO_BOOKINGS'       => 'Keine Buchungen in den letzten 12 und den nächsten 36 Monaten.',
+            'NO_BOOKINGS'       => 'Keine Buchungen (Buchungen, die vor mehr als 12 Monaten endeten, werden nicht angezeigt).',
             'NEW_BOOKING'       => 'Neue Buchung',
             'EDIT_BOOKING'      => 'Buchung bearbeiten',
             'ARRIVAL_DEPARTURE' => 'Anreise – Abreise',
@@ -168,6 +170,8 @@ return [
             'ERR_BOOKING_INVALID_RANGE'               => 'Bitte einen gültigen Zeitraum eingeben; das Ende muss nach dem Beginn liegen.',
             'ERR_BOOKING_DAY_MODE_REQUIRES_WHOLE_DAYS' => 'Dieses Objekt kann nur tageweise gebucht werden.',
             'ERR_BOOKING_LABEL_TOO_LONG'              => 'Die Beschriftung darf höchstens %d Zeichen lang sein.',
+            'ERR_BOOKING_NOTE_TOO_LONG'               => 'Die interne Notiz ist zu lang.',
+            'ERR_STATUS_TITLE_TOO_LONG'               => 'Der Name des Status darf höchstens %d Zeichen lang sein.',
             'ERR_BOOKING_OVERLAP'                     => 'Der Zeitraum überschneidet sich mit einer vorhandenen Buchung:',
 
             'SETTINGS'             => 'Einstellungen',

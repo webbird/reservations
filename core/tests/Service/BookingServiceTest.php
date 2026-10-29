@@ -109,6 +109,9 @@ final class BookingServiceTest extends TestCase
     {
         $result = $this->service->create(1, $this->flat, $this->range('2026-11-02 00:00', '2026-11-06 00:00'), $this->booked, str_repeat('ä', 256));
         self::assertSame('booking.label_too_long', $result->firstErrorKey());
+
+        $result = $this->service->create(1, $this->flat, $this->range('2026-11-02 00:00', '2026-11-06 00:00'), $this->booked, '', str_repeat('x', BookingService::NOTE_MAX + 1));
+        self::assertSame('booking.note_too_long', $result->firstErrorKey());
     }
 
     public function testChangeoverDayIsAllowed(): void

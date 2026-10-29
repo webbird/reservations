@@ -15,6 +15,7 @@ use Reservations\Core\Result\Result;
 use Reservations\Core\Service\BookingService;
 use Reservations\Core\Service\ResourceService;
 use Reservations\Core\Service\SettingsService;
+use Reservations\Core\Service\TypeService;
 use Reservations\Core\Storage\Pdo\SettingsRepository;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
@@ -134,6 +135,11 @@ final class ReservationsWbce
     public static function resourceService(): ResourceService
     {
         return new ResourceService(self::resources(), self::types());
+    }
+
+    public static function typeService(): TypeService
+    {
+        return new TypeService(self::db(), self::types());
     }
 
     public static function bookingService(): BookingService

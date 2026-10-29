@@ -19,6 +19,7 @@ use Reservations\Core\Domain\CalendarView;
 use Reservations\Core\Domain\DisplayMode;
 use Reservations\Core\Domain\Settings;
 use Reservations\Core\Domain\TimeRange;
+use Reservations\Core\Domain\Type;
 use Reservations\Core\Result\Result;
 
 $sectionId = (int) $section_id;
@@ -144,6 +145,20 @@ switch ($post('rsv_action')) {
             bookingMode: $bookingMode,
         ));
         $finish($result, $result->ok ? [] : ['rsv_settings' => 1], $old, ReservationsWbce::t('MSG_SETTINGS_SAVED'));
+
+    case 'type_save':
+        $id = (int) $post('type_id');
+        $old = ['type_id' => $id, 'title' => $post('title'), 'position' => (int) $post('position')];
+        $existing = $id > 0 ? ReservationsWbce::types()->find($sectionId, $id) : null;
+        // defaults are not on the form and keep their stored values
+        $type = new Type($existing?->id, $sectionId, $old['title'], $existing->defaults ?? [], $old['position']);
+        $service = ReservationsWbce::typeService();
+        $result = $id > 0 ? $service->update($type) : $service->create($type);
+        $finish($result, ['rsv_types' => 1] + ($result->ok ? [] : ['rsv_type' => $id]), $old, ReservationsWbce::t('MSG_TYPE_SAVED'));
+
+    case 'type_delete':
+        $result = ReservationsWbce::typeService()->delete($sectionId, (int) $post('type_id'));
+        $finish($result, ['rsv_types' => 1], [], ReservationsWbce::t('MSG_TYPE_DELETED'));
 
     case 'booking_delete':
         $resourceId = (int) $post('resource_id');

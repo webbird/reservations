@@ -56,6 +56,31 @@ if ($rsvParam('rsv_settings') === 1) {
     return;
 }
 
+if ($rsvParam('rsv_types') === 1) {
+    $rsvUsage = array_count_values(array_map(static fn ($r) => $r->typeId, ReservationsWbce::resources()->listBySection($rsvSection)));
+    $rsvRows = [];
+    foreach ($rsvTypes as $rsvId => $rsvType) {
+        $rsvRows[] = [
+            'id'        => $rsvId,
+            'title'     => $rsvType->title,
+            'position'  => $rsvType->position,
+            'resources' => $rsvUsage[$rsvId] ?? 0,
+            'url_edit'  => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_types' => 1, 'rsv_type' => $rsvId]),
+        ];
+    }
+    $rsvEdit = $rsvTypes[$rsvParam('rsv_type')] ?? null;
+    ReservationsWbce::twig()->display('modify_types.twig', $rsvVars + [
+        'types'     => $rsvRows,
+        'form'      => $rsvOld ?? [
+            'type_id'  => $rsvEdit->id ?? 0,
+            'title'    => $rsvEdit->title ?? '',
+            'position' => $rsvEdit->position ?? count($rsvTypes),
+        ],
+        'url_types' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_types' => 1]),
+    ]);
+    return;
+}
+
 $rsvResource = ReservationsWbce::resources()->find($rsvSection, $rsvParam('rsv_bookings'));
 
 if ($rsvResource !== null) {
@@ -144,4 +169,5 @@ ReservationsWbce::twig()->display('modify_resources.twig', $rsvVars + [
     'types'        => array_map(static fn ($t) => ['id' => $t->id, 'title' => $t->title], array_values($rsvTypes)),
     'form'         => $rsvForm,
     'url_settings' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_settings' => 1]),
+    'url_types'    => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_types' => 1]),
 ]);

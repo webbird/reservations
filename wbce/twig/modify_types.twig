@@ -1,0 +1,66 @@
+{#
+    reservations/twig/modify_types.twig – object types of a section
+#}
+<div class="mod_reservations">
+    <p><a href="{{ url_list }}">« {{ t('BACK_TO_RESOURCES') }}</a></p>
+    {% include '_messages.twig' %}
+
+    <table class="rsv-table">
+        <caption>{{ t('TYPES') }}</caption>
+        <thead>
+            <tr>
+                <th scope="col">{{ t('TITLE') }}</th>
+                <th scope="col" class="rsv-num">{{ t('POSITION') }}</th>
+                <th scope="col" class="rsv-num">{{ t('RESOURCES') }}</th>
+                <th scope="col"><span class="rsv-sr">{{ t('ACTIONS') }}</span></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for type in types %}
+            <tr>
+                <th scope="row">{{ type.title }}</th>
+                <td class="rsv-num">{{ type.position }}</td>
+                <td class="rsv-num">{{ type.resources }}</td>
+                <td class="rsv-actions">
+                    <a href="{{ type.url_edit }}">{{ t('EDIT') }}<span class="rsv-sr">: {{ type.title }}</span></a>
+                    {# used and last types cannot be deleted; the core checks it again #}
+                    {% if type.resources == 0 and types|length > 1 %}
+                        <form action="{{ action }}" method="post" class="rsv-inline" onsubmit="return confirm('{{ t('CONFIRM_DELETE_TYPE')|e('js') }}')">
+                            <input type="hidden" name="page_id" value="{{ page_id }}">
+                            <input type="hidden" name="section_id" value="{{ section_id }}">
+                            <input type="hidden" name="rsv_action" value="type_delete">
+                            <input type="hidden" name="type_id" value="{{ type.id }}">
+                            {{ FTAN|raw }}
+                            <button type="submit" class="rsv-link">{{ t('DELETE') }}<span class="rsv-sr">: {{ type.title }}</span></button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <form class="rsv-form" action="{{ action }}" method="post">
+        <input type="hidden" name="page_id" value="{{ page_id }}">
+        <input type="hidden" name="section_id" value="{{ section_id }}">
+        <input type="hidden" name="rsv_action" value="type_save">
+        <input type="hidden" name="type_id" value="{{ form.type_id }}">
+        {{ FTAN|raw }}
+
+        <fieldset>
+            <legend>{{ form.type_id ? t('EDIT_TYPE') : t('NEW_TYPE') }}</legend>
+            <p>
+                <label for="rsv-type-title-{{ section_id }}">{{ t('TITLE') }}</label>
+                <input id="rsv-type-title-{{ section_id }}" type="text" name="title" value="{{ form.title }}" maxlength="100" required>
+            </p>
+            <p>
+                <label for="rsv-type-position-{{ section_id }}">{{ t('POSITION') }}</label>
+                <input id="rsv-type-position-{{ section_id }}" type="number" name="position" value="{{ form.position }}" min="0" step="1" required>
+            </p>
+            <p class="rsv-buttons">
+                <button type="submit" class="button ico-save">{{ L_('TEXT:SAVE') }}</button>
+                {% if form.type_id %}<a href="{{ url_types }}">{{ L_('TEXT:CANCEL') }}</a>{% endif %}
+            </p>
+        </fieldset>
+    </form>
+</div>

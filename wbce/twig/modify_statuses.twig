@@ -1,0 +1,113 @@
+{#
+    reservations/twig/modify_statuses.twig – booking statuses of a section
+#}
+<div class="mod_reservations">
+    <p><a href="{{ url_list }}">« {{ t('BACK_TO_RESOURCES') }}</a></p>
+    {% include '_messages.twig' %}
+
+    <table class="rsv-table">
+        <caption>{{ t('STATUSES') }}</caption>
+        <thead>
+            <tr>
+                <th scope="col">{{ t('TITLE') }}</th>
+                <th scope="col">{{ t('PATTERN') }}</th>
+                <th scope="col">{{ t('BLOCKS') }}</th>
+                <th scope="col">{{ t('VISIBILITY') }}</th>
+                <th scope="col">{{ t('ROLE') }}</th>
+                <th scope="col">{{ t('ACTIVE') }}</th>
+                <th scope="col" class="rsv-num">{{ t('POSITION') }}</th>
+                <th scope="col"><span class="rsv-sr">{{ t('ACTIONS') }}</span></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for s in statuses %}
+            <tr{% if not s.active %} class="rsv-inactive"{% endif %}>
+                <th scope="row">{{ s.title }}</th>
+                <td><span class="rsv-swatch rsv-pattern-{{ s.pattern }}" style="--rsv-color: {{ s.color }}"></span> {{ t('PATTERN_' ~ s.pattern|upper) }}</td>
+                <td>{{ s.blocks ? t('YES') : t('NO') }}</td>
+                <td>{{ t('VISIBILITY_' ~ s.visibility|upper) }}</td>
+                <td>{{ s.role ? t('ROLE_' ~ s.role|upper) : '' }}</td>
+                <td>{{ s.active ? t('YES') : t('NO') }}</td>
+                <td class="rsv-num">{{ s.position }}</td>
+                <td class="rsv-actions">
+                    <a href="{{ s.url_edit }}">{{ t('EDIT') }}<span class="rsv-sr">: {{ s.title }}</span></a>
+                    {# statuses with a role or with bookings cannot be deleted; the core checks it again #}
+                    {% if not s.role and not s.used %}
+                        <form action="{{ action }}" method="post" class="rsv-inline" onsubmit="return confirm('{{ t('CONFIRM_DELETE_STATUS')|e('js') }}')">
+                            <input type="hidden" name="page_id" value="{{ page_id }}">
+                            <input type="hidden" name="section_id" value="{{ section_id }}">
+                            <input type="hidden" name="rsv_action" value="status_delete">
+                            <input type="hidden" name="status_id" value="{{ s.id }}">
+                            {{ FTAN|raw }}
+                            <button type="submit" class="rsv-link">{{ t('DELETE') }}<span class="rsv-sr">: {{ s.title }}</span></button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <form class="rsv-form" action="{{ action }}" method="post">
+        <input type="hidden" name="page_id" value="{{ page_id }}">
+        <input type="hidden" name="section_id" value="{{ section_id }}">
+        <input type="hidden" name="rsv_action" value="status_save">
+        <input type="hidden" name="status_id" value="{{ form.status_id }}">
+        {{ FTAN|raw }}
+
+        <fieldset>
+            <legend>{{ form.status_id ? t('EDIT_STATUS') : t('NEW_STATUS') }}</legend>
+            <p>
+                <label for="rsv-status-title-{{ section_id }}">{{ t('TITLE') }}</label>
+                <input id="rsv-status-title-{{ section_id }}" type="text" name="title" value="{{ form.title }}" maxlength="100" required>
+            </p>
+            <p>
+                <label for="rsv-status-color-{{ section_id }}">{{ t('COLOR') }}</label>
+                <input id="rsv-status-color-{{ section_id }}" type="color" name="color" value="{{ form.color }}">
+            </p>
+            <p>
+                <label for="rsv-status-pattern-{{ section_id }}">{{ t('PATTERN') }}</label>
+                <select id="rsv-status-pattern-{{ section_id }}" name="pattern">
+                    {% for p in patterns %}
+                        <option value="{{ p }}"{% if p == form.pattern %} selected{% endif %}>{{ t('PATTERN_' ~ p|upper) }}</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p>
+                <input id="rsv-blocks-{{ section_id }}" type="checkbox" name="blocks" value="1" aria-describedby="rsv-blocks-hint-{{ section_id }}"{% if form.blocks %} checked{% endif %}>
+                <label for="rsv-blocks-{{ section_id }}">{{ t('BLOCKS') }}</label>
+                <small id="rsv-blocks-hint-{{ section_id }}">{{ t('BLOCKS_HINT') }}</small>
+            </p>
+            <p>
+                <label for="rsv-status-visibility-{{ section_id }}">{{ t('VISIBILITY') }}</label>
+                <select id="rsv-status-visibility-{{ section_id }}" name="visibility">
+                    {% for v in visibilities %}
+                        <option value="{{ v }}"{% if v == form.visibility %} selected{% endif %}>{{ t('VISIBILITY_' ~ v|upper) }}</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p>
+                <label for="rsv-status-role-{{ section_id }}">{{ t('ROLE') }}</label>
+                <select id="rsv-status-role-{{ section_id }}" name="role" aria-describedby="rsv-status-role-hint-{{ section_id }}">
+                    <option value="">{{ t('ROLE_NONE') }}</option>
+                    {% for r in roles %}
+                        <option value="{{ r }}"{% if r == form.role %} selected{% endif %}>{{ t('ROLE_' ~ r|upper) }}</option>
+                    {% endfor %}
+                </select>
+                <small id="rsv-status-role-hint-{{ section_id }}">{{ t('ROLE_HINT') }}</small>
+            </p>
+            <p>
+                <input id="rsv-active-status-{{ section_id }}" type="checkbox" name="active" value="1"{% if form.active %} checked{% endif %}>
+                <label for="rsv-active-status-{{ section_id }}">{{ t('ACTIVE') }}</label>
+            </p>
+            <p>
+                <label for="rsv-status-position-{{ section_id }}">{{ t('POSITION') }}</label>
+                <input id="rsv-status-position-{{ section_id }}" type="number" name="position" value="{{ form.position }}" min="0" step="1" required>
+            </p>
+            <p class="rsv-buttons">
+                <button type="submit" class="button ico-save">{{ L_('TEXT:SAVE') }}</button>
+                {% if form.status_id %}<a href="{{ url_statuses }}">{{ L_('TEXT:CANCEL') }}</a>{% endif %}
+            </p>
+        </fieldset>
+    </form>
+</div>

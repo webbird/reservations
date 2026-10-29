@@ -56,6 +56,49 @@ if ($rsvParam('rsv_settings') === 1) {
     return;
 }
 
+if ($rsvParam('rsv_statuses') === 1) {
+    $rsvRows = [];
+    $rsvEdit = null;
+    $rsvStatusList = ReservationsWbce::statuses()->listBySection($rsvSection);
+    foreach ($rsvStatusList as $rsvStatus) {
+        $rsvRows[] = [
+            'id'         => $rsvStatus->id,
+            'title'      => $rsvStatus->title,
+            'color'      => $rsvStatus->color,
+            'pattern'    => $rsvStatus->pattern->value,
+            'blocks'     => $rsvStatus->blocks,
+            'visibility' => $rsvStatus->visibility->value,
+            'role'       => $rsvStatus->role?->value,
+            'active'     => $rsvStatus->active,
+            'position'   => $rsvStatus->position,
+            'used'       => ReservationsWbce::statuses()->isUsed($rsvSection, (int) $rsvStatus->id),
+            'url_edit'   => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_statuses' => 1, 'rsv_status' => (int) $rsvStatus->id]),
+        ];
+        if ($rsvStatus->id === $rsvParam('rsv_status')) {
+            $rsvEdit = $rsvStatus;
+        }
+    }
+    ReservationsWbce::twig()->display('modify_statuses.twig', $rsvVars + [
+        'statuses'     => $rsvRows,
+        'patterns'     => array_column(Reservations\Core\Domain\Pattern::cases(), 'value'),
+        'visibilities' => array_column(Reservations\Core\Domain\Visibility::cases(), 'value'),
+        'roles'        => array_column(Reservations\Core\Domain\StatusRole::cases(), 'value'),
+        'form'         => $rsvOld ?? [
+            'status_id'  => $rsvEdit->id ?? 0,
+            'title'      => $rsvEdit->title ?? '',
+            'color'      => $rsvEdit->color ?? '#85b7eb',
+            'pattern'    => $rsvEdit?->pattern->value ?? 'solid',
+            'blocks'     => $rsvEdit->blocks ?? true,
+            'visibility' => $rsvEdit?->visibility->value ?? 'label',
+            'role'       => $rsvEdit?->role?->value ?? '',
+            'active'     => $rsvEdit->active ?? true,
+            'position'   => $rsvEdit->position ?? count($rsvStatusList),
+        ],
+        'url_statuses' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_statuses' => 1]),
+    ]);
+    return;
+}
+
 if ($rsvParam('rsv_types') === 1) {
     $rsvUsage = array_count_values(array_map(static fn ($r) => $r->typeId, ReservationsWbce::resources()->listBySection($rsvSection)));
     $rsvRows = [];
@@ -170,4 +213,5 @@ ReservationsWbce::twig()->display('modify_resources.twig', $rsvVars + [
     'form'         => $rsvForm,
     'url_settings' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_settings' => 1]),
     'url_types'    => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_types' => 1]),
+    'url_statuses' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_statuses' => 1]),
 ]);

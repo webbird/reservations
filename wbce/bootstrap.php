@@ -15,6 +15,7 @@ use Reservations\Core\Result\Result;
 use Reservations\Core\Service\BookingService;
 use Reservations\Core\Service\ResourceService;
 use Reservations\Core\Service\SettingsService;
+use Reservations\Core\Service\StatusService;
 use Reservations\Core\Service\TypeService;
 use Reservations\Core\Storage\Pdo\SettingsRepository;
 use Reservations\Core\Storage\Pdo\BookingRepository;
@@ -137,6 +138,11 @@ final class ReservationsWbce
         return new ResourceService(self::resources(), self::types());
     }
 
+    public static function statusService(): StatusService
+    {
+        return new StatusService(self::db(), self::statuses(), self::bookings(), self::resources());
+    }
+
     public static function typeService(): TypeService
     {
         return new TypeService(self::db(), self::types());
@@ -149,10 +155,12 @@ final class ReservationsWbce
 
     /**
      * Error keys from the core ("booking.overlap") map to ERR_BOOKING_OVERLAP.
+     * Conflicts come as booking rows (booking.overlap) or as pairs of booking
+     * ids (status.blocking_conflicts).
      *
      * @return list<string>
      */
-    public static function errorMessages(Result $result): array
+    public static function errorMessages(Result $result, int $sectionId): array
     {
         $messages = [];
         foreach ($result->errors as $error) {
@@ -160,15 +168,35 @@ final class ReservationsWbce
             if (isset($error['params']['max']) && is_int($error['params']['max'])) {
                 $message = sprintf($message, $error['params']['max']);
             }
+            $pairs = [];
             foreach ((array) ($error['params']['conflicts'] ?? []) as $conflict) {
                 if (is_array($conflict) && is_string($conflict['start'] ?? null) && is_string($conflict['end'] ?? null)) {
                     $range = new TimeRange(self::db()->fromDb($conflict['start']), self::db()->fromDb($conflict['end']));
                     $message .= ' ' . self::formatRange($range->start, $range->end, $range->startsAndEndsAtMidnight());
+                } elseif (is_array($conflict) && is_int($conflict[0] ?? null) && is_int($conflict[1] ?? null)) {
+                    $pairs[] = self::conflictPair($sectionId, $conflict[0], $conflict[1]);
                 }
             }
-            $messages[] = $message;
+            $messages[] = $pairs === [] ? $message : $message . ' ' . implode('; ', $pairs);
         }
         return $messages;
+    }
+
+    /**
+     * "FeWo 1: 01.11.2026 – 08.11.2026 / 05.11.2026 – 06.11.2026"
+     */
+    private static function conflictPair(int $sectionId, int $a, int $b): string
+    {
+        $parts = [];
+        $resourceId = 0;
+        foreach ([$a, $b] as $id) {
+            $booking = self::bookings()->find($sectionId, $id);
+            if ($booking !== null) {
+                $resourceId = $booking->resourceId;
+                $parts[] = self::formatRange($booking->range->start, $booking->range->end, $booking->range->startsAndEndsAtMidnight());
+            }
+        }
+        return (self::resources()->find($sectionId, $resourceId)->title ?? '?') . ': ' . implode(' / ', $parts);
     }
 
     /**

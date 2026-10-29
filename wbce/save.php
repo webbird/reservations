@@ -17,9 +17,13 @@ use Reservations\Core\Domain\BookableResource;
 use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\CalendarView;
 use Reservations\Core\Domain\DisplayMode;
+use Reservations\Core\Domain\Pattern;
 use Reservations\Core\Domain\Settings;
+use Reservations\Core\Domain\Status;
+use Reservations\Core\Domain\StatusRole;
 use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Domain\Type;
+use Reservations\Core\Domain\Visibility;
 use Reservations\Core\Result\Result;
 
 $sectionId = (int) $section_id;
@@ -45,7 +49,7 @@ $finish = static function (Result $result, array $params, array $old, string $su
         $admin->touchSection($sectionId);
         ReservationsWbce::flash($sectionId, ['success' => $success]);
     } else {
-        ReservationsWbce::flash($sectionId, ['errors' => ReservationsWbce::errorMessages($result), 'old' => $old]);
+        ReservationsWbce::flash($sectionId, ['errors' => ReservationsWbce::errorMessages($result, $sectionId), 'old' => $old]);
     }
     header('Location: ' . ReservationsWbce::modifyUrl($pageId, $sectionId, $params));
     exit;
@@ -145,6 +149,35 @@ switch ($post('rsv_action')) {
             bookingMode: $bookingMode,
         ));
         $finish($result, $result->ok ? [] : ['rsv_settings' => 1], $old, ReservationsWbce::t('MSG_SETTINGS_SAVED'));
+
+    case 'status_save':
+        $id = (int) $post('status_id');
+        $old = [
+            'status_id'  => $id,
+            'title'      => $post('title'),
+            'color'      => strtolower($post('color')),
+            'pattern'    => $post('pattern'),
+            'blocks'     => $post('blocks') === '1',
+            'visibility' => $post('visibility'),
+            'role'       => $post('role'),
+            'active'     => $post('active') === '1',
+            'position'   => (int) $post('position'),
+        ];
+        $params = ['rsv_statuses' => 1, 'rsv_status' => $id];
+        $pattern = Pattern::tryFrom($old['pattern']);
+        $visibility = Visibility::tryFrom($old['visibility']);
+        $role = $old['role'] === '' ? null : StatusRole::tryFrom($old['role']);
+        if ($pattern === null || $visibility === null || ($old['role'] !== '' && $role === null)) {
+            $finish(Result::fail('settings.invalid_value'), $params, $old, '');
+        }
+        $status = new Status($id > 0 ? $id : null, $sectionId, $old['title'], $old['blocks'], $visibility, $old['color'], $pattern, $role, $old['active'], $old['position']);
+        $service = ReservationsWbce::statusService();
+        $result = $id > 0 ? $service->update($status) : $service->create($status);
+        $finish($result, $result->ok ? ['rsv_statuses' => 1] : $params, $old, ReservationsWbce::t('MSG_STATUS_SAVED'));
+
+    case 'status_delete':
+        $result = ReservationsWbce::statusService()->delete($sectionId, (int) $post('status_id'));
+        $finish($result, ['rsv_statuses' => 1], [], ReservationsWbce::t('MSG_STATUS_DELETED'));
 
     case 'type_save':
         $id = (int) $post('type_id');

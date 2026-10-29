@@ -4,7 +4,7 @@
 {% extends '_view_layout.twig' %}
 {% block content %}
     <table class="rsv-month-table">
-        <caption>{{ title }}, {{ period }}</caption>
+        <caption>{% if url %}<a href="{{ url }}">{{ title }}</a>{% else %}{{ title }}{% endif %}, {{ period }}</caption>
         <thead>
             <tr>
                 {% for wd in weekdays %}<th scope="col" abbr="{{ wd.long }}">{{ wd.short }}</th>{% endfor %}

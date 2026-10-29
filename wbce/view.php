@@ -48,6 +48,11 @@ if ($rsvSingle) {
 }
 $rsvWholeDays = ReservationsWbce::wholeDays($rsvSection);
 
+// object names link to their description, resolved in one query
+$rsvNews = ReservationsNewsImg::idOf($rsvSettings->presentationSource);
+$rsvPosts = $rsvNews === null ? [] : ReservationsNewsImg::resolveMany($rsvNews, array_values(array_filter(array_map(static fn ($r) => $r->presentationRef, $rsvResources))));
+$rsvLink = static fn ($r): ?string => $rsvPosts[$r->presentationRef ?? '']['url'] ?? null;
+
 $rsvStatuses = [];
 foreach (ReservationsWbce::statuses()->listBySection($rsvSection) as $rsvStatus) {
     $rsvStatuses[(int) $rsvStatus->id] = $rsvStatus;
@@ -150,7 +155,7 @@ if ($rsvView === CalendarView::List) {
                 'half'  => $rsvHalf($rsvBooking),
             ];
         }
-        $rsvGroups[] = ['title' => $rsvResource->title, 'entries' => $rsvEntries];
+        $rsvGroups[] = ['title' => $rsvResource->title, 'url' => $rsvLink($rsvResource), 'entries' => $rsvEntries];
     }
     ReservationsWbce::twig()->display('view_list.twig', $rsvVars + ['groups' => $rsvGroups]);
     return;
@@ -178,6 +183,7 @@ if ($rsvView === CalendarView::Month) {
     }
     ReservationsWbce::twig()->display('view_month.twig', $rsvVars + [
         'title'    => $rsvResource?->title,
+        'url'      => $rsvResource === null ? null : $rsvLink($rsvResource),
         'weekdays' => $rsvWeekdays,
         'weeks'    => $rsvWeeks,
     ]);
@@ -200,6 +206,7 @@ for ($rsvM = $rsvMonth; $rsvM < $rsvEnd; $rsvM = $rsvM->modify('+1 month')) {
     foreach ($rsvResources as $rsvResource) {
         $rsvRows[] = [
             'title' => $rsvResource->title,
+            'url'   => $rsvLink($rsvResource),
             'cells' => array_map(
                 static fn (Day $d): array => $rsvCell($d, $rsvWholeDays),
                 Occupancy::days($rsvBookings[$rsvResource->id] ?? [], $rsvM, $rsvNext, $rsvWholeDays),

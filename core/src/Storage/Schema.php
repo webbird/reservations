@@ -30,8 +30,7 @@ final class Schema
                     'view' => "str:50='default'",
                     'plan_range' => 'small=1',
                     'show_labels' => 'bool=1',
-                    'show_requests' => 'bool=0',
-                    'requests_enabled' => 'bool=1',
+                    'requests_enabled' => 'bool=0',
                     'notify_email' => "str:255=''",
                     'retention_days' => 'small=90',
                     'past_months' => 'small=12',
@@ -39,7 +38,10 @@ final class Schema
                     'resource_id' => 'int?',
                     'booking_mode' => "str:20='day'",
                     'presentation_source' => 'str?:100',
+                    'captcha' => 'bool=0',
                 ],
+                // the visibility of the status with role request_new decides that since 0.5.0
+                'dropped' => ['show_requests'],
                 'primary' => ['section_id'],
             ],
             'types' => [

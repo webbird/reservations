@@ -15,6 +15,9 @@ final class SettingsService
     public const PLAN_RANGES = [1, 3];
     public const MONTHS_MAX = 60;
     public const PRESENTATION_SOURCE_MAX = 100;
+    public const EMAIL_MAX = 255;
+    /** ten years; the column is a SMALLINT */
+    public const RETENTION_MAX = 3650;
 
     public function __construct(
         private readonly SettingsRepository $settings,
@@ -47,6 +50,12 @@ final class SettingsService
         }
         if ($s->presentationSource !== null && mb_strlen($s->presentationSource) > self::PRESENTATION_SOURCE_MAX) {
             return Result::fail('settings.presentation_source_too_long', ['max' => self::PRESENTATION_SOURCE_MAX], 'presentation_source');
+        }
+        if ($s->notifyEmail !== '' && (strlen($s->notifyEmail) > self::EMAIL_MAX || filter_var($s->notifyEmail, FILTER_VALIDATE_EMAIL) === false)) {
+            return Result::fail('settings.invalid_email', [], 'notify_email');
+        }
+        if ($s->retentionDays < 1 || $s->retentionDays > self::RETENTION_MAX) {
+            return Result::fail('settings.invalid_retention', ['max' => self::RETENTION_MAX], 'retention_days');
         }
         if ($s->resourceId !== null && $this->resources->find($s->sectionId, $s->resourceId) === null) {
             return Result::fail('resource.not_found', ['id' => $s->resourceId], 'resource_id');

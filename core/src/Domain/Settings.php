@@ -9,7 +9,10 @@ namespace Reservations\Core\Domain;
  * null means the first active object. The booking mode applies to all objects
  * of the section; sections do not mix modes. presentationSource is a neutral
  * reference to where the object descriptions live (e.g. "news_img:5"); the
- * core never interprets it.
+ * core never interprets it. Requests: notifyEmail may stay empty (no mail),
+ * retentionDays: contact data is kept that many days after the requested
+ * period (after a rejection: after the rejection); captcha adds the CMS
+ * captcha to the request form.
  */
 final readonly class Settings
 {
@@ -24,6 +27,10 @@ final readonly class Settings
         public ?int $resourceId = null,
         public BookingMode $bookingMode = BookingMode::Day,
         public ?string $presentationSource = null,
+        public bool $requestsEnabled = false,
+        public string $notifyEmail = '',
+        public int $retentionDays = 90,
+        public bool $captcha = false,
     ) {
     }
 
@@ -43,6 +50,10 @@ final readonly class Settings
             $resourceId,
             $this->bookingMode,
             $this->presentationSource,
+            $this->requestsEnabled,
+            $this->notifyEmail,
+            $this->retentionDays,
+            $this->captcha,
         );
     }
 

@@ -10,8 +10,7 @@ use Reservations\Core\Domain\DisplayMode;
 use Reservations\Core\Domain\Settings;
 
 /**
- * Reads and writes the display columns and the booking mode. Other columns
- * (requests, notifications) are left untouched.
+ * Reads and writes the settings of a section; page_id is left untouched.
  */
 final class SettingsRepository
 {
@@ -39,6 +38,10 @@ final class SettingsRepository
             resourceId: Row::nullableInt($row, 'resource_id'),
             bookingMode: BookingMode::tryFrom(Row::string($row, 'booking_mode')) ?? BookingMode::Day,
             presentationSource: Row::nullableString($row, 'presentation_source'),
+            requestsEnabled: Row::bool($row, 'requests_enabled'),
+            notifyEmail: Row::string($row, 'notify_email'),
+            retentionDays: Row::int($row, 'retention_days'),
+            captcha: Row::bool($row, 'captcha'),
         );
     }
 
@@ -54,6 +57,10 @@ final class SettingsRepository
             'resource_id' => $s->resourceId,
             'booking_mode' => $s->bookingMode,
             'presentation_source' => $s->presentationSource,
+            'requests_enabled' => $s->requestsEnabled,
+            'notify_email' => $s->notifyEmail,
+            'retention_days' => $s->retentionDays,
+            'captcha' => $s->captcha,
         ], ['section_id' => $s->sectionId]);
     }
 }

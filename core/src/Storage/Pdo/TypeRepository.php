@@ -24,6 +24,19 @@ final class TypeRepository
         $this->db->update(self::TABLE, $this->row($type), ['type_id' => (int) $type->id, 'section_id' => $type->sectionId]);
     }
 
+    public function delete(int $sectionId, int $typeId): void
+    {
+        $this->db->delete(self::TABLE, ['type_id' => $typeId, 'section_id' => $sectionId]);
+    }
+
+    public function isUsed(int $sectionId, int $typeId): bool
+    {
+        return $this->db->fetchInt(
+            'SELECT COUNT(*) FROM ' . $this->db->table('resources') . ' WHERE section_id = ? AND type_id = ?',
+            [$sectionId, $typeId],
+        ) > 0;
+    }
+
     public function find(int $sectionId, int $typeId): ?Type
     {
         $row = $this->db->fetchOne(

@@ -138,6 +138,21 @@ final class BookingServiceTest extends TestCase
         self::assertTrue($this->service->create(1, $this->flat, $this->range('2026-11-03 00:00', '2026-11-04 00:00'), $this->cancelled)->ok);
     }
 
+    public function testFailingFollowUpLeavesNoBooking(): void
+    {
+        foreach ([$this->booked, $this->cancelled] as $status) {
+            try {
+                $this->service->create(1, $this->flat, $this->range('2026-11-02 00:00', '2026-11-06 00:00'), $status, then: static function (int $id): void {
+                    throw new \RuntimeException('request insert failed');
+                });
+                self::fail('Exception expected.');
+            } catch (\RuntimeException $e) {
+                self::assertSame('request insert failed', $e->getMessage());
+            }
+        }
+        self::assertSame([], $this->bookings->countByResource(1));
+    }
+
     public function testBufferRequiresGapBetweenBookings(): void
     {
         self::assertTrue($this->service->create(3, $this->room, $this->range('2026-11-02 10:00', '2026-11-02 11:00'), $this->roomBooked)->ok);

@@ -9,12 +9,15 @@ use DateTimeZone;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use Reservations\Core\Domain\BookableResource;
+use Reservations\Core\Domain\Settings;
 use Reservations\Core\Domain\StatusRole;
 use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Port\Clock;
 use Reservations\Core\Service\BookingService;
+use Reservations\Core\Service\RequestService;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
+use Reservations\Core\Storage\Pdo\RequestRepository;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
 use Reservations\Core\Storage\Pdo\SettingsRepository;
 use Reservations\Core\Storage\Pdo\StatusRepository;
@@ -102,6 +105,51 @@ final class MysqlIntegrationTest extends TestCase
         self::assertTrue($service->create(1, $flat, $range('2026-11-02 00:00', '2026-11-06 00:00'), $booked)->ok);
         self::assertSame('booking.overlap', $service->create(1, $flat, $range('2026-11-05 00:00', '2026-11-08 00:00'), $booked)->firstErrorKey());
         self::assertTrue($service->create(1, $flat, $range('2026-11-06 00:00', '2026-11-08 00:00'), $booked)->ok);
+    }
+
+    public function testRequestRoundTripAndPurge(): void
+    {
+        $db = $this->db();
+        $statuses = new StatusRepository($db);
+        $types = new TypeRepository($db);
+        (new SectionSetup($db, $statuses, $types))->run(1, 10);
+        $settings = new SettingsRepository($db);
+        $settings->save(new Settings(1, requestsEnabled: true));
+        $resources = new ResourceRepository($db);
+        $flat = $resources->insert(new BookableResource(null, 1, (int) $types->listBySection(1)[0]->id, 'FeWo Seeblick'));
+        $now = new DateTimeImmutable('2026-10-29 12:00', $this->tz);
+        $clock = new class ($now) implements Clock {
+            public function __construct(private readonly DateTimeImmutable $now)
+            {
+            }
+
+            public function now(): DateTimeImmutable
+            {
+                return $this->now;
+            }
+        };
+        $bookings = new BookingRepository($db);
+        $requests = new RequestRepository($db);
+        $service = new RequestService(
+            new BookingService($db, $resources, $settings, $statuses, $bookings, $clock),
+            $settings,
+            $resources,
+            $statuses,
+            $bookings,
+            $requests,
+            $clock,
+        );
+
+        $result = $service->submit(1, $flat, TimeRange::fromLocal('2026-11-02 00:00', '2026-11-06 00:00', $this->tz), 'Erika', 'erika@example.com', '', null, '', true);
+        self::assertTrue($result->ok);
+        self::assertIsInt($result->value);
+        $request = $requests->findByBooking(1, $result->value);
+        self::assertNull($request?->persons);
+        self::assertEquals(new DateTimeImmutable('2027-02-04 00:00', $this->tz), $request?->purgeAfter);
+
+        $requests->setPurgeAfter($result->value, $now);
+        self::assertSame(1, $service->purgeExpired());
+        self::assertSame('', $requests->findByBooking(1, $result->value)?->email);
     }
 
     public function testLockedTransactionRollsBackOnError(): void

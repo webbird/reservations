@@ -36,6 +36,10 @@ final class BookingService
     }
 
     /**
+     * $then runs with the new booking id inside the same transaction, e.g. to
+     * store the request that belongs to the booking; if it throws, no booking stays.
+     *
+     * @param (callable(int): void)|null $then
      * @return Result value: new booking id; on overlap params.conflicts lists the bookings
      */
     public function create(
@@ -46,6 +50,7 @@ final class BookingService
         string $label = '',
         string $note = '',
         ?int $userId = null,
+        ?callable $then = null,
     ): Result {
         $now = $this->clock->now();
         $booking = new Booking(
@@ -61,7 +66,7 @@ final class BookingService
             createdBy: $userId,
             updatedBy: $userId,
         );
-        return $this->save($booking);
+        return $this->save($booking, $then);
     }
 
     public function update(
@@ -95,7 +100,10 @@ final class BookingService
         return $this->save($booking);
     }
 
-    private function save(Booking $booking): Result
+    /**
+     * @param (callable(int): void)|null $then
+     */
+    private function save(Booking $booking, ?callable $then = null): Result
     {
         // the database may run without strict mode and would truncate silently
         if (mb_strlen($booking->label) > self::LABEL_MAX) {
@@ -117,23 +125,24 @@ final class BookingService
             return Result::fail('booking.day_mode_requires_whole_days', [], 'range');
         }
 
-        $persist = function () use ($booking): int {
+        $persist = function () use ($booking, $then): int {
             if ($booking->id === null) {
-                return $this->bookings->insert($booking);
+                $id = $this->bookings->insert($booking);
+                if ($then !== null) {
+                    $then($id);
+                }
+                return $id;
             }
             $this->bookings->update($booking);
             return $booking->id;
         };
 
-        if (!$status->blocks) {
-            return Result::ok($persist());
-        }
-
         $gap = $resource->requiredGapMinutes();
         $checkRange = $gap > 0 ? $booking->range->withBuffer($gap, $gap) : $booking->range;
 
-        return $this->db->lockedTransaction('resources', 'resource_id', $resource->id ?? 0, function () use ($booking, $checkRange, $persist): Result {
-            $conflicts = $this->bookings->findBlockingOverlaps($booking->sectionId, $booking->resourceId, $checkRange, $booking->id);
+        // non-blocking statuses skip the overlap check but still need the transaction for $then
+        return $this->db->lockedTransaction('resources', 'resource_id', $resource->id ?? 0, function () use ($booking, $checkRange, $persist, $status): Result {
+            $conflicts = $status->blocks ? $this->bookings->findBlockingOverlaps($booking->sectionId, $booking->resourceId, $checkRange, $booking->id) : [];
             if ($conflicts !== []) {
                 return Result::fail('booking.overlap', [
                     'conflicts' => array_map(fn (Booking $c): array => [

@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Reservations\Core\Domain;
 
 /**
- * Display settings of a section. resourceId picks the object shown in single
- * mode; null means the first active object.
+ * Settings of a section. resourceId picks the object shown in single mode;
+ * null means the first active object. The booking mode applies to all objects
+ * of the section; sections do not mix modes.
  */
 final readonly class Settings
 {
@@ -19,6 +20,7 @@ final readonly class Settings
         public int $pastMonths = 12,
         public int $futureMonths = 24,
         public ?int $resourceId = null,
+        public BookingMode $bookingMode = BookingMode::Day,
     ) {
     }
 

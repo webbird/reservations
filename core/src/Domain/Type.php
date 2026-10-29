@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Reservations\Core\Domain;
 
 /**
- * Kind of resource (holiday flat, meeting room, …). Fixes the booking mode and
- * provides default values that are copied into new resources of this type.
+ * Kind of resource (holiday flat, meeting room, …). Provides default values
+ * that are copied into new resources of this type. The booking mode belongs
+ * to the section (Settings), so all types of a section share it.
  */
 final readonly class Type
 {
@@ -17,7 +18,6 @@ final readonly class Type
         public ?int $id,
         public int $sectionId,
         public string $title,
-        public BookingMode $bookingMode,
         public array $defaults = [],
         public int $position = 0,
     ) {

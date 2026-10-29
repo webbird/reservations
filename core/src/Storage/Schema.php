@@ -14,8 +14,9 @@ final class Schema
 {
     /**
      * Column specs: pk | int | int? | small | small? | bool | str:N | str?:N | text | datetime | datetime? | time?
+     * dropped: columns of older versions that install() removes.
      *
-     * @return array<string, array{columns: array<string, string>, primary?: list<string>, indexes?: array<string, list<string>>, unique?: array<string, list<string>>}>
+     * @return array<string, array{columns: array<string, string>, dropped?: list<string>, primary?: list<string>, indexes?: array<string, list<string>>, unique?: array<string, list<string>>}>
      */
     public static function tables(): array
     {
@@ -36,6 +37,7 @@ final class Schema
                     'past_months' => 'small=12',
                     'future_months' => 'small=24',
                     'resource_id' => 'int?',
+                    'booking_mode' => "str:20='day'",
                 ],
                 'primary' => ['section_id'],
             ],
@@ -44,10 +46,11 @@ final class Schema
                     'type_id' => 'pk',
                     'section_id' => 'int',
                     'title' => 'str:100',
-                    'booking_mode' => "str:20='day'",
                     'defaults' => 'text',
                     'position' => 'int=0',
                 ],
+                // the booking mode moved to settings in 0.3.0
+                'dropped' => ['booking_mode'],
                 'indexes' => ['section' => ['section_id']],
             ],
             'statuses' => [
@@ -141,9 +144,9 @@ final class Schema
     }
 
     /**
-     * Creates missing tables and adds missing columns to existing ones, so it
-     * serves as install and upgrade. Columns added later must be nullable or
-     * have a default (SQLite cannot add NOT NULL columns without one).
+     * Creates missing tables, adds missing columns to existing ones and removes
+     * dropped ones, so it serves as install and upgrade. Columns added later must
+     * be nullable or have a default (SQLite cannot add NOT NULL columns without one).
      *
      * @return list<string> names of the tables that were created
      */
@@ -159,6 +162,11 @@ final class Schema
                     }
                     $db->exec(sprintf('ALTER TABLE %s ADD COLUMN %s %s', $db->table($name), $column, self::columnSql($db->platform(), $spec)));
                 }
+                foreach (array_intersect($def['dropped'] ?? [], $existing) as $column) {
+                    if (self::canDropColumns($db)) {
+                        $db->exec(sprintf('ALTER TABLE %s DROP COLUMN %s', $db->table($name), $column));
+                    }
+                }
                 continue;
             }
             foreach (self::statements($db->platform(), $db->table($name), $def) as $sql) {
@@ -169,6 +177,19 @@ final class Schema
         return $created;
     }
 
+    /**
+     * SQLite supports DROP COLUMN from 3.35 on; older versions keep the column,
+     * which is harmless because it has a default and is no longer read.
+     */
+    private static function canDropColumns(Connection $db): bool
+    {
+        if ($db->platform() !== 'sqlite') {
+            return true;
+        }
+        $version = $db->fetchValue('SELECT sqlite_version()');
+        return is_string($version) && version_compare($version, '3.35.0', '>=');
+    }
+
     public static function uninstall(Connection $db): void
     {
         foreach (array_keys(self::tables()) as $name) {
@@ -177,7 +198,7 @@ final class Schema
     }
 
     /**
-     * @param array{columns: array<string, string>, primary?: list<string>, indexes?: array<string, list<string>>, unique?: array<string, list<string>>} $def
+     * @param array{columns: array<string, string>, dropped?: list<string>, primary?: list<string>, indexes?: array<string, list<string>>, unique?: array<string, list<string>>} $def
      * @return list<string>
      */
     public static function statements(string $platform, string $table, array $def): array

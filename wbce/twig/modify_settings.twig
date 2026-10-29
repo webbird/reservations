@@ -14,6 +14,17 @@
         <fieldset>
             <legend>{{ t('SETTINGS') }}</legend>
 
+            <fieldset class="rsv-choice" aria-describedby="rsv-booking-mode-hint-{{ section_id }}">
+                <legend>{{ t('BOOKING_MODE') }}</legend>
+                {% for mode in ['day', 'period'] %}
+                    <p>
+                        <input id="rsv-booking-{{ mode }}-{{ section_id }}" type="radio" name="booking_mode" value="{{ mode }}"{% if form.booking_mode == mode %} checked{% endif %}>
+                        <label for="rsv-booking-{{ mode }}-{{ section_id }}">{{ t('BOOKING_MODE_' ~ mode|upper) }}</label>
+                    </p>
+                {% endfor %}
+                <small id="rsv-booking-mode-hint-{{ section_id }}">{{ t('BOOKING_MODE_HINT') }}</small>
+            </fieldset>
+
             <fieldset class="rsv-choice">
                 <legend>{{ t('DISPLAY_MODE') }}</legend>
                 <p>

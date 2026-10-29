@@ -16,6 +16,7 @@ use Reservations\Core\Service\BookingService;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
+use Reservations\Core\Storage\Pdo\SettingsRepository;
 use Reservations\Core\Storage\Pdo\StatusRepository;
 use Reservations\Core\Storage\Pdo\TypeRepository;
 use Reservations\Core\Storage\Schema;
@@ -71,6 +72,15 @@ final class MysqlIntegrationTest extends TestCase
         self::assertContains('resource_id', $this->db()->columns('settings'));
     }
 
+    public function testInstallRemovesDroppedColumns(): void
+    {
+        $this->db()->exec('ALTER TABLE ' . $this->db()->table('types') . " ADD COLUMN booking_mode VARCHAR(20) NOT NULL DEFAULT 'day'");
+        self::assertContains('booking_mode', $this->db()->columns('types'));
+
+        Schema::install($this->db());
+        self::assertNotContains('booking_mode', $this->db()->columns('types'));
+    }
+
     public function testOverlapCheckUnderRowLock(): void
     {
         $db = $this->db();
@@ -86,7 +96,7 @@ final class MysqlIntegrationTest extends TestCase
                 return new DateTimeImmutable('2026-10-29 12:00', new DateTimeZone('Europe/Berlin'));
             }
         };
-        $service = new BookingService($db, $resources, $types, $statuses, new BookingRepository($db), $clock);
+        $service = new BookingService($db, $resources, new SettingsRepository($db), $statuses, new BookingRepository($db), $clock);
         $range = fn (string $start, string $end): TimeRange => TimeRange::fromLocal($start, $end, $this->tz);
 
         self::assertTrue($service->create(1, $flat, $range('2026-11-02 00:00', '2026-11-06 00:00'), $booked)->ok);

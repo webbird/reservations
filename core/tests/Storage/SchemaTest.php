@@ -52,6 +52,22 @@ final class SchemaTest extends TestCase
         self::assertNull($this->db->fetchValue('SELECT resource_id FROM ' . $this->db->table('settings')));
     }
 
+    public function testInstallRemovesDroppedColumns(): void
+    {
+        $old = Schema::tables()['types'];
+        $old['columns']['booking_mode'] = "str:20='day'";
+        foreach (Schema::statements('sqlite', $this->db->table('types'), $old) as $sql) {
+            $this->db->exec($sql);
+        }
+        $version = $this->db->fetchValue('SELECT sqlite_version()');
+        if (!is_string($version) || version_compare($version, '3.35.0', '<')) {
+            self::markTestSkipped('SQLite ' . (is_string($version) ? $version : '?') . ' cannot drop columns.');
+        }
+
+        Schema::install($this->db);
+        self::assertNotContains('booking_mode', $this->db->columns('types'));
+    }
+
     public function testUninstallDropsTables(): void
     {
         Schema::install($this->db);

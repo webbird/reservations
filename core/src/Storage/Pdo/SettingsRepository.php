@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Reservations\Core\Storage\Pdo;
 
+use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\CalendarView;
 use Reservations\Core\Domain\DisplayMode;
 use Reservations\Core\Domain\Settings;
 
 /**
- * Reads and writes the display columns of the settings row. Other columns
+ * Reads and writes the display columns and the booking mode. Other columns
  * (requests, notifications) are left untouched.
  */
 final class SettingsRepository
@@ -36,6 +37,7 @@ final class SettingsRepository
             pastMonths: Row::int($row, 'past_months'),
             futureMonths: Row::int($row, 'future_months'),
             resourceId: Row::nullableInt($row, 'resource_id'),
+            bookingMode: BookingMode::tryFrom(Row::string($row, 'booking_mode')) ?? BookingMode::Day,
         );
     }
 
@@ -49,6 +51,7 @@ final class SettingsRepository
             'past_months' => $s->pastMonths,
             'future_months' => $s->futureMonths,
             'resource_id' => $s->resourceId,
-        ], ['section_id' => $s->sectionId]);
+            'booking_mode' => $s->bookingMode,
+        ],['section_id' => $s->sectionId]);
     }
 }

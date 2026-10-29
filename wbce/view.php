@@ -46,11 +46,7 @@ if ($rsvSingle) {
     $rsvChosen = array_values(array_filter($rsvResources, static fn ($r) => $r->id === $rsvSettings->resourceId));
     $rsvResources = array_slice($rsvChosen !== [] ? $rsvChosen : $rsvResources, 0, 1);
 }
-$rsvTypes = [];
-foreach (ReservationsWbce::types()->listBySection($rsvSection) as $rsvType) {
-    $rsvTypes[$rsvType->id] = $rsvType;
-}
-$rsvWholeDays = static fn ($r): bool => ReservationsWbce::wholeDays($rsvTypes[$r->typeId] ?? null);
+$rsvWholeDays = ReservationsWbce::wholeDays($rsvSection);
 
 $rsvStatuses = [];
 foreach (ReservationsWbce::statuses()->listBySection($rsvSection) as $rsvStatus) {
@@ -138,7 +134,7 @@ $rsvVars = [
 // debug aid for admins: ?rsv_debug=1 prints the computed half days as an HTML comment
 if (isset($_GET['rsv_debug']) && isset($wb) && $wb->isAdmin()) {
     foreach ($rsvResources as $rsvResource) {
-        $rsvDays = Occupancy::days($rsvBookings[$rsvResource->id] ?? [], $rsvMonth, $rsvEnd, $rsvWholeDays($rsvResource));
+        $rsvDays = Occupancy::days($rsvBookings[$rsvResource->id] ?? [], $rsvMonth, $rsvEnd, $rsvWholeDays);
         echo "\n<!-- rsv #", (int) $rsvResource->id, ' ', implode(' ', array_map(static fn (Day $d): string => ($d->am->id ?? '.') . '/' . ($d->pm->id ?? '.'), $rsvDays)), " -->\n";
     }
 }
@@ -149,7 +145,7 @@ if ($rsvView === CalendarView::List) {
         $rsvEntries = [];
         foreach ($rsvBookings[$rsvResource->id] ?? [] as $rsvBooking) {
             $rsvEntries[] = [
-                'range' => ReservationsWbce::formatRange($rsvBooking->range->start, $rsvBooking->range->end, $rsvWholeDays($rsvResource)),
+                'range' => ReservationsWbce::formatRange($rsvBooking->range->start, $rsvBooking->range->end, $rsvWholeDays),
                 'text'  => $rsvStatusText($rsvBooking),
                 'half'  => $rsvHalf($rsvBooking),
             ];
@@ -169,8 +165,8 @@ if ($rsvView === CalendarView::Month) {
         $rsvIcu = IntlCalendar::createInstance($rsvTz, $rsvLocale)?->getFirstDayOfWeek();
         $rsvFirstDay = is_int($rsvIcu) ? ($rsvIcu + 5) % 7 + 1 : 1;
         $rsvCells = array_fill(0, ((int) $rsvMonth->format('N') - $rsvFirstDay + 7) % 7, null);
-        foreach (Occupancy::days($rsvBookings[$rsvResource->id] ?? [], $rsvMonth, $rsvEnd, $rsvWholeDays($rsvResource)) as $rsvDay) {
-            $rsvCells[] = $rsvCell($rsvDay, $rsvWholeDays($rsvResource));
+        foreach (Occupancy::days($rsvBookings[$rsvResource->id] ?? [], $rsvMonth, $rsvEnd, $rsvWholeDays) as $rsvDay) {
+            $rsvCells[] = $rsvCell($rsvDay, $rsvWholeDays);
         }
         $rsvWeeks = array_chunk(array_pad($rsvCells, (int) ceil(count($rsvCells) / 7) * 7, null), 7);
         $rsvLongFmt = $rsvFmt('EEEE');
@@ -205,8 +201,8 @@ for ($rsvM = $rsvMonth; $rsvM < $rsvEnd; $rsvM = $rsvM->modify('+1 month')) {
         $rsvRows[] = [
             'title' => $rsvResource->title,
             'cells' => array_map(
-                static fn (Day $d): array => $rsvCell($d, $rsvWholeDays($rsvResource)),
-                Occupancy::days($rsvBookings[$rsvResource->id] ?? [], $rsvM, $rsvNext, $rsvWholeDays($rsvResource)),
+                static fn (Day $d): array => $rsvCell($d, $rsvWholeDays),
+                Occupancy::days($rsvBookings[$rsvResource->id] ?? [], $rsvM, $rsvNext, $rsvWholeDays),
             ),
         ];
     }

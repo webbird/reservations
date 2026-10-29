@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Reservations\Core\Storage;
 
-use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\Pattern;
 use Reservations\Core\Domain\Status;
 use Reservations\Core\Domain\StatusRole;
@@ -79,7 +78,7 @@ final class SectionSetup
             ));
         }
 
-        $this->types->insert(new Type(null, $sectionId, $t['type'], BookingMode::Day, [], 0));
+        $this->types->insert(new Type(null, $sectionId, $t['type'], [], 0));
 
         return true;
     }

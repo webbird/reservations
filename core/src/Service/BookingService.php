@@ -12,8 +12,8 @@ use Reservations\Core\Result\Result;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
+use Reservations\Core\Storage\Pdo\SettingsRepository;
 use Reservations\Core\Storage\Pdo\StatusRepository;
-use Reservations\Core\Storage\Pdo\TypeRepository;
 
 /**
  * Creates and changes bookings. Knows nothing about backend or frontend; the
@@ -28,7 +28,7 @@ final class BookingService
     public function __construct(
         private readonly Connection $db,
         private readonly ResourceRepository $resources,
-        private readonly TypeRepository $types,
+        private readonly SettingsRepository $settings,
         private readonly StatusRepository $statuses,
         private readonly BookingRepository $bookings,
         private readonly Clock $clock,
@@ -108,15 +108,12 @@ final class BookingService
         if ($resource === null) {
             return Result::fail('resource.not_found', ['id' => $booking->resourceId], 'resource');
         }
-        $type = $this->types->find($booking->sectionId, $resource->typeId);
-        if ($type === null) {
-            return Result::fail('type.not_found', ['id' => $resource->typeId], 'resource');
-        }
         $status = $this->statuses->find($booking->sectionId, $booking->statusId);
         if ($status === null || !$status->active) {
             return Result::fail('status.not_found', ['id' => $booking->statusId], 'status');
         }
-        if ($type->bookingMode === BookingMode::Day && !$booking->range->startsAndEndsAtMidnight()) {
+        $mode = $this->settings->find($booking->sectionId)->bookingMode ?? BookingMode::Day;
+        if ($mode === BookingMode::Day &&!$booking->range->startsAndEndsAtMidnight()) {
             return Result::fail('booking.day_mode_requires_whole_days', [], 'range');
         }
 

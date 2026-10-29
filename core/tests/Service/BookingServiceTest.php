@@ -10,16 +10,17 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 use Reservations\Core\Domain\BookableResource;
 use Reservations\Core\Domain\BookingMode;
+use Reservations\Core\Domain\Settings;
 use Reservations\Core\Domain\Status;
 use Reservations\Core\Domain\StatusRole;
 use Reservations\Core\Domain\TimeRange;
-use Reservations\Core\Domain\Type;
 use Reservations\Core\Port\Clock;
 use Reservations\Core\Result\Result;
 use Reservations\Core\Service\BookingService;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
+use Reservations\Core\Storage\Pdo\SettingsRepository;
 use Reservations\Core\Storage\Pdo\StatusRepository;
 use Reservations\Core\Storage\Pdo\TypeRepository;
 use Reservations\Core\Storage\Schema;
@@ -34,6 +35,7 @@ final class BookingServiceTest extends TestCase
     private int $flat;
     private int $room;
     private int $booked;
+    private int $roomBooked;
     private int $cancelled;
     private int $foreignStatus;
 
@@ -48,14 +50,17 @@ final class BookingServiceTest extends TestCase
         $setup = new SectionSetup($db, $this->statuses, $types);
         $setup->run(1, 10);
         $setup->run(2, 20);
+        // section 3 books periods; modes are never mixed within a section
+        $setup->run(3, 30);
+        $settings = new SettingsRepository($db);
+        $settings->save(new Settings(3, bookingMode: BookingMode::Period));
 
-        $dayType = (int) $types->listBySection(1)[0]->id;
-        $periodType = $types->insert(new Type(null, 1, 'Raum', BookingMode::Period));
         $resources = new ResourceRepository($db);
-        $this->flat = $resources->insert(new BookableResource(null, 1, $dayType, 'FeWo Seeblick'));
-        $this->room = $resources->insert(new BookableResource(null, 1, $periodType, 'Besprechungsraum', bufferBefore: 5, bufferAfter: 10));
+        $this->flat = $resources->insert(new BookableResource(null, 1, (int) $types->listBySection(1)[0]->id, 'FeWo Seeblick'));
+        $this->room = $resources->insert(new BookableResource(null, 3, (int) $types->listBySection(3)[0]->id, 'Besprechungsraum', bufferBefore: 5, bufferAfter: 10));
 
         $this->booked = (int) $this->statuses->findByRole(1, StatusRole::RequestConfirmed)?->id;
+        $this->roomBooked = (int) $this->statuses->findByRole(3, StatusRole::RequestConfirmed)?->id;
         $this->cancelled = (int) array_values(array_filter($this->statuses->listBySection(1), static fn (Status $s) => !$s->blocks && $s->role === null))[0]->id;
         $this->foreignStatus = (int) $this->statuses->findByRole(2, StatusRole::RequestConfirmed)?->id;
 
@@ -66,7 +71,7 @@ final class BookingServiceTest extends TestCase
             }
         };
         $this->bookings = new BookingRepository($db);
-        $this->service = new BookingService($db, $resources, $types, $this->statuses, $this->bookings, $clock);
+        $this->service = new BookingService($db, $resources, $settings, $this->statuses, $this->bookings, $clock);
     }
 
     private function id(Result $result): int
@@ -135,12 +140,12 @@ final class BookingServiceTest extends TestCase
 
     public function testBufferRequiresGapBetweenBookings(): void
     {
-        self::assertTrue($this->service->create(1, $this->room, $this->range('2026-11-02 10:00', '2026-11-02 11:00'), $this->booked)->ok);
+        self::assertTrue($this->service->create(3, $this->room, $this->range('2026-11-02 10:00', '2026-11-02 11:00'), $this->roomBooked)->ok);
         // gap needed: 10 min clean-up + 5 min preparation
-        self::assertFalse($this->service->create(1, $this->room, $this->range('2026-11-02 11:10', '2026-11-02 12:00'), $this->booked)->ok);
-        self::assertFalse($this->service->create(1, $this->room, $this->range('2026-11-02 09:00', '2026-11-02 09:50'), $this->booked)->ok);
-        self::assertTrue($this->service->create(1, $this->room, $this->range('2026-11-02 11:15', '2026-11-02 12:00'), $this->booked)->ok);
-        self::assertTrue($this->service->create(1, $this->room, $this->range('2026-11-02 08:00', '2026-11-02 09:45'), $this->booked)->ok);
+        self::assertFalse($this->service->create(3, $this->room, $this->range('2026-11-02 11:10', '2026-11-02 12:00'), $this->roomBooked)->ok);
+        self::assertFalse($this->service->create(3, $this->room, $this->range('2026-11-02 09:00', '2026-11-02 09:50'), $this->roomBooked)->ok);
+        self::assertTrue($this->service->create(3, $this->room, $this->range('2026-11-02 11:15', '2026-11-02 12:00'), $this->roomBooked)->ok);
+        self::assertTrue($this->service->create(3, $this->room, $this->range('2026-11-02 08:00', '2026-11-02 09:45'), $this->roomBooked)->ok);
     }
 
     public function testUpdateDoesNotConflictWithItself(): void

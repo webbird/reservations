@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace Reservations\Core\Tests\Service;
 
+use DateTimeImmutable;
 use DateTimeZone;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use Reservations\Core\Domain\BookableResource;
+use Reservations\Core\Domain\Booking;
+use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\CalendarView;
 use Reservations\Core\Domain\DisplayMode;
 use Reservations\Core\Domain\Settings;
+use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Service\SettingsService;
+use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
 use Reservations\Core\Storage\Pdo\SettingsRepository;
@@ -24,23 +29,29 @@ final class SettingsServiceTest extends TestCase
 {
     private SettingsService $service;
     private SettingsRepository $settings;
+    private BookingRepository $bookings;
+    private StatusRepository $statuses;
+    private DateTimeZone $tz;
     private int $flat;
     private int $foreignFlat;
 
     protected function setUp(): void
     {
         $pdo = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-        $db = new Connection($pdo, 'test_', new DateTimeZone('Europe/Berlin'));
+        $this->tz = new DateTimeZone('Europe/Berlin');
+        $db = new Connection($pdo, 'test_', $this->tz);
         Schema::install($db);
         $types = new TypeRepository($db);
-        $setup = new SectionSetup($db, new StatusRepository($db), $types);
+        $this->statuses = new StatusRepository($db);
+        $setup = new SectionSetup($db, $this->statuses, $types);
         $setup->run(1, 10);
         $setup->run(2, 20);
         $resources = new ResourceRepository($db);
         $this->flat = $resources->insert(new BookableResource(null, 1, (int) $types->listBySection(1)[0]->id, 'FeWo Seeblick'));
         $this->foreignFlat = $resources->insert(new BookableResource(null, 2, (int) $types->listBySection(2)[0]->id, 'Fremd'));
         $this->settings = new SettingsRepository($db);
-        $this->service = new SettingsService($this->settings, $resources);
+        $this->bookings = new BookingRepository($db);
+        $this->service = new SettingsService($this->settings, $resources, $this->bookings);
     }
 
     public function testDefaultsAfterSetup(): void
@@ -50,9 +61,22 @@ final class SettingsServiceTest extends TestCase
 
     public function testSaveRoundTrip(): void
     {
-        $settings = new Settings(1, DisplayMode::Single, CalendarView::Month, 3, false, 0, 6, $this->flat);
+        $settings = new Settings(1, DisplayMode::Single, CalendarView::Month, 3, false, 0, 6, $this->flat, BookingMode::Period);
         self::assertTrue($this->service->save($settings)->ok);
         self::assertEquals($settings, $this->settings->find(1));
+    }
+
+    public function testBookingModeIsLockedOnceTheSectionHasBookings(): void
+    {
+        $status = (int) $this->statuses->listBySection(1)[0]->id;
+        $now = new DateTimeImmutable('2026-10-29 12:00', $this->tz);
+        $range = TimeRange::fromLocal('2026-11-02 00:00', '2026-11-06 00:00', $this->tz);
+        $this->bookings->insert(new Booking(null, 1, $this->flat, $range, $status, createdAt: $now, updatedAt: $now));
+
+        self::assertSame('settings.mode_locked', $this->service->save(new Settings(1, bookingMode: BookingMode::Period))->firstErrorKey());
+        // other settings stay editable, and section 2 has no bookings
+        self::assertTrue($this->service->save(new Settings(1, planRange: 3))->ok);
+        self::assertTrue($this->service->save(new Settings(2, bookingMode: BookingMode::Period))->ok);
     }
 
     public function testValidation(): void

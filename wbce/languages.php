@@ -69,6 +69,10 @@ return [
             'ERR_BOOKING_OVERLAP'                     => 'The period overlaps with an existing booking:',
 
             'SETTINGS'             => 'Settings',
+            'BOOKING_MODE'         => 'Booking mode',
+            'BOOKING_MODE_DAY'     => 'By day (arrival and departure)',
+            'BOOKING_MODE_PERIOD'  => 'By period (date and time)',
+            'BOOKING_MODE_HINT'    => 'Applies to all objects of this section and can only be changed as long as there are no bookings. For objects with another mode, add a second section.',
             'DISPLAY_MODE'         => 'Display',
             'MODE_MULTI'           => 'Several objects (occupancy plan)',
             'MODE_SINGLE'          => 'Single object (month calendar)',
@@ -89,6 +93,7 @@ return [
 
             'ERR_SETTINGS_NOT_FOUND'          => 'The settings of this section are missing.',
             'ERR_SETTINGS_INVALID_VALUE'      => 'Invalid value.',
+            'ERR_SETTINGS_MODE_LOCKED'        => 'The booking mode cannot be changed because this section already has bookings.',
             'ERR_SETTINGS_INVALID_PLAN_RANGE' => 'The occupancy plan can show 1 or 3 months.',
             'ERR_SETTINGS_INVALID_MONTHS'     => 'Please enter a number of months between 0 and %d (going ahead: at least 1).',
             'ERR_SETTINGS_VIEW_NOT_AVAILABLE' => 'This default view is not available for the chosen display.',
@@ -175,6 +180,10 @@ return [
             'ERR_BOOKING_OVERLAP'                     => 'Der Zeitraum überschneidet sich mit einer vorhandenen Buchung:',
 
             'SETTINGS'             => 'Einstellungen',
+            'BOOKING_MODE'         => 'Buchungsmodus',
+            'BOOKING_MODE_DAY'     => 'Tageweise (Anreise und Abreise)',
+            'BOOKING_MODE_PERIOD'  => 'Zeitraum (Datum und Uhrzeit)',
+            'BOOKING_MODE_HINT'    => 'Gilt für alle Objekte dieses Abschnitts und lässt sich nur ändern, solange es keine Buchungen gibt. Für Objekte mit anderem Modus einen zweiten Abschnitt anlegen.',
             'DISPLAY_MODE'         => 'Darstellung',
             'MODE_MULTI'           => 'Mehrere Objekte (Belegungsplan)',
             'MODE_SINGLE'          => 'Einzelobjekt (Monatskalender)',
@@ -195,6 +204,7 @@ return [
 
             'ERR_SETTINGS_NOT_FOUND'          => 'Die Einstellungen dieses Abschnitts fehlen.',
             'ERR_SETTINGS_INVALID_VALUE'      => 'Ungültiger Wert.',
+            'ERR_SETTINGS_MODE_LOCKED'        => 'Der Buchungsmodus lässt sich nicht ändern, weil es in diesem Abschnitt schon Buchungen gibt.',
             'ERR_SETTINGS_INVALID_PLAN_RANGE' => 'Der Belegungsplan kann 1 oder 3 Monate zeigen.',
             'ERR_SETTINGS_INVALID_MONTHS'     => 'Bitte eine Anzahl Monate zwischen 0 und %d eingeben (vorblättern: mindestens 1).',
             'ERR_SETTINGS_VIEW_NOT_AVAILABLE' => 'Diese Startansicht gibt es für die gewählte Darstellung nicht.',

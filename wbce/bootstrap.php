@@ -10,7 +10,6 @@ defined('WB_PATH') or die('This file cannot be accessed directly!');
 
 use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\TimeRange;
-use Reservations\Core\Domain\Type;
 use Reservations\Core\Port\Clock;
 use Reservations\Core\Result\Result;
 use Reservations\Core\Service\BookingService;
@@ -109,7 +108,7 @@ final class ReservationsWbce
 
     public static function settingsService(): SettingsService
     {
-        return new SettingsService(self::settings(), self::resources());
+        return new SettingsService(self::settings(), self::resources(), self::bookings());
     }
 
     public static function sectionSetup(): SectionSetup
@@ -139,7 +138,7 @@ final class ReservationsWbce
 
     public static function bookingService(): BookingService
     {
-        return new BookingService(self::db(), self::resources(), self::types(), self::statuses(), self::bookings(), self::clock());
+        return new BookingService(self::db(), self::resources(), self::settings(),self::statuses(), self::bookings(), self::clock());
     }
 
     /**
@@ -167,12 +166,12 @@ final class ReservationsWbce
     }
 
     /**
-     * Whole days (date only) or period (date and time). A missing type counts as
-     * day mode, the default type of every new section.
+     * Whole days (date only) or period (date and time); the mode belongs to the
+     * section. Missing settings count as day mode, the default of every section.
      */
-    public static function wholeDays(?Type $type): bool
+    public static function wholeDays(int $sectionId): bool
     {
-        return ($type->bookingMode ?? BookingMode::Day) === BookingMode::Day;
+        return (self::settings()->find($sectionId)->bookingMode ?? BookingMode::Day) === BookingMode::Day;
     }
 
     /**

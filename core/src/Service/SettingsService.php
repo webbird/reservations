@@ -6,6 +6,7 @@ namespace Reservations\Core\Service;
 
 use Reservations\Core\Domain\Settings;
 use Reservations\Core\Result\Result;
+use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
 use Reservations\Core\Storage\Pdo\SettingsRepository;
 
@@ -17,13 +18,19 @@ final class SettingsService
     public function __construct(
         private readonly SettingsRepository $settings,
         private readonly ResourceRepository $resources,
+        private readonly BookingRepository $bookings,
     ) {
     }
 
     public function save(Settings $s): Result
     {
-        if ($this->settings->find($s->sectionId) === null) {
+        $existing = $this->settings->find($s->sectionId);
+        if ($existing === null) {
             return Result::fail('settings.not_found', ['id' => $s->sectionId]);
+        }
+        // existing bookings were entered for the old mode; day mode would drop their times on the next edit
+        if ($s->bookingMode !== $existing->bookingMode && $this->bookings->countByResource($s->sectionId) !== []) {
+            return Result::fail('settings.mode_locked', [], 'booking_mode');
         }
         if (!in_array($s->planRange, self::PLAN_RANGES, true)) {
             return Result::fail('settings.invalid_plan_range', [], 'plan_range');

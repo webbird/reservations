@@ -45,6 +45,7 @@ if ($rsvParam('rsv_settings') === 1) {
         'show_labels'   => $rsvSettings->showLabels,
         'past_months'   => $rsvSettings->pastMonths,
         'future_months' => $rsvSettings->futureMonths,
+        'booking_mode'  => $rsvSettings->bookingMode->value,
     ];
     ReservationsWbce::twig()->display('modify_settings.twig', $rsvVars + [
         'form'      => $rsvForm,
@@ -58,7 +59,7 @@ if ($rsvParam('rsv_settings') === 1) {
 $rsvResource = ReservationsWbce::resources()->find($rsvSection, $rsvParam('rsv_bookings'));
 
 if ($rsvResource !== null) {
-    $rsvWholeDays = ReservationsWbce::wholeDays($rsvTypes[$rsvResource->typeId] ?? null);
+    $rsvWholeDays = ReservationsWbce::wholeDays($rsvSection);
     $rsvInputFormat = $rsvWholeDays ? 'Y-m-d' : 'Y-m-d\TH:i';
 
     $rsvStatuses = [];

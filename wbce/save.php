@@ -14,6 +14,7 @@ require WB_PATH . '/modules/admin.php';
 require_once __DIR__ . '/bootstrap.php';
 
 use Reservations\Core\Domain\BookableResource;
+use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\CalendarView;
 use Reservations\Core\Domain\DisplayMode;
 use Reservations\Core\Domain\Settings;
@@ -99,7 +100,7 @@ switch ($post('rsv_action')) {
         if ($resource === null) {
             $finish(Result::fail('resource.not_found'), [], $old, '');
         }
-        $wholeDays = ReservationsWbce::wholeDays(ReservationsWbce::types()->find($sectionId, $resource->typeId));
+        $wholeDays = ReservationsWbce::wholeDays($sectionId);
         try {
             $range = $wholeDays
                 ? TimeRange::fromLocal($old['start'] . ' 00:00', $old['end'] . ' 00:00', ReservationsWbce::timezone())
@@ -122,10 +123,13 @@ switch ($post('rsv_action')) {
             'show_labels'   => $post('show_labels') === '1',
             'past_months'   => (int) $post('past_months'),
             'future_months' => (int) $post('future_months'),
+            'booking_mode'  => $post('booking_mode'),
         ];
         $mode = DisplayMode::tryFrom($old['display_mode']);
         $view = CalendarView::tryFrom($old['default_view']);
-        if ($mode === null || $view === null) {
+        $bookingMode = BookingMode::tryFrom($old['booking_mode']);
+        // appointments follow in 1.1
+        if ($mode === null || $view === null || $bookingMode === null || $bookingMode === BookingMode::Appointment) {
             $finish(Result::fail('settings.invalid_value'), ['rsv_settings' => 1], $old, '');
         }
         $result = ReservationsWbce::settingsService()->save(new Settings(
@@ -137,6 +141,7 @@ switch ($post('rsv_action')) {
             pastMonths: $old['past_months'],
             futureMonths: $old['future_months'],
             resourceId: $old['resource_id'] > 0 ? $old['resource_id'] : null,
+            bookingMode: $bookingMode,
         ));
         $finish($result, $result->ok ? [] : ['rsv_settings' => 1], $old, ReservationsWbce::t('MSG_SETTINGS_SAVED'));
 

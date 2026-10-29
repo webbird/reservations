@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Reservations\Core\Storage\Pdo;
 
-use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\Type;
 
 final class TypeRepository
@@ -54,7 +53,6 @@ final class TypeRepository
         return [
             'section_id' => $type->sectionId,
             'title' => $type->title,
-            'booking_mode' => $type->bookingMode,
             'defaults' => json_encode($type->defaults, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
             'position' => $type->position,
         ];
@@ -76,7 +74,6 @@ final class TypeRepository
             id: Row::int($row, 'type_id'),
             sectionId: Row::int($row, 'section_id'),
             title: Row::string($row, 'title'),
-            bookingMode: BookingMode::from(Row::string($row, 'booking_mode')),
             defaults: $defaults,
             position: Row::int($row, 'position'),
         );

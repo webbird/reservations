@@ -137,6 +137,9 @@ return [
             'NEWS_SECTION_HINT'    => 'The posts of this news section describe the objects. Each object can then be linked to one of these posts.',
             'NEWS_SECTION_MISSING' => 'Section #%d (no longer exists)',
             'NONE'                 => '(none)',
+            'DESCRIPTION'          => 'Description',
+            'DESCRIPTION_ORPHANED' => 'orphaned (post inactive, deleted or in another news section)',
+            'DESCRIPTION_MISSING'  => 'Post #%d (not found)',
             'MSG_SETTINGS_SAVED'   => 'The settings have been saved.',
 
             'ERR_SETTINGS_NOT_FOUND'          => 'The settings of this section are missing.',
@@ -298,6 +301,9 @@ return [
             'NEWS_SECTION_HINT'    => 'Die Beiträge dieser News-Sektion beschreiben die Objekte. Jedes Objekt lässt sich dann einem dieser Beiträge zuordnen.',
             'NEWS_SECTION_MISSING' => 'Abschnitt #%d (existiert nicht mehr)',
             'NONE'                 => '(keine)',
+            'DESCRIPTION'          => 'Beschreibung',
+            'DESCRIPTION_ORPHANED' => 'verwaist (Beitrag inaktiv, gelöscht oder in einer anderen News-Sektion)',
+            'DESCRIPTION_MISSING'  => 'Beitrag #%d (nicht gefunden)',
             'MSG_SETTINGS_SAVED'   => 'Die Einstellungen wurden gespeichert.',
 
             'ERR_SETTINGS_NOT_FOUND'          => 'Die Einstellungen dieses Abschnitts fehlen.',

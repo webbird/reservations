@@ -11,6 +11,7 @@
             <tr>
                 <th scope="col">{{ t('TITLE') }}</th>
                 <th scope="col">{{ t('TYPE') }}</th>
+                {% if news %}<th scope="col">{{ t('DESCRIPTION') }}</th>{% endif %}
                 <th scope="col">{{ t('ACTIVE') }}</th>
                 <th scope="col" class="rsv-num">{{ t('BOOKINGS') }}</th>
                 <th scope="col"><span class="rsv-sr">{{ t('ACTIONS') }}</span></th>
@@ -21,6 +22,9 @@
             <tr{% if not r.active %} class="rsv-inactive"{% endif %}>
                 <th scope="row">{{ r.title }}</th>
                 <td>{{ r.type }}</td>
+                {% if news %}
+                    <td>{{ r.description is same as(false) ? t('DESCRIPTION_ORPHANED') : r.description }}</td>
+                {% endif %}
                 <td>{{ r.active ? t('YES') : t('NO') }}</td>
                 <td class="rsv-num">{{ r.bookings }}</td>
                 <td class="rsv-actions">
@@ -29,7 +33,7 @@
                 </td>
             </tr>
         {% else %}
-            <tr><td colspan="5">{{ t('NO_RESOURCES') }}</td></tr>
+            <tr><td colspan="{{ news ? 6 : 5 }}">{{ t('NO_RESOURCES') }}</td></tr>
         {% endfor %}
         </tbody>
     </table>
@@ -55,6 +59,20 @@
                     {% endfor %}
                 </select>
             </p>
+            {% if news %}
+                <p>
+                    <label for="rsv-post-{{ section_id }}">{{ t('DESCRIPTION') }}</label>
+                    <select id="rsv-post-{{ section_id }}" name="post_id">
+                        <option value="0">{{ t('NONE') }}</option>
+                        {% for id, title in posts %}
+                            <option value="{{ id }}"{% if id == form.post_id %} selected{% endif %}>{{ title }}</option>
+                        {% endfor %}
+                        {% if form.post_id and posts[form.post_id] is not defined %}
+                            <option value="{{ form.post_id }}" selected>{{ t('DESCRIPTION_MISSING', form.post_id) }}</option>
+                        {% endif %}
+                    </select>
+                </p>
+            {% endif %}
             <p>
                 <input id="rsv-active-{{ section_id }}" type="checkbox" name="active" value="1"{% if form.active %} checked{% endif %}>
                 <label for="rsv-active-{{ section_id }}">{{ t('ACTIVE') }}</label>

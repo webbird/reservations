@@ -58,10 +58,21 @@ $finish = static function (Result $result, array $params, array $old, string $su
 switch ($post('rsv_action')) {
     case 'resource_save':
         $id = (int) $post('resource_id');
-        $old = ['resource_id' => $id, 'title' => $post('title'), 'type_id' => (int) $post('type_id'), 'active' => $post('active') === '1'];
+        $old = ['resource_id' => $id, 'title' => $post('title'), 'type_id' => (int) $post('type_id'), 'active' => $post('active') === '1', 'post_id' => (int) $post('post_id')];
         $existing = $id > 0 ? ReservationsWbce::resources()->find($sectionId, $id) : null;
         if ($id > 0 && $existing === null) {
             $finish(Result::fail('resource.not_found'), [], $old, '');
+        }
+        // without a news section the field is not on the form and the stored ref stays
+        $presentationRef = $existing?->presentationRef;
+        $news = ReservationsWbce::newsSection($sectionId);
+        if ($news !== null) {
+            $presentationRef = $old['post_id'] > 0 ? ReservationsNewsImg::PREFIX . $old['post_id'] : null;
+            // an orphaned post may stay as it is, a new one must belong to the news section
+            $unchanged = $presentationRef === $existing?->presentationRef;
+            if ($presentationRef !== null && !$unchanged && !isset(ReservationsNewsImg::choices($news)[$old['post_id']])) {
+                $finish(Result::fail('settings.invalid_value'), ['rsv_edit' => $id], $old, '');
+            }
         }
         // fields that are not on the form keep their stored values
         $resource = new BookableResource(
@@ -72,7 +83,7 @@ switch ($post('rsv_action')) {
             color: $existing?->color,
             active: $old['active'],
             position: $existing->position ?? 0,
-            presentationRef: $existing?->presentationRef,
+            presentationRef: $presentationRef,
             capacity: $existing?->capacity,
             autoConfirm: $existing->autoConfirm ?? false,
             slotMinutes: $existing->slotMinutes ?? 30,

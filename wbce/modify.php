@@ -189,13 +189,18 @@ if ($rsvResource !== null) {
 
 $rsvRows = [];
 $rsvCounts = ReservationsWbce::bookings()->countByResource($rsvSection);
-foreach (ReservationsWbce::resources()->listBySection($rsvSection) as $rsvItem) {
+$rsvItems = ReservationsWbce::resources()->listBySection($rsvSection);
+$rsvNews = ReservationsWbce::newsSection($rsvSection);
+$rsvPosts = $rsvNews === null ? [] : ReservationsNewsImg::resolveMany($rsvNews, array_values(array_filter(array_map(static fn ($r) => $r->presentationRef, $rsvItems))));
+foreach ($rsvItems as $rsvItem) {
     $rsvRows[] = [
         'id'           => $rsvItem->id,
         'title'        => $rsvItem->title,
         'type'         => $rsvTypes[$rsvItem->typeId]->title ?? '?',
         'active'       => $rsvItem->active,
         'bookings'     => $rsvCounts[(int) $rsvItem->id] ?? 0,
+        // null: no description; false: the post is gone, inactive or in another news section
+        'description'  => $rsvItem->presentationRef === null ? null : ($rsvPosts[$rsvItem->presentationRef]['title'] ?? false),
         'url_edit'     => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_edit' => (int) $rsvItem->id]),
         'url_bookings' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_bookings' => (int) $rsvItem->id]),
     ];
@@ -207,10 +212,13 @@ $rsvForm = $rsvOld ?? [
     'title'       => $rsvEdit->title ?? '',
     'type_id'     => $rsvEdit->typeId ?? array_key_first($rsvTypes),
     'active'      => $rsvEdit->active ?? true,
+    'post_id'     => ReservationsNewsImg::idOf($rsvEdit?->presentationRef) ?? 0,
 ];
 
 ReservationsWbce::twig()->display('modify_resources.twig', $rsvVars + [
     'resources'    => $rsvRows,
+    'news'         => $rsvNews !== null,
+    'posts'        => $rsvNews === null ? [] : ReservationsNewsImg::choices($rsvNews),
     'types'        => array_map(static fn ($t) => ['id' => $t->id, 'title' => $t->title], array_values($rsvTypes)),
     'form'         => $rsvForm,
     'url_settings' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_settings' => 1]),

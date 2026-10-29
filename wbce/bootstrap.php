@@ -210,6 +210,14 @@ final class ReservationsWbce
     }
 
     /**
+     * The news_img section that holds the object descriptions, or null.
+     */
+    public static function newsSection(int $sectionId): ?int
+    {
+        return ReservationsNewsImg::idOf(self::settings()->find($sectionId)?->presentationSource);
+    }
+
+    /**
      * Day mode shows arrival and departure date; the departure is the exclusive end.
      */
     public static function formatRange(DateTimeImmutable $start, DateTimeImmutable $end, bool $wholeDays): string

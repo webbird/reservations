@@ -22,8 +22,8 @@ Erweiterung `intl`. Datenbank: MySQL/MariaDB oder SQLite (beides unterstützt WB
 ## 1. Umfang
 
 ### Version 1.0
-- Ressourcen mit Buchungsmodus **tageweise** und **Zeitraum**
-- **Objekttypen** pro Abschnitt (z. B. Ferienwohnung, Raum, Gerät): Name, Buchungsmodus,
+- Buchungsmodus **tageweise** oder **Zeitraum**, pro Abschnitt eingestellt
+- **Objekttypen** pro Abschnitt (z. B. Ferienwohnung, Raum, Gerät): Name, Reihenfolge,
   Vorgabewerte für neue Objekte
 - **Konfigurierbare Status** pro Abschnitt: Bezeichnung, Farbe, Muster, Verhalten
   (blockiert ja/nein, öffentliche Darstellung), feste Rollen für den Ablauf bei Anfragen
@@ -78,8 +78,8 @@ Konzept mit generischen Objekten und Objekttypen bereits ab.
 |---|---|
 | Abschnitt | WBCE-Section mit dem Modul. Hat eigene Einstellungen und eigene Ressourcen. |
 | Ressource | Das buchbare Ding (Wohnung, Raum, Person, Gerät). In der Oberfläche heißt sie „Objekt“. |
-| Objekttyp | Art der Ressource (Ferienwohnung, Raum, Person, Gerät …). Legt den Buchungsmodus fest und liefert Vorgabewerte. |
-| Buchungsmodus | `day` (tageweise), `period` (Zeitraum), `appointment` (Termin, ab 1.1) |
+| Objekttyp | Art der Ressource (Ferienwohnung, Raum, Person, Gerät …). Liefert Vorgabewerte für neue Objekte. |
+| Buchungsmodus | `day` (tageweise), `period` (Zeitraum), `appointment` (Termin, ab 1.1). Gilt für alle Objekte eines Abschnitts. |
 | Status | Konfigurierbarer Zustand einer Buchung (z. B. angefragt, reserviert, gebucht, gesperrt). Das Verhalten steckt in Eigenschaften, nicht im Namen. |
 | Präsentation | Seite in einem anderen Modul, die das Objekt beschreibt (news_img-Beitrag, Catamaran-Content) |
 | Buchung | Belegter Zeitraum einer Ressource. Sperrzeiten sind ebenfalls Buchungen, mit einem blockierenden Status wie „gesperrt“. |
@@ -184,6 +184,12 @@ Tabellennamen: Präfix des CMS + `mod_reservations_` in WBCE. Der Kern bekommt d
 | notify_email | VARCHAR(255) | Empfänger für Benachrichtigungen |
 | retention_days | SMALLINT | Kontaktdaten nach X Tagen löschen (Standard 90) |
 | past_months / future_months | SMALLINT | Navigationsgrenzen |
+| resource_id | INT NULL | Objekt für die Einzelobjekt-Darstellung; leer = erstes aktives |
+| booking_mode | VARCHAR(20) | `day`, `period`, `appointment`; `appointment` erst ab 1.1 auswählbar |
+
+Ein Abschnitt mischt keine Buchungsmodi. Wer Wohnungen und einen Raum anbietet, legt zwei
+Abschnitte auf die Seite. Der Modus lässt sich nur ändern, solange der Abschnitt keine
+Buchungen hat; sonst gingen beim nächsten Bearbeiten Uhrzeiten verloren.
 
 ### types (Objekttypen)
 | Spalte | Typ | Hinweis |
@@ -191,14 +197,14 @@ Tabellennamen: Präfix des CMS + `mod_reservations_` in WBCE. Der Kern bekommt d
 | type_id | INT PK AI | |
 | section_id | INT, Index | |
 | title | VARCHAR(100) | z. B. „Ferienwohnung“, „Besprechungsraum“ |
-| booking_mode | VARCHAR(20) | `day`, `period`, `appointment`; `appointment` erst ab 1.1 auswählbar |
 | defaults | TEXT (JSON) | Vorgabewerte für neue Objekte dieses Typs (Raster, Puffer, An- und Abreisezeit …) |
 | position | INT | Reihenfolge, auch Gruppierung im Belegungsplan |
 
-Der Buchungsmodus hängt am Typ, nicht am einzelnen Objekt. Die Vorgabewerte werden beim
-Anlegen eines Objekts **kopiert**, nicht zur Laufzeit vererbt. Spätere Änderungen am Typ
-ändern also keine bestehenden Objekte. Beim Anlegen eines Abschnitts gibt es einen Typ als
-Vorgabe, z. B. „Objekt“ mit Modus tageweise.
+Die Vorgabewerte werden beim Anlegen eines Objekts **kopiert**, nicht zur Laufzeit vererbt.
+Spätere Änderungen am Typ ändern also keine bestehenden Objekte. Beim Anlegen eines
+Abschnitts gibt es einen Typ als Vorgabe („Objekt“). Ein Typ, den Objekte verwenden, und der
+letzte Typ eines Abschnitts lassen sich nicht löschen. Bis 0.2.0 stand der Buchungsmodus am
+Typ (`types.booking_mode`); die Installation entfernt diese Spalte.
 
 ### statuses
 | Spalte | Typ | Hinweis |
@@ -219,7 +225,7 @@ Vorgabe, z. B. „Objekt“ mit Modus tageweise.
 |---|---|---|
 | resource_id | INT PK AI | |
 | section_id | INT, Index | |
-| type_id | INT, Index | bestimmt den Buchungsmodus |
+| type_id | INT, Index | Objekttyp (Vorgabewerte, Gruppierung) |
 | title | VARCHAR(255) | |
 | color | VARCHAR(7) | nur als Kennfarbe, nie als einzige Information |
 | active | TINYINT(1) | inaktiv: nicht im Frontend und nicht anfragbar |
@@ -441,9 +447,6 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 - Sollen Anfragen ohne Bestätigungslink den Zeitraum sofort blockieren, oder erst nach der
   Bestätigung per Mail (Double-Opt-in)? 1.0 sieht Ersteres vor; mit konfigurierbaren Status
   lässt sich das ohnehin über „blockiert“ beim Status „angefragt“ abschalten.
-- Darf ein Abschnitt gemischte Buchungsmodi enthalten (z. B. Wohnungen und ein Raum)? Das
-  Datenmodell erlaubt es über die Objekttypen. Der Belegungsplan würde dann nach Typ
-  getrennte Blöcke zeigen.
 - Welche Buchungen zählt die Spalte „Buchungen“ in der Objektliste des Backends? Derzeit alle
   (auch vergangene, stornierte, abgelehnte). Tendenz: nur laufende (heute liegt zwischen
   Beginn und Ende) und zukünftige. Entscheidung später.
@@ -460,3 +463,4 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 - Einzelobjekt: das angezeigte Objekt wird in den Einstellungen gewählt (Spalte `settings.resource_id`), ohne Auswahl das erste aktive.
 - Belegungsplan über 3 Monate: drei Monatstabellen untereinander statt einer breiten Tabelle.
 - Wochenansicht mit Stundenraster (Objekte mit Uhrzeiten): eigener Schritt nach der Darstellung; bis dahin zeigt der Plan solche Objekte als Vormittag/Nachmittag.
+- Gemischte Buchungsmodi in einem Abschnitt: **nein**. Der Modus gehört zum Abschnitt (`settings.booking_mode`); für einen anderen Modus einen zweiten Abschnitt anlegen.

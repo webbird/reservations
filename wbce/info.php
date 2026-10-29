@@ -10,7 +10,7 @@ defined('WB_PATH') or die('This file cannot be accessed directly!');
 $module_directory   = 'reservations';
 $module_name        = 'Reservations';
 $module_function    = 'page';
-$module_version     = '0.2.0';
+$module_version     = '0.3.0';
 $module_platform    = '1.7.0';
 $module_author      = 'Bianka Martinovic';
 $module_license     = 'GNU General Public License';

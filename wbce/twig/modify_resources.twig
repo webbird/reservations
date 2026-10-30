@@ -13,7 +13,8 @@
                 <th scope="col">{{ t('TYPE') }}</th>
                 {% if news %}<th scope="col">{{ t('DESCRIPTION') }}</th>{% endif %}
                 <th scope="col">{{ t('ACTIVE') }}</th>
-                <th scope="col" class="rsv-num">{{ t('BOOKINGS') }}</th>
+                <th scope="col" class="rsv-num">{{ t('BOOKINGS_CURRENT') }}</th>
+                <th scope="col" class="rsv-num">{{ t('REQUESTS_OPEN') }}</th>
                 <th scope="col"><span class="rsv-sr">{{ t('ACTIONS') }}</span></th>
             </tr>
         </thead>
@@ -27,13 +28,14 @@
                 {% endif %}
                 <td>{{ r.active ? t('YES') : t('NO') }}</td>
                 <td class="rsv-num">{{ r.bookings }}</td>
+                <td class="rsv-num">{% if r.requests %}<strong>{{ r.requests }}</strong>{% else %}0{% endif %}</td>
                 <td class="rsv-actions">
                     <a href="{{ r.url_bookings }}">{{ t('BOOKINGS') }}<span class="rsv-sr">: {{ r.title }}</span></a>
                     <a href="{{ r.url_edit }}">{{ t('EDIT') }}<span class="rsv-sr">: {{ r.title }}</span></a>
                 </td>
             </tr>
         {% else %}
-            <tr><td colspan="{{ news ? 6 : 5 }}">{{ t('NO_RESOURCES') }}</td></tr>
+            <tr><td colspan="{{ news ? 7 : 6 }}">{{ t('NO_RESOURCES') }}</td></tr>
         {% endfor %}
         </tbody>
     </table>

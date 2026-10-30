@@ -96,4 +96,21 @@ final class BookingRepositoryTest extends TestCase
 
         self::assertSame([$this->flat => 2], $this->bookings->countByResource(1));
     }
+
+    public function testCountCurrentSplitsRequestsAndSkipsPastOrCancelled(): void
+    {
+        $requested = (int) (new StatusRepository($this->db))->findByRole(1, StatusRole::RequestNew)?->id;
+        // past, running, future, cancelled, open request, request of another section
+        $this->bookings->insert($this->booking($this->flat, '2026-10-01 00:00', '2026-10-05 00:00', $this->booked));
+        $this->bookings->insert($this->booking($this->flat, '2026-10-26 00:00', '2026-10-30 00:00', $this->booked));
+        $this->bookings->insert($this->booking($this->flat, '2026-11-02 00:00', '2026-11-06 00:00', $this->booked));
+        $this->bookings->insert($this->booking($this->flat, '2026-11-08 00:00', '2026-11-09 00:00', $this->cancelled));
+        $this->bookings->insert($this->booking($this->otherFlat, '2026-11-10 00:00', '2026-11-12 00:00', $requested));
+        $this->bookings->insert($this->booking($this->flat, '2026-11-03 00:00', '2026-11-04 00:00', $this->booked, 2));
+
+        self::assertSame(
+            [$this->flat => ['bookings' => 2, 'requests' => 0], $this->otherFlat => ['bookings' => 0, 'requests' => 1]],
+            $this->bookings->countCurrentByResource(1, new DateTimeImmutable('2026-10-27 12:00', $this->tz)),
+        );
+    }
 }

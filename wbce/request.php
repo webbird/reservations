@@ -91,8 +91,11 @@ if ($result->firstErrorKey() === 'booking.overlap') {
     // the conflicting dates may belong to hidden requests; visitors only learn that the period is taken
     $result = Result::fail('request.unavailable', [], 'range');
 }
-if ($result->ok) {
+if ($result->ok && is_int($result->value)) {
     unset($_SESSION['mod_reservations_form_time'][$sectionId]);
-    $result = Result::ok(ReservationsWbce::resources()->find($sectionId, $old['resource_id'])->autoConfirm ?? false);
+    $booked = ReservationsWbce::resources()->find($sectionId, $old['resource_id'])->autoConfirm ?? false;
+    // the request is stored either way; a failed mail is logged and the backend still shows the request
+    ReservationsWbce::requestMails($sectionId, $result->value, $booked ? 'booked' : 'received');
+    $result = Result::ok($booked);
 }
 $finish($result);

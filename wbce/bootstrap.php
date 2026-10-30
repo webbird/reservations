@@ -228,6 +228,92 @@ final class ReservationsWbce
     }
 
     /**
+     * Mails about a request, in the language of the page: to the requester,
+     * and for a new request ('received', 'booked' = confirmed at once) also to
+     * notify_email. Without double opt-in anybody can enter a foreign address,
+     * so mails to the requester carry nothing the visitor typed.
+     *
+     * @param 'received'|'booked'|'confirmed'|'rejected' $event
+     * @return bool false if a mail could not be sent
+     */
+    public static function requestMails(int $sectionId, int $bookingId, string $event): bool
+    {
+        $booking = self::bookings()->find($sectionId, $bookingId);
+        $request = (new RequestRepository(self::db()))->findByBooking($sectionId, $bookingId);
+        $page = $GLOBALS['database']->fetchRow(
+            'SELECT p.`page_id`, p.`language` FROM `{TP}sections` s JOIN `{TP}pages` p ON p.`page_id` = s.`page_id` WHERE s.`section_id` = ?',
+            [$sectionId],
+        );
+        // purged requests have no address any more
+        if ($booking === null || $request === null || $request->email === '' || $page === null) {
+            return false;
+        }
+        $texts = self::mailTexts((string) $page['language']);
+        $t = static fn (string $key, string ...$args): string => vsprintf($texts[$key] ?? $key, $args);
+        $object = self::resources()->find($sectionId, $booking->resourceId)->title ?? '?';
+        $period = self::formatRange($booking->range->start, $booking->range->end, self::wholeDays($sectionId));
+        $facts = $t('RESOURCE') . ': ' . $object . "\n" . $t('MAIL_PERIOD') . ': ' . $period . "\n";
+        $notify = self::settings()->find($sectionId)->notifyEmail ?? '';
+
+        $sent = self::sendMail(
+            $request->email,
+            $notify,
+            $t('MAIL_SUBJECT_' . strtoupper($event), $object),
+            $t('MAIL_TEXT_' . strtoupper($event)) . "\n\n" . $facts . "\n" . $t('MAIL_FOOTER', WEBSITE_TITLE),
+        );
+
+        if ($notify !== '' && in_array($event, ['received', 'booked'], true)) {
+            $url = self::modifyUrl((int) $page['page_id'], $sectionId, ['rsv_bookings' => $booking->resourceId, 'rsv_booking' => $bookingId]);
+            $sent = self::sendMail(
+                $notify,
+                $request->email,
+                $t('MAIL_ADMIN_SUBJECT_' . strtoupper($event), $object, $period),
+                $t('MAIL_ADMIN_TEXT_' . strtoupper($event)) . "\n\n" . $facts
+                    . $t('NAME') . ': ' . $request->name . "\n"
+                    . $t('EMAIL') . ': ' . $request->email . "\n"
+                    . $t('PHONE') . ': ' . $request->phone . "\n"
+                    . $t('PERSONS') . ': ' . ($request->persons ?? '') . "\n"
+                    . $t('MESSAGE') . ":\n" . $request->message . "\n\n"
+                    . $t('MAIL_ADMIN_LINK', $url),
+            ) && $sent;
+        }
+        return $sent;
+    }
+
+    /**
+     * The module texts of one language, independent of the language of the current user.
+     *
+     * @return array<string, string>
+     */
+    private static function mailTexts(string $language): array
+    {
+        static $all = null;
+        $all ??= include __DIR__ . '/languages.php';
+        return $all[strtoupper($language)]['MOD_RESERVATIONS'] ?? $all['EN']['MOD_RESERVATIONS'];
+    }
+
+    /**
+     * Plain text mail through the mailer configured in WBCE.
+     */
+    private static function sendMail(string $to, string $replyTo, string $subject, string $body): bool
+    {
+        $mail = new Mailer();
+        $mail->isHTML(false);
+        $mail->addAddress($to);
+        if ($replyTo !== '') {
+            $mail->addReplyTo($replyTo);
+        }
+        $mail->Subject = $subject;
+        $mail->Body = $body;
+        if ($mail->send()) {
+            return true;
+        }
+        // no address in the log: it is personal data
+        error_log('reservations: mail "' . $subject . '" not sent: ' . $mail->ErrorInfo);
+        return false;
+    }
+
+    /**
      * Error keys from the core ("booking.overlap") map to ERR_BOOKING_OVERLAP.
      * Conflicts come as booking rows (booking.overlap) or as pairs of booking
      * ids (status.blocking_conflicts).

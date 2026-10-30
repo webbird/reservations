@@ -194,7 +194,7 @@ if ($rsvResource !== null) {
 }
 
 $rsvRows = [];
-$rsvCounts = ReservationsWbce::bookings()->countByResource($rsvSection);
+$rsvCounts = ReservationsWbce::bookings()->countCurrentByResource($rsvSection, ReservationsWbce::clock()->now());
 $rsvItems = ReservationsWbce::resources()->listBySection($rsvSection);
 $rsvNews = ReservationsWbce::newsSection($rsvSection);
 $rsvPosts = $rsvNews === null ? [] : ReservationsNewsImg::resolveMany($rsvNews, array_values(array_filter(array_map(static fn ($r) => $r->presentationRef, $rsvItems))));
@@ -204,7 +204,8 @@ foreach ($rsvItems as $rsvItem) {
         'title'        => $rsvItem->title,
         'type'         => $rsvTypes[$rsvItem->typeId]->title ?? '?',
         'active'       => $rsvItem->active,
-        'bookings'     => $rsvCounts[(int) $rsvItem->id] ?? 0,
+        'bookings'     => $rsvCounts[(int) $rsvItem->id]['bookings'] ?? 0,
+        'requests'     => $rsvCounts[(int) $rsvItem->id]['requests'] ?? 0,
         // null: no description; false: the post is gone, inactive or in another news section
         'description'  => $rsvItem->presentationRef === null ? null : ($rsvPosts[$rsvItem->presentationRef]['title'] ?? false),
         'url_edit'     => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_edit' => (int) $rsvItem->id]),

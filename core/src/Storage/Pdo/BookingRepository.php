@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Reservations\Core\Storage\Pdo;
 
+use DateTimeImmutable;
 use Reservations\Core\Domain\Booking;
+use Reservations\Core\Domain\StatusRole;
 use Reservations\Core\Domain\TimeRange;
 
 final class BookingRepository
@@ -60,6 +62,32 @@ final class BookingRepository
         );
         foreach ($rows as $row) {
             $counts[Row::int($row, 'resource_id')] = Row::int($row, 'cnt');
+        }
+        return $counts;
+    }
+
+    /**
+     * Current and future bookings per resource (ending after $now), split into
+     * open requests (status role request_new) and bookings (other blocking
+     * statuses); cancelled or rejected ones block nothing and are not counted.
+     *
+     * @return array<int, array{bookings: int, requests: int}> resource id => counts; resources without any are missing
+     */
+    public function countCurrentByResource(int $sectionId, DateTimeImmutable $now): array
+    {
+        $rows = $this->db->fetchAll(
+            'SELECT b.resource_id,'
+            . " SUM(CASE WHEN s.role = ? THEN 1 ELSE 0 END) AS requests,"
+            . " SUM(CASE WHEN s.blocks = 1 AND (s.role IS NULL OR s.role <> ?) THEN 1 ELSE 0 END) AS bookings"
+            . ' FROM ' . $this->db->table(self::TABLE) . ' b'
+            . ' JOIN ' . $this->db->table('statuses') . ' s ON s.status_id = b.status_id AND s.section_id = b.section_id'
+            . ' WHERE b.section_id = ? AND b.end_at > ?'
+            . ' GROUP BY b.resource_id',
+            [StatusRole::RequestNew, StatusRole::RequestNew, $sectionId, $now],
+        );
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[Row::int($row, 'resource_id')] = ['bookings' => Row::int($row, 'bookings'), 'requests' => Row::int($row, 'requests')];
         }
         return $counts;
     }

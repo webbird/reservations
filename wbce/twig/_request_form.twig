@@ -4,7 +4,9 @@
 #}
 {% set r = request %}
 {% set invalid = 'aria-invalid="true" aria-describedby="rsv-request-error-' ~ section_id ~ '"' %}
-<section class="rsv-request" id="rsv-request-{{ section_id }}" aria-labelledby="rsv-request-title-{{ section_id }}">
+{# empty jump target for the redirect of request.php: templates may hide :target elements (sticky-nav trick) #}
+<span id="rsv-request-{{ section_id }}" class="rsv-anchor"></span>
+<section class="rsv-request" aria-labelledby="rsv-request-title-{{ section_id }}">
     <h3 id="rsv-request-title-{{ section_id }}">{{ t('REQUEST_TITLE') }}</h3>
 
     {% if r.errors %}

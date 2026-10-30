@@ -160,7 +160,8 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
         'ftan'       => $GLOBALS['wb']->getFTAN(),
         'resources'  => array_map(static fn ($r) => ['id' => $r->id, 'title' => $r->title, 'capacity' => $r->capacity], $rsvResources),
         'whole_days' => $rsvWholeDays,
-        'min'        => (new DateTimeImmutable('today', $rsvTz))->format($rsvWholeDays ? 'Y-m-d' : 'Y-m-d\TH:i'),
+        // only a hint for the date picker; the lead time of the object is checked by the core
+        'min'        => $rsvWholeDays ? (new DateTimeImmutable('tomorrow', $rsvTz))->format('Y-m-d') : (new DateTimeImmutable('now', $rsvTz))->format('Y-m-d\TH:i'),
         'retention'  => $rsvSettings->retentionDays,
         'captcha'    => $rsvCaptcha,
         'errors'     => $rsvFlash['errors'] ?? [],

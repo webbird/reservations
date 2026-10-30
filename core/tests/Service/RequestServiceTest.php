@@ -129,17 +129,17 @@ final class RequestServiceTest extends TestCase
         self::assertSame(1, $this->db->fetchInt('SELECT COUNT(*) FROM ' . $this->db->table('requests')));
     }
 
-    public function testArrivalTodayIsAllowedInDayMode(): void
+    public function testEarliestArrivalIsTomorrowInDayMode(): void
     {
-        $this->id($this->submit($this->flat, $this->range('2026-10-29', '2026-10-31')));
-        self::assertSame('request.too_early', $this->submit($this->flat, $this->range('2026-10-28', '2026-10-31'))->firstErrorKey());
+        self::assertSame('request.too_early', $this->submit($this->flat, $this->range('2026-10-29', '2026-10-31'))->firstErrorKey());
+        $this->id($this->submit($this->flat, $this->range('2026-10-30', '2026-11-01')));
     }
 
     public function testLeadTimes(): void
     {
-        // at least two days ahead (from 31 Oct on), at most 30 days (until 28 Nov 15:00)
-        self::assertSame('request.too_early', $this->submit($this->limited, $this->range('2026-10-30', '2026-11-02'))->firstErrorKey());
-        $this->id($this->submit($this->limited, $this->range('2026-10-31', '2026-11-02')));
+        // at least two days ahead (31 Oct 15:00, so from 1 Nov on), at most 30 days (until 28 Nov 15:00)
+        self::assertSame('request.too_early', $this->submit($this->limited, $this->range('2026-10-31', '2026-11-02'))->firstErrorKey());
+        $this->id($this->submit($this->limited, $this->range('2026-11-01', '2026-11-03')));
         $this->id($this->submit($this->limited, $this->range('2026-11-28', '2026-11-30')));
         self::assertSame('request.too_late', $this->submit($this->limited, $this->range('2026-11-29', '2026-12-01'))->firstErrorKey());
     }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Reservations\Core\Service;
 
 use DateInterval;
-use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\Request;
 use Reservations\Core\Domain\StatusRole;
 use Reservations\Core\Domain\TimeRange;
@@ -93,11 +92,8 @@ final class RequestService
         }
 
         $now = $this->clock->now();
+        // whole days start at midnight, so in day mode the earliest arrival is the day after now + lead time
         $earliest = $now->add(new DateInterval('PT' . $resource->leadMinMinutes . 'M'));
-        // whole days: arriving on the earliest day counts, whatever the time of day
-        if ($settings->bookingMode === BookingMode::Day) {
-            $earliest = $earliest->setTime(0, 0);
-        }
         if ($range->start < $earliest) {
             return Result::fail('request.too_early', [], 'range');
         }

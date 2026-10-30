@@ -1,0 +1,85 @@
+{#
+    reservations/twig/_request_form.twig – booking request form below the calendar
+    Errors come one at a time from request.php; the field concerned points to the message.
+#}
+{% set r = request %}
+{% set invalid = 'aria-invalid="true" aria-describedby="rsv-request-error-' ~ section_id ~ '"' %}
+<section class="rsv-request" id="rsv-request-{{ section_id }}" aria-labelledby="rsv-request-title-{{ section_id }}">
+    <h3 id="rsv-request-title-{{ section_id }}">{{ t('REQUEST_TITLE') }}</h3>
+
+    {% if r.errors %}
+        <div class="rsv-msg rsv-msg--error" id="rsv-request-error-{{ section_id }}" role="alert">
+            <ul>{% for message in r.errors %}<li>{{ message }}</li>{% endfor %}</ul>
+        </div>
+    {% elseif r.success %}
+        <div class="rsv-msg rsv-msg--success" role="status">{{ r.success }}</div>
+    {% endif %}
+
+    <form action="{{ r.action }}" method="post">
+        <input type="hidden" name="section_id" value="{{ section_id }}">
+        <input type="hidden" name="return" value="{{ r.return }}">
+        {{ r.ftan|raw }}
+        <p class="rsv-hint">{{ t('REQUIRED_HINT') }}</p>
+
+        {% if r.resources|length == 1 %}
+            <input type="hidden" name="resource_id" value="{{ r.resources[0].id }}">
+            <p>{{ t('RESOURCE') }}: <strong>{{ r.resources[0].title }}</strong></p>
+        {% else %}
+            <p>
+                <label for="rsv-req-resource-{{ section_id }}">{{ t('RESOURCE') }} <span aria-hidden="true">*</span></label>
+                <select id="rsv-req-resource-{{ section_id }}" name="resource_id" required{{ r.field == 'resource' ? (' ' ~ invalid)|raw }}>
+                    {% for res in r.resources %}
+                        <option value="{{ res.id }}"{% if res.id == r.old.resource_id %} selected{% endif %}>{{ res.title }}</option>
+                    {% endfor %}
+                </select>
+            </p>
+        {% endif %}
+
+        <div class="rsv-pair">
+            <p>
+                <label for="rsv-req-start-{{ section_id }}">{{ t(r.whole_days ? 'ARRIVAL' : 'START') }} <span aria-hidden="true">*</span></label>
+                <input id="rsv-req-start-{{ section_id }}" type="{{ r.whole_days ? 'date' : 'datetime-local' }}" name="start" value="{{ r.old.start }}" min="{{ r.min }}" required{{ r.field == 'range' ? (' ' ~ invalid)|raw }}>
+            </p>
+            <p>
+                <label for="rsv-req-end-{{ section_id }}">{{ t(r.whole_days ? 'DEPARTURE' : 'END') }} <span aria-hidden="true">*</span></label>
+                <input id="rsv-req-end-{{ section_id }}" type="{{ r.whole_days ? 'date' : 'datetime-local' }}" name="end" value="{{ r.old.end }}" min="{{ r.min }}" required>
+            </p>
+        </div>
+
+        <p>
+            <label for="rsv-req-name-{{ section_id }}">{{ t('NAME') }} <span aria-hidden="true">*</span></label>
+            <input id="rsv-req-name-{{ section_id }}" type="text" name="name" value="{{ r.old.name }}" maxlength="255" autocomplete="name" required{{ r.field == 'name' ? (' ' ~ invalid)|raw }}>
+        </p>
+        <p>
+            <label for="rsv-req-email-{{ section_id }}">{{ t('EMAIL') }} <span aria-hidden="true">*</span></label>
+            <input id="rsv-req-email-{{ section_id }}" type="email" name="email" value="{{ r.old.email }}" maxlength="255" autocomplete="email" required{{ r.field == 'email' ? (' ' ~ invalid)|raw }}>
+        </p>
+        <p>
+            <label for="rsv-req-phone-{{ section_id }}">{{ t('PHONE') }}</label>
+            <input id="rsv-req-phone-{{ section_id }}" type="tel" name="phone" value="{{ r.old.phone }}" maxlength="50" autocomplete="tel"{{ r.field == 'phone' ? (' ' ~ invalid)|raw }}>
+        </p>
+        <p>
+            <label for="rsv-req-persons-{{ section_id }}">{{ t('PERSONS') }}</label>
+            <input id="rsv-req-persons-{{ section_id }}" type="number" name="persons" value="{{ r.old.persons }}" min="1"{% if r.resources|length == 1 and r.resources[0].capacity %} max="{{ r.resources[0].capacity }}"{% endif %} inputmode="numeric"{{ r.field == 'persons' ? (' ' ~ invalid)|raw }}>
+        </p>
+        <p>
+            <label for="rsv-req-message-{{ section_id }}">{{ t('MESSAGE') }}</label>
+            <textarea id="rsv-req-message-{{ section_id }}" name="message" rows="4"{{ r.field == 'message' ? (' ' ~ invalid)|raw }}>{{ r.old.message }}</textarea>
+        </p>
+
+        {# trap for bots: hidden from people and assistive technology #}
+        <div class="rsv-hp" aria-hidden="true">
+            <label for="rsv-req-hp-{{ section_id }}">{{ t('HP_LABEL') }}</label>
+            <input id="rsv-req-hp-{{ section_id }}" type="text" name="rsv_hp" value="" tabindex="-1" autocomplete="off">
+        </div>
+
+        {% if r.captcha %}<div class="rsv-captcha">{{ r.captcha|raw }}</div>{% endif %}
+
+        <p class="rsv-check">
+            <input id="rsv-req-privacy-{{ section_id }}" type="checkbox" name="privacy" value="1"{% if r.old.privacy is defined and r.old.privacy %} checked{% endif %} required{{ r.field == 'privacy' ? (' ' ~ invalid)|raw }}>
+            <label for="rsv-req-privacy-{{ section_id }}">{{ t('REQUEST_PRIVACY', r.retention) }} <span aria-hidden="true">*</span></label>
+        </p>
+
+        <p><button type="submit">{{ t('REQUEST_SEND') }}</button></p>
+    </form>
+</section>

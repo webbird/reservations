@@ -139,7 +139,36 @@ $rsvVars = [
     ], array_values(array_filter(CalendarView::cases(), static fn (CalendarView $v): bool => $v->fits($rsvSettings->displayMode)))),
     'legend'        => $rsvLegend,
     'has_resources' => $rsvResources !== [],
+    'request'       => null,
 ];
+
+// booking request form below the calendar; request.php handles the post and redirects back
+if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
+    $rsvFlash = $_SESSION['mod_reservations_request'][$rsvSection] ?? [];
+    unset($_SESSION['mod_reservations_request'][$rsvSection]);
+    // request.php rejects forms sent less than two seconds after this
+    $_SESSION['mod_reservations_form_time'][$rsvSection] = time();
+    $rsvCaptcha = '';
+    if ($rsvSettings->captcha && ReservationsWbce::captchaAvailable()) {
+        ob_start();
+        call_captcha('all', '', 'rsv' . $rsvSection);
+        $rsvCaptcha = (string) ob_get_clean();
+    }
+    $rsvVars['request'] = [
+        'action'     => WB_URL . '/modules/reservations/request.php',
+        'return'     => (string) strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '#'),
+        'ftan'       => $GLOBALS['wb']->getFTAN(),
+        'resources'  => array_map(static fn ($r) => ['id' => $r->id, 'title' => $r->title, 'capacity' => $r->capacity], $rsvResources),
+        'whole_days' => $rsvWholeDays,
+        'min'        => (new DateTimeImmutable('today', $rsvTz))->format($rsvWholeDays ? 'Y-m-d' : 'Y-m-d\TH:i'),
+        'retention'  => $rsvSettings->retentionDays,
+        'captcha'    => $rsvCaptcha,
+        'errors'     => $rsvFlash['errors'] ?? [],
+        'field'      => $rsvFlash['field'] ?? null,
+        'success'    => $rsvFlash['success'] ?? null,
+        'old'        => $rsvFlash['old'] ?? [],
+    ];
+}
 
 // debug aid for admins: ?rsv_debug=1 prints the computed half days as an HTML comment
 if (isset($_GET['rsv_debug']) && isset($wb) && $wb->isAdmin()) {

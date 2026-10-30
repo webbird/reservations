@@ -13,6 +13,7 @@ use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Port\Clock;
 use Reservations\Core\Result\Result;
 use Reservations\Core\Service\BookingService;
+use Reservations\Core\Service\RequestService;
 use Reservations\Core\Service\ResourceService;
 use Reservations\Core\Service\SettingsService;
 use Reservations\Core\Service\StatusService;
@@ -20,6 +21,7 @@ use Reservations\Core\Service\TypeService;
 use Reservations\Core\Storage\Pdo\SettingsRepository;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
+use Reservations\Core\Storage\Pdo\RequestRepository;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
 use Reservations\Core\Storage\Pdo\StatusRepository;
 use Reservations\Core\Storage\Pdo\TypeRepository;
@@ -210,6 +212,19 @@ final class ReservationsWbce
     public static function bookingService(): BookingService
     {
         return new BookingService(self::db(), self::resources(), self::settings(),self::statuses(), self::bookings(), self::clock());
+    }
+
+    public static function requestService(): RequestService
+    {
+        return new RequestService(
+            self::bookingService(),
+            self::settings(),
+            self::resources(),
+            self::statuses(),
+            self::bookings(),
+            new RequestRepository(self::db()),
+            self::clock(),
+        );
     }
 
     /**

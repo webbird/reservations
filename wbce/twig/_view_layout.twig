@@ -1,6 +1,6 @@
 {#
     reservations/twig/_view_layout.twig – frame of all public views:
-    view switcher, period navigation, content, legend
+    view switcher, period navigation, content, legend, request form
 #}
 {# empty jump target: templates may hide or offset :target elements (sticky-nav trick) #}
 <span id="rsv-{{ section_id }}" class="rsv-anchor"></span>
@@ -30,6 +30,7 @@
                 {% endfor %}
             </ul>
         {% endif %}
+        {% if request %}{% include '_request_form.twig' %}{% endif %}
     {% else %}
         <p>{{ t('NO_RESOURCE') }}</p>
     {% endif %}

@@ -52,6 +52,7 @@ Erweiterung `intl`. Datenbank: MySQL/MariaDB oder SQLite (beides unterstützt WB
 | später | Bearbeiten im Frontend für angemeldete Benutzer |
 | später | Stückzahl pro Ressource („noch 2 von 3 Beamern frei“) |
 | später | Bestätigungslink für Anfragen (Double-Opt-in) |
+| später | **Text beim Bestätigen oder Ablehnen:** der Admin gibt einen eigenen Text für die Mail an die anfragende Person ein oder wählt einen hinterlegten **Textblock** (pro Abschnitt gepflegt, z. B. „Schlüsselübergabe“, „Zeitraum leider belegt“) und passt ihn an. Der Text stammt vom Admin, darf also in die Mail; nur Eingaben des Besuchers bleiben draußen (siehe Abschnitt 6) |
 | später | Weitere Sprachen (DA, FR, NL, NO, SK wie in v2) |
 | später | **Serienbuchungen** (z. B. feste Trainingszeiten wöchentlich) – Voraussetzung für Kontingente und Auto-Stornierung |
 | später | **Kapazität nach Personenzahl (PAX):** eine Buchung belegt so viele Einheiten, wie für die Personenzahl nötig sind (z. B. 2 Plätze für 30 Personen). Braucht Buchungen über mehrere Ressourcen; verwandt mit „Stückzahl“ |
@@ -179,14 +180,17 @@ Tabellennamen: Präfix des CMS + `mod_reservations_` in WBCE. Der Kern bekommt d
 | view | VARCHAR(50) | Darstellungsvariante (Ordner unter `views/`) |
 | plan_range | TINYINT | 1 oder 3 Monate |
 | show_labels | TINYINT(1) | öffentliche Beschriftungen anzeigen |
-| show_requests | TINYINT(1) | angefragte Zeiträume öffentlich zeigen |
-| requests_enabled | TINYINT(1) | Anfrageformular aktiv |
-| notify_email | VARCHAR(255) | Empfänger für Benachrichtigungen |
-| retention_days | SMALLINT | Kontaktdaten nach X Tagen löschen (Standard 90) |
+| requests_enabled | TINYINT(1) | Anfrageformular aktiv (Standard aus) |
+| notify_email | VARCHAR(255) | Empfänger für Benachrichtigungen über neue Anfragen; leer = keine Mail |
+| retention_days | SMALLINT | Kontaktdaten X Tage nach dem angefragten Zeitraum löschen (Standard 90, 1–3650) |
+| captcha | TINYINT(1) | Captcha (WBCE: captcha_control) im Anfrageformular; FTAN und Honeypot sind immer aktiv |
 | past_months / future_months | SMALLINT | Navigationsgrenzen |
 | resource_id | INT NULL | Objekt für die Einzelobjekt-Darstellung; leer = erstes aktives |
 | presentation_source | VARCHAR(100) NULL | Quelle der Objektbeschreibungen, z. B. `news_img:3` (News-Abschnitt; siehe Abschnitt 8) |
 | booking_mode | VARCHAR(20) | `day`, `period`, `appointment`; `appointment` erst ab 1.1 auswählbar |
+
+Ob angefragte Zeiträume öffentlich zu sehen sind, regelt die Sichtbarkeit des Status mit der
+Rolle „neue Anfrage“; die frühere Spalte `show_requests` ist mit 0.5.0 entfallen.
 
 Ein Abschnitt mischt keine Buchungsmodi. Wer Wohnungen und einen Raum anbietet, legt zwei
 Abschnitte auf die Seite. Der Modus lässt sich nur ändern, solange der Abschnitt keine
@@ -276,6 +280,20 @@ Keine Zeilen bedeutet: rund um die Uhr verfügbar.
 | privacy_accepted_at | DATETIME | |
 | created_at | DATETIME | |
 | purge_after | DATETIME | danach personenbezogene Felder leeren |
+
+**Ablauf einer Anfrage** (`RequestService`):
+- Prüfung: Anfragen im Abschnitt aktiv, Objekt aktiv, Name, E-Mail, Telefon, Personen
+  (höchstens die Kapazität), Nachricht, Einwilligung, Vorlauf und Höchstvorlauf. Ganze Tage
+  beginnen um Mitternacht; die früheste Anreise ist der Tag nach „jetzt + Vorlauf“.
+- Buchung und Anfrage entstehen in **einer Transaktion** (`BookingService::create()` mit
+  Rückruf), samt Prüfung auf Überschneidung. Status: Rolle „neue Anfrage“, bei
+  `auto_confirm` gleich „Anfrage bestätigt“.
+- Bestätigen und Ablehnen nur für Buchungen mit Anfrage; beim Bestätigen erneute Prüfung auf
+  Überschneidung.
+- `purge_after` = Ende des Zeitraums + `retention_days`, nach einer Ablehnung ab der
+  Ablehnung. Geleert wird bei jedem Aufruf des Backends und des Anfrage-Endpunkts (WBCE hat
+  keinen Cron); die Buchung bleibt.
+- Beim Löschen einer Buchung wird ihre Anfrage mitgelöscht.
 
 ### Ab 1.1: services, service_resources
 `services` (service_id, section_id, title, duration_minutes, buffer_after, active, position)
@@ -372,8 +390,18 @@ Es gelten die Konventionen aus news_img:
   `escapeString()` (in WBCE 1.7 ohnehin veraltet). Tabellennamen kommen nur aus dem
   Präfix und festen Namen im Kern, nie aus Benutzereingaben.
 - Jede Ausgabe mit `htmlspecialchars(…, ENT_QUOTES)`
-- Anfrageformular: Honeypot, Zeitprüfung (Mindestdauer bis zum Absenden), Ratenbegrenzung
-  pro Sitzung, serverseitige Prüfung auf Verfügbarkeit (dem Browser wird nicht geglaubt)
+- Anfrageformular (WBCE: eigener Endpunkt `request.php`, danach Rücksprung zur Seite):
+  - immer: FTAN, Honeypot, mindestens 2 Sekunden zwischen Anzeige und Absenden
+  - optional je Abschnitt: Captcha aus captcha_control
+  - serverseitige Prüfung auf Verfügbarkeit (dem Browser wird nicht geglaubt); bei einer
+    Überschneidung nennt die Meldung keine Termine, sie könnten zu verborgenen Anfragen gehören
+  - Rücksprung nur auf Pfade unterhalb von `WB_URL`, der Host kommt immer aus `WB_URL`
+  - noch nicht umgesetzt: Ratenbegrenzung pro Sitzung
+- Mails ohne Double-Opt-in: Wer eine fremde Adresse einträgt, löst eine Mail an sie aus.
+  Mails an die anfragende Person enthalten deshalb nur festen Text, Objekt und Zeitraum,
+  nichts vom Besucher Eingegebenes. Alle Angaben gehen nur an die Benachrichtigungsadresse.
+  Sprache der Mails ist die der Seite. Ein gescheiterter Versand wird ohne Adresse
+  protokolliert, die Anfrage bleibt.
 - Beachten: `print_error()` beendet das Skript, `print_success()` nicht
 
 ---
@@ -462,12 +490,12 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 ---
 
 ## 10. Offene Punkte
-- Sollen Anfragen ohne Bestätigungslink den Zeitraum sofort blockieren, oder erst nach der
-  Bestätigung per Mail (Double-Opt-in)? 1.0 sieht Ersteres vor; mit konfigurierbaren Status
-  lässt sich das ohnehin über „blockiert“ beim Status „angefragt“ abschalten.
-- Welche Buchungen zählt die Spalte „Buchungen“ in der Objektliste des Backends? Derzeit alle
-  (auch vergangene, stornierte, abgelehnte). Tendenz: nur laufende (heute liegt zwischen
-  Beginn und Ende) und zukünftige. Entscheidung später.
+- Ratenbegrenzung für das Anfrageformular (siehe Abschnitt 6).
+- Mailversand im Zusammenspiel mit einem echten Mailserver testen (Eingang, sofort bestätigt,
+  Bestätigung, Ablehnung, Benachrichtigung).
+- Upgrade: Neue Spalten legt `upgrade.php` an (`Schema::install()`). Wer nur Dateien austauscht
+  und kein Modul-Upgrade auslöst, bekommt im Frontend einen Fehler, bis das Backend des
+  Abschnitts einmal geöffnet wurde. In die Upgrade-Anleitung aufnehmen.
 
 ### Erledigt
 - Objekttypen und Status: **pro Abschnitt**.
@@ -482,4 +510,7 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 - Belegungsplan über 3 Monate: drei Monatstabellen untereinander statt einer breiten Tabelle.
 - Wochenansicht mit Stundenraster (Objekte mit Uhrzeiten): eigener Schritt nach der Darstellung; bis dahin zeigt der Plan solche Objekte als Vormittag/Nachmittag.
 - Gemischte Buchungsmodi in einem Abschnitt: **nein**. Der Modus gehört zum Abschnitt (`settings.booking_mode`); für einen anderen Modus einen zweiten Abschnitt anlegen.
+- Anfragen ohne Bestätigungslink blockieren den Zeitraum **sofort** (Double-Opt-in später); abschaltbar über „blockiert“ beim Status mit der Rolle „neue Anfrage“.
+- Spamschutz: FTAN und Honeypot immer, Captcha je Abschnitt wählbar.
+- Objektliste im Backend: Spalten „Aktuelle Buchungen“ (laufende und künftige mit blockierendem Status, ohne offene Anfragen) und „Offene Anfragen“ (Rolle „neue Anfrage“); vergangene, stornierte und abgelehnte zählen nicht.
 - Objektbeschreibungen in WBCE: **1:1** ein news_img-Abschnitt je Reservations-Abschnitt (`settings.presentation_source`), Zuordnung je Objekt über `resources.presentation_ref`; Port `PresentationProvider` erst mit Catamaran, Vorschaubild vorerst nicht.

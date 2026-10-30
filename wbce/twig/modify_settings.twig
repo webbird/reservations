@@ -98,6 +98,31 @@
                 </p>
             {% endif %}
 
+            <fieldset class="rsv-choice">
+                <legend>{{ t('REQUESTS') }}</legend>
+                <p>
+                    <input id="rsv-requests-{{ section_id }}" type="checkbox" name="requests_enabled" value="1"{% if form.requests_enabled %} checked{% endif %}>
+                    <label for="rsv-requests-{{ section_id }}">{{ t('REQUESTS_ENABLED') }}</label>
+                </p>
+                <p>
+                    <label for="rsv-notify-{{ section_id }}">{{ t('NOTIFY_EMAIL') }}</label>
+                    <input id="rsv-notify-{{ section_id }}" type="email" name="notify_email" value="{{ form.notify_email }}" maxlength="255" autocomplete="email" aria-describedby="rsv-notify-hint-{{ section_id }}">
+                    <small id="rsv-notify-hint-{{ section_id }}">{{ t('NOTIFY_EMAIL_HINT') }}</small>
+                </p>
+                <p>
+                    <label for="rsv-retention-{{ section_id }}">{{ t('RETENTION_DAYS') }}</label>
+                    <input id="rsv-retention-{{ section_id }}" type="number" name="retention_days" value="{{ form.retention_days }}" min="1" max="{{ retention_max }}" required aria-describedby="rsv-retention-hint-{{ section_id }}">
+                    <small id="rsv-retention-hint-{{ section_id }}">{{ t('RETENTION_DAYS_HINT') }}</small>
+                </p>
+                {% if captcha_available %}
+                    <p>
+                        <input id="rsv-captcha-{{ section_id }}" type="checkbox" name="captcha" value="1"{% if form.captcha %} checked{% endif %} aria-describedby="rsv-captcha-hint-{{ section_id }}">
+                        <label for="rsv-captcha-{{ section_id }}">{{ t('USE_CAPTCHA') }}</label>
+                        <small id="rsv-captcha-hint-{{ section_id }}">{{ t('USE_CAPTCHA_HINT') }}</small>
+                    </p>
+                {% endif %}
+            </fieldset>
+
             <p class="rsv-buttons">
                 <button type="submit" class="button ico-save">{{ L_('TEXT:SAVE') }}</button>
                 <a href="{{ url_list }}">{{ L_('TEXT:CANCEL') }}</a>

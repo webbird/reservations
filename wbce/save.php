@@ -141,6 +141,11 @@ switch ($post('rsv_action')) {
             'future_months' => (int) $post('future_months'),
             'booking_mode'  => $post('booking_mode'),
             'news_section'  => (int) $post('news_section'),
+            'requests_enabled' => $post('requests_enabled') === '1',
+            'notify_email'  => trim($post('notify_email')),
+            'retention_days' => (int) $post('retention_days'),
+            // without captcha_control the form has no captcha field; never switch on what cannot run
+            'captcha'       => $post('captcha') === '1' && ReservationsWbce::captchaAvailable(),
         ];
         $mode = DisplayMode::tryFrom($old['display_mode']);
         $view = CalendarView::tryFrom($old['default_view']);
@@ -161,6 +166,10 @@ switch ($post('rsv_action')) {
             resourceId: $old['resource_id'] > 0 ? $old['resource_id'] : null,
             bookingMode: $bookingMode,
             presentationSource: $old['news_section'] > 0 ? ReservationsNewsImg::PREFIX . $old['news_section'] : null,
+            requestsEnabled: $old['requests_enabled'],
+            notifyEmail: $old['notify_email'],
+            retentionDays: $old['retention_days'],
+            captcha: $old['captcha'],
         ));
         $finish($result, $result->ok ? [] : ['rsv_settings' => 1], $old, ReservationsWbce::t('MSG_SETTINGS_SAVED'));
 

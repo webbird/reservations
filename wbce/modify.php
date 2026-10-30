@@ -47,13 +47,19 @@ if ($rsvParam('rsv_settings') === 1) {
         'future_months' => $rsvSettings->futureMonths,
         'booking_mode'  => $rsvSettings->bookingMode->value,
         'news_section'  => ReservationsNewsImg::idOf($rsvSettings->presentationSource) ?? 0,
+        'requests_enabled' => $rsvSettings->requestsEnabled,
+        'notify_email'  => $rsvSettings->notifyEmail,
+        'retention_days' => $rsvSettings->retentionDays,
+        'captcha'       => $rsvSettings->captcha,
     ];
     ReservationsWbce::twig()->display('modify_settings.twig', $rsvVars + [
         'form'      => $rsvForm,
         'resources' => array_map(static fn ($r) => ['id' => $r->id, 'title' => $r->title], ReservationsWbce::resources()->listBySection($rsvSection)),
         'first'     => $rsvActive[0]->title ?? null,
         'months_max' => Reservations\Core\Service\SettingsService::MONTHS_MAX,
+        'retention_max' => Reservations\Core\Service\SettingsService::RETENTION_MAX,
         'news_sections' => ReservationsNewsImg::sections(),
+        'captcha_available' => ReservationsWbce::captchaAvailable(),
     ]);
     return;
 }

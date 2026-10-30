@@ -268,6 +268,14 @@ final class ReservationsWbce
     }
 
     /**
+     * The captcha of the module captcha_control (ALTCHA, without HTTPS a math task).
+     */
+    public static function captchaAvailable(): bool
+    {
+        return is_file(WB_PATH . '/modules/captcha_control/Captcha.php');
+    }
+
+    /**
      * The news_img section that holds the object descriptions, or null.
      */
     public static function newsSection(int $sectionId): ?int

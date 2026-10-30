@@ -20,7 +20,7 @@
         {% for b in bookings %}
             <tr{% if b.past %} class="rsv-past"{% endif %}>
                 <th scope="row">{{ b.range }}</th>
-                <td><span class="rsv-badge" style="background:{{ b.color }};color:{{ b.text_color }}">{{ b.status }}</span></td>
+                <td><span class="rsv-badge" style="background:{{ b.color }};color:{{ b.text_color }}">{{ b.status }}</span>{% if b.request %} <small>{{ t('FROM_REQUEST') }}</small>{% endif %}</td>
                 <td>{{ b.label }}</td>
                 <td>{{ b.note|length > 80 ? b.note|slice(0, 80) ~ '…' : b.note }}</td>
                 <td class="rsv-actions">
@@ -41,6 +41,41 @@
         {% endfor %}
         </tbody>
     </table>
+
+    {% if contact %}
+        <section class="rsv-contact" aria-labelledby="rsv-contact-title-{{ section_id }}">
+            <h3 id="rsv-contact-title-{{ section_id }}">{{ t('REQUEST_DATA') }}</h3>
+            {% if contact.purged %}
+                <p>{{ t('CONTACT_PURGED') }}</p>
+            {% else %}
+                <dl>
+                    <dt>{{ t('RECEIVED_AT') }}</dt><dd>{{ contact.created }}</dd>
+                    <dt>{{ t('NAME') }}</dt><dd>{{ contact.name }}</dd>
+                    <dt>{{ t('EMAIL') }}</dt><dd><a href="mailto:{{ contact.email }}">{{ contact.email }}</a></dd>
+                    {% if contact.phone %}<dt>{{ t('PHONE') }}</dt><dd>{{ contact.phone }}</dd>{% endif %}
+                    {% if contact.persons %}<dt>{{ t('PERSONS') }}</dt><dd>{{ contact.persons }}</dd>{% endif %}
+                    {% if contact.message %}<dt>{{ t('MESSAGE') }}</dt><dd>{{ contact.message|nl2br }}</dd>{% endif %}
+                    <dt>{{ t('CONTACT_PURGE_AFTER') }}</dt><dd>{{ contact.purge_after }}</dd>
+                </dl>
+            {% endif %}
+            {% if contact.open %}
+                <div class="rsv-buttons">
+                    {% for decision in ['confirm', 'reject'] %}
+                        <form action="{{ action }}" method="post" class="rsv-inline"{% if decision == 'reject' %} onsubmit="return confirm('{{ t('CONFIRM_REJECT')|e('js') }}')"{% endif %}>
+                            <input type="hidden" name="page_id" value="{{ page_id }}">
+                            <input type="hidden" name="section_id" value="{{ section_id }}">
+                            <input type="hidden" name="rsv_action" value="request_{{ decision }}">
+                            <input type="hidden" name="resource_id" value="{{ resource.id }}">
+                            <input type="hidden" name="booking_id" value="{{ form.booking_id }}">
+                            {{ FTAN|raw }}
+                            <button type="submit" class="button">{{ t('REQUEST_' ~ decision|upper) }}</button>
+                        </form>
+                    {% endfor %}
+                </div>
+                <p><small>{{ t('DECISION_HINT') }}</small></p>
+            {% endif %}
+        </section>
+    {% endif %}
 
     <form class="rsv-form" action="{{ action }}" method="post">
         <input type="hidden" name="page_id" value="{{ page_id }}">

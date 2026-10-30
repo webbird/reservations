@@ -15,6 +15,8 @@ require_once __DIR__ . '/bootstrap.php';
 $rsvSection = (int) $section_id;
 $rsvPage = (int) $page_id;
 ReservationsWbce::ensureSection($rsvSection, $rsvPage);
+// WBCE has no cron; expired contact data of requests is emptied on backend and request calls
+ReservationsWbce::requestService()->purgeExpired();
 // URL parameters only count for the section they were meant for
 $rsvParam = static fn (string $name): int => (int) ($_GET['rsv_section'] ?? 0) === $rsvSection ? (int) ($_GET[$name] ?? 0) : 0;
 $rsvFlash = ReservationsWbce::takeFlash($rsvSection);
@@ -144,6 +146,8 @@ if ($rsvResource !== null) {
     }
 
     $rsvToday = new DateTimeImmutable('today', ReservationsWbce::timezone());
+    $rsvRequests = new Reservations\Core\Storage\Pdo\RequestRepository(ReservationsWbce::db());
+    $rsvRequestIds = array_flip($rsvRequests->bookingIds($rsvSection));
     $rsvRows = [];
     // no upper limit: a booking typed with a wrong year must stay visible and deletable
     $rsvWindow = new Reservations\Core\Domain\TimeRange($rsvToday->modify('-12 months'), $rsvToday->modify('+100 years'));
@@ -158,11 +162,29 @@ if ($rsvResource !== null) {
             'text_color' => Reservations\Core\Support\Color::contrastText($rsvStatus?->color ?? '#888780'),
             'label'      => $rsvBooking->label,
             'note'       => $rsvBooking->note,
+            'request'    => isset($rsvRequestIds[$rsvBooking->id]),
             'url_edit'   => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_bookings' => (int) $rsvResource->id, 'rsv_booking' => (int) $rsvBooking->id]),
         ];
     }
 
     $rsvEdit = ReservationsWbce::bookings()->find($rsvSection, $rsvParam('rsv_booking'));
+    // contact data of a booking that came in as request; decisions only while it is open
+    $rsvRequest = $rsvEdit === null ? null : $rsvRequests->findByBooking($rsvSection, (int) $rsvEdit->id);
+    $rsvContact = null;
+    if ($rsvRequest !== null && $rsvEdit !== null) {
+        $rsvDate = static fn (?DateTimeImmutable $d): string => $d === null ? '' : $d->format(DATE_FORMAT . ' ' . TIME_FORMAT);
+        $rsvContact = [
+            'name'        => $rsvRequest->name,
+            'email'       => $rsvRequest->email,
+            'phone'       => $rsvRequest->phone,
+            'persons'     => $rsvRequest->persons,
+            'message'     => $rsvRequest->message,
+            'created'     => $rsvDate($rsvRequest->createdAt),
+            'purge_after' => $rsvDate($rsvRequest->purgeAfter),
+            'purged'      => $rsvRequest->email === '',
+            'open'        => ($rsvStatuses[$rsvEdit->statusId]->role ?? null) === Reservations\Core\Domain\StatusRole::RequestNew,
+        ];
+    }
     $rsvDefaultStatus = ReservationsWbce::statuses()->findByRole($rsvSection, Reservations\Core\Domain\StatusRole::RequestConfirmed);
     $rsvForm = $rsvOld ?? ($rsvEdit !== null
         ? [
@@ -188,6 +210,7 @@ if ($rsvResource !== null) {
         'bookings'   => $rsvRows,
         'statuses'   => array_map(static fn ($s) => ['id' => $s->id, 'title' => $s->title], array_values(array_filter($rsvStatuses, static fn ($s) => $s->active))),
         'form'       => $rsvForm,
+        'contact'    => $rsvContact,
         'url_new'    => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_bookings' => (int) $rsvResource->id]),
     ]);
     return;

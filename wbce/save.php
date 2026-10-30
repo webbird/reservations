@@ -221,6 +221,18 @@ switch ($post('rsv_action')) {
         ReservationsWbce::bookings()->delete($sectionId, (int) $post('booking_id'));
         $finish(Result::ok(), ['rsv_bookings' => $resourceId], [], ReservationsWbce::t('MSG_BOOKING_DELETED'));
 
+    case 'request_confirm':
+    case 'request_reject':
+        $resourceId = (int) $post('resource_id');
+        $bookingId = (int) $post('booking_id');
+        $confirm = $post('rsv_action') === 'request_confirm';
+        $service = ReservationsWbce::requestService();
+        $result = $confirm ? $service->confirm($sectionId, $bookingId, $userId) : $service->reject($sectionId, $bookingId, $userId);
+        // the decision stands even if the mail fails; the admin is told to contact the person
+        $mailed = $result->ok && ReservationsWbce::requestMails($sectionId, $bookingId, $confirm ? 'confirmed' : 'rejected');
+        $message = ReservationsWbce::t($confirm ? 'MSG_REQUEST_CONFIRMED' : 'MSG_REQUEST_REJECTED') . ($mailed ? '' : ' ' . ReservationsWbce::t('MSG_MAIL_FAILED'));
+        $finish($result, ['rsv_bookings' => $resourceId, 'rsv_booking' => $bookingId], [], $message);
+
     default:
         header('Location: ' . ReservationsWbce::modifyUrl($pageId, $sectionId));
         exit;

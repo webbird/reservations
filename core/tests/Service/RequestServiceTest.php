@@ -112,6 +112,8 @@ final class RequestServiceTest extends TestCase
         self::assertEquals(new DateTimeImmutable('2026-12-06 00:00', $this->tz), $request->purgeAfter);
         // not visible through another section
         self::assertNull($this->requests->findByBooking(2, $id));
+        self::assertSame([$id], $this->requests->bookingIds(1));
+        self::assertSame([], $this->requests->bookingIds(2));
     }
 
     public function testAutoConfirmBooksDirectly(): void

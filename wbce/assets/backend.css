@@ -55,3 +55,9 @@
 .mod_reservations:not(#rsv):not(#rsv) .rsv-form label[for^="rsv-labels"],
 .mod_reservations:not(#rsv):not(#rsv) .rsv-form label[for^="rsv-blocks"] { display: inline; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-form input[type="number"] { width: 6em; }
+
+/* contact data of a request */
+.mod_reservations:not(#rsv):not(#rsv) .rsv-contact { margin: 1.5em 0; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-contact dl { display: grid; grid-template-columns: max-content 1fr; gap: .3em 1.5em; margin: 0 0 1em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-contact dt { font-weight: bold; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-contact dd { margin: 0; }

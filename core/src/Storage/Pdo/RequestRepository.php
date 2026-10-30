@@ -60,6 +60,22 @@ final class RequestRepository
         );
     }
 
+    /**
+     * Ids of the section's bookings that came in as requests, for marking them in lists.
+     *
+     * @return list<int>
+     */
+    public function bookingIds(int $sectionId): array
+    {
+        $rows = $this->db->fetchAll(
+            'SELECT r.booking_id FROM ' . $this->db->table(self::TABLE) . ' r'
+            . ' JOIN ' . $this->db->table('bookings') . ' b ON b.booking_id = r.booking_id'
+            . ' WHERE b.section_id = ?',
+            [$sectionId],
+        );
+        return array_map(static fn (array $row): int => Row::int($row, 'booking_id'), $rows);
+    }
+
     public function setPurgeAfter(int $bookingId, DateTimeImmutable $when): void
     {
         $this->db->update(self::TABLE, ['purge_after' => $when], ['booking_id' => $bookingId]);

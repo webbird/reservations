@@ -184,6 +184,8 @@ return [
             'REQUEST_PRIVACY'      => 'I agree that my details are stored to handle this request. They are deleted %d days after the requested period.',
             'REQUEST_SEND'         => 'Send request',
             'REQUEST_ANOTHER'      => 'Send another request',
+            'HOURS_PUBLIC'         => 'Start and end must lie within the opening hours:',
+            'HOURS_CLOSED_OTHERS'  => 'Closed on the other days.',
             'MSG_REQUEST_SENT'     => 'Thank you, your request has been sent. We will get back to you.',
             'MSG_REQUEST_BOOKED'   => 'Thank you, your booking is confirmed.',
 
@@ -472,6 +474,8 @@ return [
             'REQUEST_PRIVACY'      => 'Ich bin einverstanden, dass meine Angaben zur Bearbeitung dieser Anfrage gespeichert werden. Sie werden %d Tage nach dem angefragten Zeitraum gelöscht.',
             'REQUEST_SEND'         => 'Anfrage senden',
             'REQUEST_ANOTHER'      => 'Weitere Anfrage senden',
+            'HOURS_PUBLIC'         => 'Beginn und Ende müssen in den Öffnungszeiten liegen:',
+            'HOURS_CLOSED_OTHERS'  => 'An den übrigen Tagen geschlossen.',
             'MSG_REQUEST_SENT'     => 'Vielen Dank, Ihre Anfrage wurde gesendet. Wir melden uns bei Ihnen.',
             'MSG_REQUEST_BOOKED'   => 'Vielen Dank, Ihre Buchung ist bestätigt.',
 

@@ -45,13 +45,20 @@
         <div class="rsv-pair">
             <p>
                 <label for="rsv-req-start-{{ section_id }}">{{ t(r.whole_days ? 'ARRIVAL' : 'START') }} <span aria-hidden="true">*</span></label>
-                <input id="rsv-req-start-{{ section_id }}" type="{{ r.whole_days ? 'date' : 'datetime-local' }}" name="start" value="{{ r.old.start }}" min="{{ r.min }}" required{{ r.field == 'range' ? (' ' ~ invalid)|raw }}>
+                <input id="rsv-req-start-{{ section_id }}" type="{{ r.whole_days ? 'date' : 'datetime-local' }}" name="start" value="{{ r.old.start }}" min="{{ r.min }}" max="{{ r.max }}"{% if r.step %} step="{{ r.step }}"{% endif %} required{{ r.field == 'range' ? (' ' ~ invalid)|raw }}>
             </p>
             <p>
                 <label for="rsv-req-end-{{ section_id }}">{{ t(r.whole_days ? 'DEPARTURE' : 'END') }}{% if one.duration_note %} ({{ one.duration_note }}){% endif %} <span aria-hidden="true">*</span></label>
-                <input id="rsv-req-end-{{ section_id }}" type="{{ r.whole_days ? 'date' : 'datetime-local' }}" name="end" value="{{ r.old.end }}" min="{{ r.min }}" required>
+                <input id="rsv-req-end-{{ section_id }}" type="{{ r.whole_days ? 'date' : 'datetime-local' }}" name="end" value="{{ r.old.end }}" min="{{ r.min }}"{% if r.step %} step="{{ r.step }}"{% endif %} required>
             </p>
         </div>
+        {% if r.hours %}
+            <div class="rsv-hours">
+                <p class="rsv-hint">{{ t('HOURS_PUBLIC') }}</p>
+                <ul>{% for h in r.hours %}<li>{{ h.day }}: {{ h.times }}</li>{% endfor %}</ul>
+                {% if r.closed_days %}<p class="rsv-hint">{{ t('HOURS_CLOSED_OTHERS') }}</p>{% endif %}
+            </div>
+        {% endif %}
 
         <p>
             <label for="rsv-req-name-{{ section_id }}">{{ t('NAME') }} <span aria-hidden="true">*</span></label>

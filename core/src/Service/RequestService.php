@@ -9,6 +9,7 @@ use DateTimeImmutable;
 use Reservations\Core\Domain\BookableResource;
 use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\Request;
+use Reservations\Core\Domain\Settings;
 use Reservations\Core\Domain\StatusRole;
 use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Port\Clock;
@@ -118,12 +119,9 @@ final class RequestService
         if ($range->start < $this->earliestStart($resource, $wholeDays)) {
             return Result::fail('request.too_early', [], 'range');
         }
-        // without limits of its own an object takes the calendar window (up to the end of the last
-        // month visitors can browse to), so a single request cannot block it for decades
         $today = $now->setTime(0, 0);
-        $horizon = $today->setDate((int) $today->format('Y'), (int) $today->format('n') + $settings->futureMonths + 1, 1);
-        $latest = $resource->leadMaxDays !== null ? $now->add(new DateInterval('P' . $resource->leadMaxDays . 'D')) : $horizon;
-        if ($range->start > $latest) {
+        $horizon = $this->horizon($settings);
+        if ($range->start > $this->latestStart($resource, $settings)) {
             return Result::fail('request.too_late', ['max' => $resource->leadMaxDays ?? $today->diff($horizon)->days], 'range');
         }
         // nights in day mode (both ends at midnight, so days of the difference), minutes in period mode
@@ -204,6 +202,27 @@ final class RequestService
             $start = $start->add($slot);
         }
         return $start;
+    }
+
+    /**
+     * The latest start a request may have: the maximum advance of the object,
+     * without one the calendar window.
+     */
+    public function latestStart(BookableResource $resource, Settings $settings): DateTimeImmutable
+    {
+        return $resource->leadMaxDays !== null
+            ? $this->clock->now()->add(new DateInterval('P' . $resource->leadMaxDays . 'D'))
+            : $this->horizon($settings);
+    }
+
+    /**
+     * The end of the last month visitors can browse to. It bounds objects without
+     * limits of their own, so a single request cannot block one for decades.
+     */
+    private function horizon(Settings $settings): DateTimeImmutable
+    {
+        $today = $this->clock->now()->setTime(0, 0);
+        return $today->setDate((int) $today->format('Y'), (int) $today->format('n') + $settings->futureMonths + 1, 1);
     }
 
     /**

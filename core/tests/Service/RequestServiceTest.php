@@ -161,6 +161,13 @@ final class RequestServiceTest extends TestCase
         self::assertNotNull($limited);
         self::assertEquals(new DateTimeImmutable('2026-10-31 00:00', $this->tz), $this->service->earliestStart($limited, true));
         self::assertEquals(new DateTimeImmutable('2026-10-31 15:00', $this->tz), $this->service->earliestStart($limited, false));
+        // and the same upper limit: the maximum advance, without one the calendar window
+        $settings = (new SettingsRepository($this->db))->find(1);
+        $flat = $this->resources->find(1, $this->flat);
+        self::assertNotNull($settings);
+        self::assertNotNull($flat);
+        self::assertEquals(new DateTimeImmutable('2026-11-28 15:00', $this->tz), $this->service->latestStart($limited, $settings));
+        self::assertEquals(new DateTimeImmutable('2028-11-01 00:00', $this->tz), $this->service->latestStart($flat, $settings));
     }
 
     public function testValidation(): void

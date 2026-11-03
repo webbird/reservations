@@ -17,6 +17,7 @@ use Reservations\Core\Calendar\Occupancy;
 use Reservations\Core\Domain\Booking;
 use Reservations\Core\Domain\CalendarView;
 use Reservations\Core\Domain\DisplayMode;
+use Reservations\Core\Domain\OpeningHours;
 use Reservations\Core\Domain\Settings;
 use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Domain\Visibility;
@@ -169,6 +170,18 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
         return $unit === '' ? $text : $text . ' ' . ReservationsWbce::t($unit . (($min ?? $max) === 1 && ($min === null || $max === null) ? '' : 'S'));
     };
     $rsvRequests = ReservationsWbce::requestService();
+    // opening hours of a single object in period mode, e.g. "Monday: 09:00–12:00, 13:00–17:00"
+    $rsvHours = [];
+    if (!$rsvWholeDays && count($rsvResources) === 1) {
+        $rsvDayName = $rsvFmt('EEEE');
+        foreach (ReservationsWbce::hours()->find($rsvSection, (int) $rsvResources[0]->id)->days as $rsvDay => $rsvIntervals) {
+            // 5 January 2026 is a Monday
+            $rsvHours[] = ['day' => $rsvDayName->format(new DateTimeImmutable(sprintf('2026-01-%02d', 4 + $rsvDay), $rsvTz)), 'times' => OpeningHours::formatDay($rsvIntervals)];
+        }
+    }
+    // the grid only fits the date picker if all objects share it
+    $rsvSlots = array_unique(array_map(static fn ($r) => $r->slotMinutes, $rsvResources));
+    $rsvFormat = $rsvWholeDays ? 'Y-m-d' : 'Y-m-d\TH:i';
     $rsvVars['request'] = [
         'action'     => WB_URL . '/modules/reservations/request.php',
         'return'     => (string) strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '#'),
@@ -183,9 +196,12 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
             'duration_note' => $rsvLimit($r->minDuration, $r->maxDuration, $rsvWholeDays ? 'UNIT_NIGHT' : 'UNIT_MINUTE'),
         ], $rsvResources),
         'whole_days' => $rsvWholeDays,
-        // only a hint for the date picker: the earliest start of any of the objects
-        'min'        => min(array_map(static fn ($r) => $rsvRequests->earliestStart($r, $rsvWholeDays), $rsvResources))
-            ->format($rsvWholeDays ? 'Y-m-d' : 'Y-m-d\TH:i'),
+        // only hints for the date picker, request.php checks again: the widest range of all objects
+        'min'        => min(array_map(static fn ($r) => $rsvRequests->earliestStart($r, $rsvWholeDays), $rsvResources))->format($rsvFormat),
+        'max'        => max(array_map(static fn ($r) => $rsvRequests->latestStart($r, $rsvSettings), $rsvResources))->format($rsvFormat),
+        'step'       => !$rsvWholeDays && count($rsvSlots) === 1 ? reset($rsvSlots) * 60 : null,
+        'hours'      => $rsvHours,
+        'closed_days' => $rsvHours !== [] && count($rsvHours) < 7,
         'retention'  => $rsvSettings->retentionDays,
         'captcha'    => $rsvCaptcha,
         'errors'     => $rsvFlash['errors'] ?? [],

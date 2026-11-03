@@ -67,6 +67,23 @@ final class OpeningHoursTest extends TestCase
         self::assertFalse($hours->allowsStart($this->at('2026-10-25 04:00')));
     }
 
+    public function testDayAsText(): void
+    {
+        self::assertSame([[540, 720], [780, 1020]], OpeningHours::parseDay('09:00–12:00, 13:00–17:00'));
+        self::assertSame([[540, 720], [1080, 1440]], OpeningHours::parseDay(' 9-12 ; 18:00 - 24 '));
+        self::assertSame([], OpeningHours::parseDay(''));
+        self::assertSame([], OpeningHours::parseDay(' , '));
+        foreach (['9', '09:00', 'ab 9', '9:60-12', '09:00-12:00 13:00-17:00', '9.30-12'] as $text) {
+            self::assertNull(OpeningHours::parseDay($text), $text);
+        }
+        // ranges are left to problem()
+        self::assertSame([[1500, 1560]], OpeningHours::parseDay('25-26'));
+
+        self::assertSame('09:00–12:00, 13:00–17:00', OpeningHours::formatDay([[540, 720], [780, 1020]]));
+        self::assertSame('18:00–24:00', OpeningHours::formatDay([[1080, 1440]]));
+        self::assertSame('', OpeningHours::formatDay([]));
+    }
+
     public function testProblems(): void
     {
         self::assertNull((new OpeningHours([1 => [[540, 720], [720, 1020]]]))->problem(), 'touching intervals are fine');

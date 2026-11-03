@@ -1,9 +1,9 @@
 {#
     reservations/twig/_booking_rules.twig – booking rules of an object, or the defaults of a type
-    Expects: rules (form values), whole_days, id (prefix for element ids);
+    Expects: rules (form values), whole_days, slot_choices, id (prefix for element ids);
     optional: legend and note (language keys) for the defaults of a type
     Units: lead time in days (day mode) or hours, durations in nights or minutes,
-    buffers only in period mode.
+    grid and buffers only in period mode.
 #}
 <fieldset aria-describedby="{{ id }}-rules-hint">
     <legend>{{ t(legend ?? 'BOOKING_RULES') }}</legend>
@@ -21,6 +21,17 @@
         <label for="{{ id }}-auto-confirm">{{ t('AUTO_CONFIRM') }}</label>
         <small id="{{ id }}-auto-confirm-hint">{{ t('AUTO_CONFIRM_HINT') }}</small>
     </p>
+    {% if not whole_days %}
+        <p>
+            <label for="{{ id }}-slot">{{ t('SLOT_MINUTES') }}</label>
+            <select id="{{ id }}-slot" name="slot_minutes" aria-describedby="{{ id }}-slot-hint">
+                {% for minutes in slot_choices %}
+                    <option value="{{ minutes }}"{% if minutes == rules.slot_minutes %} selected{% endif %}>{{ minutes }}</option>
+                {% endfor %}
+            </select>
+            <small id="{{ id }}-slot-hint">{{ t('SLOT_MINUTES_HINT') }}</small>
+        </p>
+    {% endif %}
     <p>
         <label for="{{ id }}-lead-min">{{ t(whole_days ? 'LEAD_MIN_DAYS' : 'LEAD_MIN_HOURS') }}</label>
         <input id="{{ id }}-lead-min" type="number" name="lead_min" value="{{ rules.lead_min }}" min="0" inputmode="numeric" aria-describedby="{{ id }}-lead-min-hint">

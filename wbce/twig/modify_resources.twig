@@ -82,6 +82,20 @@
             {# new objects take the defaults of their type #}
             {% if form.resource_id %}
                 {% include '_booking_rules.twig' with {rules: form, id: 'rsv-rules-' ~ section_id} %}
+                {% if not whole_days %}
+                    {# one text field per weekday: easier to fill in and to read aloud than 14 time inputs #}
+                    <fieldset aria-describedby="rsv-hours-hint-{{ section_id }}">
+                        <legend>{{ t('HOURS') }}</legend>
+                        <small id="rsv-hours-hint-{{ section_id }}">{{ t('HOURS_HINT') }}</small>
+                        {% for day, name in weekdays %}
+                            <p>
+                                <label for="rsv-hours-{{ day }}-{{ section_id }}">{{ name }}</label>
+                                <input id="rsv-hours-{{ day }}-{{ section_id }}" type="text" name="hours[{{ day }}]" value="{{ form.hours[day] ?? '' }}" maxlength="100">
+                            </p>
+                        {% endfor %}
+                        <small>{{ t('BLOCKED_TIMES_HINT') }}</small>
+                    </fieldset>
+                {% endif %}
             {% endif %}
             <p class="rsv-buttons">
                 <button type="submit" class="button ico-save">{{ L_('TEXT:SAVE') }}</button>

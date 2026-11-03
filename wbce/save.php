@@ -17,6 +17,7 @@ use Reservations\Core\Domain\BookableResource;
 use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\CalendarView;
 use Reservations\Core\Domain\DisplayMode;
+use Reservations\Core\Domain\OpeningHours;
 use Reservations\Core\Domain\Pattern;
 use Reservations\Core\Domain\Settings;
 use Reservations\Core\Domain\Status;
@@ -60,6 +61,12 @@ switch ($post('rsv_action')) {
         $id = (int) $post('resource_id');
         $old = ['resource_id' => $id, 'title' => $post('title'), 'type_id' => (int) $post('type_id'), 'active' => $post('active') === '1', 'post_id' => (int) $post('post_id')]
             + ReservationsRules::input($post);
+        // opening hours as typed, one text per weekday (edit form in period mode only)
+        if (is_array($_POST['hours'] ?? null)) {
+            foreach (range(1, 7) as $day) {
+                $old['hours'][$day] = is_string($_POST['hours'][$day] ?? null) ? trim($_POST['hours'][$day]) : '';
+            }
+        }
         $existing = $id > 0 ? ReservationsWbce::resources()->find($sectionId, $id) : null;
         if ($id > 0 && $existing === null) {
             $finish(Result::fail('resource.not_found'), [], $old, '');
@@ -99,15 +106,32 @@ switch ($post('rsv_action')) {
             checkoutTime: $existing?->checkoutTime,
         );
         // only the edit form has the booking rules; new objects take those of their type
+        $wholeDays = ReservationsWbce::wholeDays($sectionId);
+        $hours = null;
         if ($existing !== null) {
-            $rules = ReservationsRules::fromPost($post, ReservationsWbce::wholeDays($sectionId));
+            $rules = ReservationsRules::fromPost($post, $wholeDays);
             if ($rules === null) {
                 $finish(Result::fail('settings.invalid_value'), ['rsv_edit' => $id], $old, '');
             }
             $resource = $resource->withRules($rules);
+            // checked before anything is saved, so the object is not stored with half of the changes
+            if (!$wholeDays && isset($old['hours'])) {
+                $days = array_map(OpeningHours::parseDay(...), $old['hours']);
+                if (in_array(null, $days, true)) {
+                    $finish(Result::fail('hours.invalid_format', [], 'hours'), ['rsv_edit' => $id], $old, '');
+                }
+                $hours = new OpeningHours(array_filter($days));
+                $problem = $hours->problem();
+                if ($problem !== null) {
+                    $finish(Result::fail($problem, [], 'hours'), ['rsv_edit' => $id], $old, '');
+                }
+            }
         }
         $service = ReservationsWbce::resourceService();
         $result = $existing === null ? $service->create($resource) : $service->update($resource);
+        if ($result->ok && $hours !== null) {
+            $result = $service->saveHours($sectionId, $id, $hours);
+        }
         $finish($result, $result->ok ? [] : ['rsv_edit' => $id], $old, ReservationsWbce::t('MSG_RESOURCE_SAVED'));
 
     case 'booking_save':

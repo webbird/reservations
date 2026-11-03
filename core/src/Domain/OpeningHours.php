@@ -31,6 +31,37 @@ final readonly class OpeningHours
     }
 
     /**
+     * One day as typed in a form: "09:00–12:00, 13:00–17:00", also "9-12" or with ";".
+     * An empty text means no hours that day; null if the text is unreadable. Ranges
+     * and overlaps are left to problem().
+     *
+     * @return list<array{int, int}>|null
+     */
+    public static function parseDay(string $text): ?array
+    {
+        $intervals = [];
+        foreach (explode(',', strtr($text, ';', ',')) as $part) {
+            if (trim($part) === '') {
+                continue;
+            }
+            if (preg_match('/^\s*(\d{1,2})(?::([0-5]\d))?\s*[-–—]\s*(\d{1,2})(?::([0-5]\d))?\s*$/u', $part, $m) !== 1) {
+                return null;
+            }
+            $intervals[] = [(int) $m[1] * 60 + (int) $m[2], (int) $m[3] * 60 + (int) ($m[4] ?? 0)];
+        }
+        return $intervals;
+    }
+
+    /**
+     * @param list<array{int, int}> $intervals
+     */
+    public static function formatDay(array $intervals): string
+    {
+        $time = static fn (int $minutes): string => sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60);
+        return implode(', ', array_map(static fn (array $i): string => $time($i[0]) . '–' . $time($i[1]), $intervals));
+    }
+
+    /**
      * Problems that make the hours unusable: a key for the first one, or null.
      */
     public function problem(): ?string

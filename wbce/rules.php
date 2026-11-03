@@ -17,9 +17,11 @@ final class ReservationsRules
 {
     /** form field => BookableResource::RULE_KEYS, without the checkbox auto_confirm */
     private const FIELDS = [
-        'capacity' => 'capacity', 'min_persons' => 'minPersons', 'lead_min' => 'leadMinMinutes', 'lead_max_days' => 'leadMaxDays',
+        'capacity' => 'capacity', 'min_persons' => 'minPersons', 'slot_minutes' => 'slotMinutes', 'lead_min' => 'leadMinMinutes', 'lead_max_days' => 'leadMaxDays',
         'min_duration' => 'minDuration', 'max_duration' => 'maxDuration', 'buffer_before' => 'bufferBefore', 'buffer_after' => 'bufferAfter',
     ];
+    /** fields only the period mode has; in day mode their stored values stay */
+    private const PERIOD_ONLY = ['slot_minutes', 'buffer_before', 'buffer_after'];
 
     /**
      * The fields as posted, to show them again after an error.
@@ -54,7 +56,7 @@ final class ReservationsRules
 
     /**
      * The rules of a form post, named like BookableResource::RULE_KEYS; null if a
-     * field is not a whole number. Day mode has no buffer fields, the stored buffers stay.
+     * field is not a whole number. Day mode has no grid and buffer fields, the stored values stay.
      *
      * @param callable(string): string $post
      * @return array<string, int|bool|null>|null
@@ -63,7 +65,7 @@ final class ReservationsRules
     {
         $rules = ['autoConfirm' => $post('auto_confirm') === '1'];
         foreach (self::FIELDS as $field => $key) {
-            if ($wholeDays && str_starts_with($field, 'buffer_')) {
+            if ($wholeDays && in_array($field, self::PERIOD_ONLY, true)) {
                 continue;
             }
             // the limit keeps the conversion to minutes below overflow
@@ -73,8 +75,8 @@ final class ReservationsRules
             }
             $rules[$key] = $value;
         }
-        // these have no "no limit": empty means 0
-        foreach (['leadMinMinutes', 'bufferBefore', 'bufferAfter'] as $key) {
+        // these have no "no limit": empty means 0 (for the grid an invalid value the core reports)
+        foreach (['slotMinutes', 'leadMinMinutes', 'bufferBefore', 'bufferAfter'] as $key) {
             if (array_key_exists($key, $rules)) {
                 $rules[$key] ??= 0;
             }

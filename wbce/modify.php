@@ -34,6 +34,8 @@ $rsvVars = [
     'errors'     => $rsvFlash['errors'] ?? [],
     'success'    => $rsvFlash['success'] ?? '',
     'url_list'   => ReservationsWbce::modifyUrl($rsvPage, $rsvSection),
+    // grid choices of the booking rules (objects and types)
+    'slot_choices' => Reservations\Core\Service\ResourceService::SLOT_MINUTES,
 ];
 
 if ($rsvParam('rsv_settings') === 1) {
@@ -241,13 +243,25 @@ foreach ($rsvItems as $rsvItem) {
 }
 
 $rsvEdit = ReservationsWbce::resources()->find($rsvSection, $rsvParam('rsv_edit'));
+$rsvHours = $rsvEdit === null ? [] : ReservationsWbce::hours()->find($rsvSection, (int) $rsvEdit->id)->days;
 $rsvForm = $rsvOld ?? [
     'resource_id' => $rsvEdit->id ?? 0,
     'title'       => $rsvEdit->title ?? '',
     'type_id'     => $rsvEdit->typeId ?? array_key_first($rsvTypes),
     'active'      => $rsvEdit->active ?? true,
     'post_id'     => ReservationsNewsImg::idOf($rsvEdit?->presentationRef) ?? 0,
-] + ($rsvEdit === null ? [] : ReservationsRules::toForm($rsvEdit, ReservationsWbce::wholeDays($rsvSection)));
+] + ($rsvEdit === null ? [] : ReservationsRules::toForm($rsvEdit, ReservationsWbce::wholeDays($rsvSection)) + [
+    'hours' => array_map(
+        static fn (int $day): string => Reservations\Core\Domain\OpeningHours::formatDay($rsvHours[$day] ?? []),
+        array_combine(range(1, 7), range(1, 7)),
+    ),
+]);
+// weekday names in the language of the backend, 1 = Monday (5 January 2026 is one)
+$rsvDayName = new IntlDateFormatter(strtolower(LANGUAGE), IntlDateFormatter::NONE, IntlDateFormatter::NONE, null, null, 'EEEE');
+$rsvWeekdays = [];
+foreach (range(1, 7) as $rsvDay) {
+    $rsvWeekdays[$rsvDay] = (string) $rsvDayName->format(new DateTimeImmutable(sprintf('2026-01-%02d', 4 + $rsvDay)));
+}
 
 ReservationsWbce::twig()->display('modify_resources.twig', $rsvVars + [
     'resources'    => $rsvRows,
@@ -256,6 +270,7 @@ ReservationsWbce::twig()->display('modify_resources.twig', $rsvVars + [
     'types'        => array_map(static fn ($t) => ['id' => $t->id, 'title' => $t->title], array_values($rsvTypes)),
     'form'         => $rsvForm,
     'whole_days'   => ReservationsWbce::wholeDays($rsvSection),
+    'weekdays'     => $rsvWeekdays,
     'url_settings' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_settings' => 1]),
     'url_types'    => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_types' => 1]),
     'url_statuses' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_statuses' => 1]),

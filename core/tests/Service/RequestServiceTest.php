@@ -261,6 +261,31 @@ final class RequestServiceTest extends TestCase
         self::assertEquals(new DateTimeImmutable('2026-10-29 15:20', $this->tz), $this->service->earliestStart($deviceResource, false));
     }
 
+    public function testRateLimitPerVisitor(): void
+    {
+        $send = fn (string $start, string $end, string $client): Result => $this->service->submit(
+            1, $this->flat, $this->range($start, $end), 'Erika', 'erika@example.com', '', null, '', true, $client,
+        );
+        $first = $this->id($send('2026-11-10', '2026-11-12', '203.0.113.5'));
+        $this->id($send('2026-11-14', '2026-11-16', '203.0.113.5'));
+        $this->id($send('2026-11-18', '2026-11-20', '203.0.113.5'));
+        $fourth = $send('2026-11-22', '2026-11-24', '203.0.113.5');
+        self::assertSame(['request.too_many', 3], [$fourth->firstErrorKey(), $fourth->errors[0]['params']['max'] ?? null]);
+        // another visitor, or one whose address is unknown, is not affected
+        $this->id($send('2026-11-22', '2026-11-24', '203.0.113.6'));
+        $this->id($send('2026-11-26', '2026-11-28', ''));
+
+        // only a keyed hash is stored, never the address; the key stays the same
+        $settings = new SettingsRepository($this->db);
+        $hash = $this->requests->findByBooking(1, $first)?->clientHash;
+        self::assertSame(hash_hmac('sha256', '203.0.113.5', $settings->clientSecret(1)), $hash);
+        self::assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $settings->clientSecret(1));
+        self::assertNotSame($settings->clientSecret(1), $settings->clientSecret(2));
+        // and it is forgotten after a day
+        $this->requests->forgetClients($this->now->modify('+1 day +1 minute'));
+        self::assertNull($this->requests->findByBooking(1, $first)?->clientHash);
+    }
+
     public function testConfirmAndReject(): void
     {
         $a = $this->id($this->submit($this->flat, $this->range('2026-11-02', '2026-11-06')));

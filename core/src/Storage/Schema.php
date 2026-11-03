@@ -39,6 +39,8 @@ final class Schema
                     'booking_mode' => "str:20='day'",
                     'presentation_source' => 'str?:100',
                     'captcha' => 'bool=0',
+                    // key for hashing visitor addresses (rate limit of requests), created on first use
+                    'client_secret' => "str:64=''",
                 ],
                 // the visibility of the status with role request_new decides that since 0.5.0
                 'dropped' => ['show_requests'],
@@ -142,6 +144,8 @@ final class Schema
                     'privacy_accepted_at' => 'datetime?',
                     'created_at' => 'datetime',
                     'purge_after' => 'datetime?',
+                    // HMAC of the visitor's address for the rate limit; emptied after a day
+                    'client_hash' => 'str?:64',
                 ],
                 'unique' => ['booking' => ['booking_id']],
                 'indexes' => ['purge' => ['purge_after']],

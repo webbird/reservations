@@ -1,6 +1,6 @@
 # reservations – Konzept
 
-Stand: 03.11.2026 · Modulversion 0.6.0
+Stand: 03.11.2026 · Modulversion 0.7.0
 
 Nachfolger von `bookings_v2`, als eigenständiges Modul mit neuem Namen. Belegungs- und
 Reservierungskalender für beliebige buchbare Dinge: Ferienwohnungen, Besprechungsräume,
@@ -54,6 +54,7 @@ Erweiterung `intl`. Datenbank: MySQL/MariaDB oder SQLite (beides unterstützt WB
 | später | Bestätigungslink für Anfragen (Double-Opt-in) |
 | später | **Text beim Bestätigen oder Ablehnen:** der Admin gibt einen eigenen Text für die Mail an die anfragende Person ein oder wählt einen hinterlegten **Textblock** (pro Abschnitt gepflegt, z. B. „Schlüsselübergabe“, „Zeitraum leider belegt“) und passt ihn an. Der Text stammt vom Admin, darf also in die Mail; nur Eingaben des Besuchers bleiben draußen (siehe Abschnitt 6). Zusammen damit: **Gast über Änderungen benachrichtigen** – beim Speichern einer Buchung mit Anfrage (Zeitraum, Objekt oder Status geändert) optional eine Mail mit den neuen Daten und demselben Text bzw. Textblock. Bis dahin lösen Änderungen über das Buchungsformular keine Mail aus |
 | später | Weitere Sprachen (DA, FR, NL, NO, SK wie in v2) |
+| später | **Ratenbegrenzung einstellbar** je Abschnitt (Anzahl und Zeitfenster); bis dahin fest 3 Anfragen pro Stunde und Besucher |
 | später | **Serienbuchungen** (z. B. feste Trainingszeiten wöchentlich) – Voraussetzung für Kontingente und Auto-Stornierung |
 | später | **Kapazität nach Personenzahl (PAX):** eine Buchung belegt so viele Einheiten, wie für die Personenzahl nötig sind (z. B. 2 Plätze für 30 Personen). Braucht Buchungen über mehrere Ressourcen; verwandt mit „Stückzahl“ |
 | später | **Teilnehmer und Kontingente:** Anmeldungen zu einer Buchung, Auslastung fester Trainingszeiten überwachen |
@@ -100,8 +101,10 @@ Konzept mit generischen Objekten und Objekttypen bereits ab.
   ist ein Wechseltag automatisch erlaubt (2.–6. und 6.–10. überschneiden sich nicht). Die
   Anzeige leitet halbe Tage daraus ab: Anreise rechts, Abreise links. Die Uhrzeiten für An-
   und Abreise (`checkin_time`/`checkout_time`) dienen nur der Information.
-- **Zeitraum:** Beginn und Ende liegen auf dem Raster (`slot_minutes`), innerhalb der
-  Öffnungszeiten.
+- **Zeitraum:** Bei Anfragen liegen Beginn und Ende auf dem Raster (`slot_minutes`) und in
+  den Öffnungszeiten; was dazwischen liegt, ist frei (Ausleihe über Nacht oder Wochenende).
+  Raster und Öffnungszeiten zählen in der Ortszeit; die erlaubten Raster teilen eine Stunde,
+  so bleibt das Raster bei der Zeitumstellung erhalten. Im Backend gelten sie nicht.
 - **Gleichzeitige Buchungen:** Prüfung auf Überschneidung und Speichern laufen in einer
   Transaktion, die die Ressource sperrt. MySQL: `SELECT … FROM resources WHERE resource_id = ?
   FOR UPDATE`. SQLite kennt kein `FOR UPDATE`; dort startet die Transaktion mit
@@ -184,6 +187,7 @@ Tabellennamen: Präfix des CMS + `mod_reservations_` in WBCE. Der Kern bekommt d
 | notify_email | VARCHAR(255) | Empfänger für Benachrichtigungen über neue Anfragen; leer = keine Mail |
 | retention_days | SMALLINT | Kontaktdaten X Tage nach dem angefragten Zeitraum löschen (Standard 90, 1–3650) |
 | captcha | TINYINT(1) | Captcha (WBCE: captcha_control) im Anfrageformular; FTAN und Honeypot sind immer aktiv |
+| client_secret | VARCHAR(64) | Schlüssel für den Besucher-Hash der Ratenbegrenzung; entsteht beim ersten Gebrauch, nicht Teil der Einstellungen im Formular |
 | past_months / future_months | SMALLINT | Navigationsgrenzen |
 | resource_id | INT NULL | Objekt für die Einzelobjekt-Darstellung; leer = erstes aktives |
 | presentation_source | VARCHAR(100) NULL | Quelle der Objektbeschreibungen, z. B. `news_img:3` (News-Abschnitt; siehe Abschnitt 8) |
@@ -208,10 +212,10 @@ Buchungen hat; sonst gingen beim nächsten Bearbeiten Uhrzeiten verloren.
 Die Vorgabewerte werden beim Anlegen eines Objekts **kopiert**, nicht zur Laufzeit vererbt.
 Spätere Änderungen am Typ ändern also keine bestehenden Objekte. Erlaubt sind nur die
 Schlüssel aus `BookableResource::RULE_KEYS` (`capacity`, `minPersons`, `autoConfirm`,
-`leadMinMinutes`, `leadMaxDays`, `minDuration`, `maxDuration`, `bufferBefore`,
-`bufferAfter`); geprüft wird mit denselben Regeln wie beim Objekt
-(`ResourceService::validateRules()`). Raster, An- und Abreisezeit folgen mit den
-Verfügbarkeitsregeln. Beim Anlegen eines
+`slotMinutes`, `leadMinMinutes`, `leadMaxDays`, `minDuration`, `maxDuration`,
+`bufferBefore`, `bufferAfter`); geprüft wird mit denselben Regeln wie beim Objekt
+(`ResourceService::validateRules()`). Öffnungszeiten sind je Objekt verschieden und
+gehören nicht zu den Vorgabewerten. Beim Anlegen eines
 Abschnitts gibt es einen Typ als Vorgabe („Objekt“). Ein Typ, den Objekte verwenden, und der
 letzte Typ eines Abschnitts lassen sich nicht löschen. Bis 0.2.0 stand der Buchungsmodus am
 Typ (`types.booking_mode`); die Installation entfernt diese Spalte.
@@ -244,28 +248,34 @@ Typ (`types.booking_mode`); die Installation entfernt diese Spalte.
 | capacity | SMALLINT NULL | höchstens so viele Personen je Anfrage |
 | min_persons | SMALLINT NULL | mindestens so viele Personen je Anfrage; macht die Personenzahl zur Pflicht |
 | auto_confirm | TINYINT(1) | Anfrage sofort verbindlich |
-| slot_minutes | SMALLINT | Raster im Modus `period` (15/30/60) |
+| slot_minutes | SMALLINT | Raster im Modus `period`: 5, 10, 15, 20, 30 oder 60 Minuten (Standard 30); nur für Anfragen |
 | min_duration / max_duration | INT NULL | Minuten bzw. Nächte je nach Modus; nur für Anfragen |
 | buffer_before / buffer_after | SMALLINT | Minuten, nur Modus `period`; gelten für alle Buchungen |
 | lead_min_minutes | INT | Vorlauf; im Modus `day` in ganzen Tagen ab heute gezählt |
 | lead_max_days | INT NULL | höchstens X Tage im Voraus |
+| checkin_time / checkout_time | TIME NULL | Modus `day`, nur Anzeige |
 
 **Buchungseinstellungen** pflegt der Admin beim Bearbeiten eines Objekts; neue Objekte
 übernehmen die Vorgabewerte ihres Typs. Das Formular zeigt die Einheiten des Modus: Vorlauf
-in Tagen (`day`) bzw. Stunden (`period`), Dauer in Nächten bzw. Minuten, Puffer nur im Modus
-`period`; gespeichert wird in den Einheiten der Tabelle. Personen, Vorlauf und Dauer gelten
-nur für Anfragen über die Website; im Backend lassen sich Buchungen frei eintragen.
-| checkin_time / checkout_time | TIME NULL | Modus `day`, nur Anzeige |
+in Tagen (`day`) bzw. Stunden (`period`), Dauer in Nächten bzw. Minuten, Raster und Puffer
+nur im Modus `period`; gespeichert wird in den Einheiten der Tabelle. Personen, Raster,
+Vorlauf und Dauer gelten nur für Anfragen über die Website; im Backend lassen sich
+Buchungen frei eintragen.
 
-### hours (Verfügbarkeit, Modus `period`/`appointment`)
+### hours (Öffnungszeiten, Modus `period`/`appointment`)
 | Spalte | Typ | Hinweis |
 |---|---|---|
 | hour_id | INT PK AI | |
+| section_id | INT | seit 0.7.0, mit Standardwert 0 für bestehende Tabellen |
 | resource_id | INT, Index | |
 | weekday | TINYINT | 1 = Mo … 7 = So (ISO) |
-| start_time / end_time | TIME | mehrere Zeilen pro Tag möglich (Mittagspause) |
+| start_time / end_time | TIME | mehrere Zeilen pro Tag möglich (Mittagspause); 24:00 als Tagesende |
 
-Keine Zeilen bedeutet: rund um die Uhr verfügbar.
+Keine Zeilen bedeutet: rund um die Uhr verfügbar; hat ein Tag Zeilen, sind die übrigen
+Tage geschlossen. Ein Beginn liegt in [von, bis), ein Ende in (von, bis]; Mitternacht zählt
+auch als 24:00 des Vortags. Im Backend wird je Wochentag ein Textfeld gepflegt
+(„09:00–12:00, 13:00–17:00“, auch „9-12“); Lesen, Ausgeben und Prüfen übernimmt
+`OpeningHours`. Sperrzeiten (Urlaub, Wartung) sind Buchungen mit blockierendem Status.
 
 ### bookings
 | Spalte | Typ | Hinweis |
@@ -292,21 +302,34 @@ Keine Zeilen bedeutet: rund um die Uhr verfügbar.
 | privacy_accepted_at | DATETIME | |
 | created_at | DATETIME | |
 | purge_after | DATETIME | danach personenbezogene Felder leeren |
+| client_hash | VARCHAR(64) NULL | HMAC-SHA256 der Besucheradresse mit `settings.client_secret`, für die Ratenbegrenzung; nach einem Tag geleert |
 
 **Ablauf einer Anfrage** (`RequestService`):
 - Prüfung: Anfragen im Abschnitt aktiv, Objekt aktiv, Name, E-Mail, Telefon, Personen
   (zwischen `min_persons` und `capacity`, mit Untergrenze Pflicht), Nachricht, Einwilligung,
-  Vorlauf, Höchstvorlauf, Mindest- und Höchstdauer (Nächte bzw. Minuten).
+  im Modus `period` Raster und Öffnungszeiten (vor dem Vorlauf, damit die Meldung
+  „geschlossen“ statt „zu früh“ lautet), Vorlauf, Höchstvorlauf, Mindest- und Höchstdauer
+  (Nächte bzw. Minuten), zuletzt die Ratenbegrenzung.
 - Früheste Anreise (`earliestStart()`): im Modus `day` heute + Vorlauf in Tagen, nie vor
-  morgen (2 Tage an einem Montag: Mittwoch); im Modus `period` jetzt + Vorlauf. Die
-  Datumsauswahl im Formular nutzt dieselbe Methode.
-- Ohne eigenen Höchstvorlauf bzw. eigene Höchstdauer gilt das Kalenderfenster: Beginn
-  spätestens zum Ende des letzten Monats, den Besucher ansteuern können (`future_months`),
-  Dauer höchstens so lang wie dieses Fenster. Sonst könnte eine einzige Anfrage ein Objekt
-  über Jahrzehnte sperren (gefunden beim Pentest, 0.6.0).
-- Formular: Bei einem einzelnen Objekt stehen Personen- und Dauergrenzen im Label und als
-  Eingabegrenzen. Bei einer Auswahl mehrerer Objekte prüft nur der Server; die Datumsauswahl
-  beginnt beim frühesten Termin aller Objekte.
+  morgen (2 Tage an einem Montag: Mittwoch); im Modus `period` jetzt + Vorlauf, aufgerundet
+  auf das Raster und verschoben auf die nächste Öffnung.
+- Spätester Beginn (`latestStart()`): Höchstvorlauf; ohne ihn gilt das Kalenderfenster, also
+  Beginn spätestens zum Ende des letzten Monats, den Besucher ansteuern können
+  (`future_months`). Ohne eigene Höchstdauer ist auch die Dauer höchstens so lang wie dieses
+  Fenster. Sonst könnte eine einzige Anfrage ein Objekt über Jahrzehnte sperren (gefunden
+  beim Pentest, 0.6.0).
+- **Ratenbegrenzung:** höchstens 3 angelegte Anfragen pro Stunde je Besucher und Abschnitt
+  (`request.too_many`). Erkannt wird der Besucher an `REMOTE_ADDR`, gespeichert nur der
+  Hash (`requests.client_hash`), einen Tag lang. Hinter einem Reverse-Proxy teilen sich alle
+  Besucher dessen Adresse; `X-Forwarded-For` wird nicht ausgewertet, weil es sich fälschen
+  lässt. Gezählt wird außerhalb der Buchungssperre, gleichzeitige Anfragen eines Besuchers
+  können die Grenze knapp überschreiten. Die Einwilligung im Formular nennt den Prüfwert.
+- Formular: Die Datumsauswahl reicht von `earliestStart()` bis `latestStart()` (bei mehreren
+  Objekten die weiteste Spanne) und hat das Raster als Schrittweite, wenn alle Objekte
+  dasselbe haben. Bei einem einzelnen Objekt stehen Personen- und Dauergrenzen im Label und
+  als Eingabegrenzen, im Modus `period` die Öffnungszeiten unter den Datumsfeldern. Bei einer
+  Auswahl mehrerer Objekte prüft der Server je Objekt. Nach dem Absenden ersetzt die
+  Bestätigung das Formular.
 - Buchung und Anfrage entstehen in **einer Transaktion** (`BookingService::create()` mit
   Rückruf), samt Prüfung auf Überschneidung. Status: Rolle „neue Anfrage“, bei
   `auto_confirm` gleich „Anfrage bestätigt“.
@@ -332,11 +355,12 @@ reservations/                    Repository
   core/                          CMS-unabhängiger Kern, Namespace Reservations\Core
     src/
       Domain/      TimeRange (halboffen), Enums BookingMode/DisplayMode/Visibility/
-                   Pattern/StatusRole, Type, Status, Resource, Booking, Request, Hours
-                   (unveränderliche Wertobjekte)
-      Service/     BookingService (anlegen, ändern, Überschneidung, Status-Übergänge)
-                   AvailabilityService (Öffnungszeiten, Sperrzeiten, Vorlauf, Puffer)
-                   RequestService (Anfrage annehmen, bestätigen, ablehnen, Löschfrist)
+                   Pattern/StatusRole, Type, Status, Resource, Booking, Request,
+                   OpeningHours (unveränderliche Wertobjekte)
+      Service/     BookingService (anlegen, ändern, Überschneidung, Puffer, Status-Übergänge)
+                   RequestService (Anfrage annehmen mit Vorlauf, Raster, Öffnungszeiten und
+                   Ratenbegrenzung; bestätigen, ablehnen, Löschfrist)
+                   ResourceService (Objekte, Buchungsregeln, Öffnungszeiten)
       Calendar/    Daten für Plan, Monat, Woche, Liste (keine Ausgabe von HTML)
       Port/        Schnittstellen zum CMS (siehe unten)
       Storage/Pdo/ Repositories mit Prepared Statements, Schema je Plattform
@@ -421,7 +445,7 @@ Es gelten die Konventionen aus news_img:
   - serverseitige Prüfung auf Verfügbarkeit (dem Browser wird nicht geglaubt); bei einer
     Überschneidung nennt die Meldung keine Termine, sie könnten zu verborgenen Anfragen gehören
   - Rücksprung nur auf Pfade unterhalb von `WB_URL`, der Host kommt immer aus `WB_URL`
-  - noch nicht umgesetzt: Ratenbegrenzung, geplant im nächsten Schritt (siehe Abschnitt 10)
+  - Ratenbegrenzung: 3 angelegte Anfragen pro Stunde je Besucher (siehe Ablauf einer Anfrage)
 - Mails ohne Double-Opt-in: Wer eine fremde Adresse einträgt, löst eine Mail an sie aus.
   Mails an die anfragende Person enthalten deshalb nur festen Text, Objekt und Zeitraum,
   nichts vom Besucher Eingegebenes. Alle Angaben gehen nur an die Benachrichtigungsadresse.
@@ -517,13 +541,7 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 ## 10. Offene Punkte
 
 ### Nächste Schritte
-1. **Verfügbarkeitsregeln:** Öffnungszeiten je Wochentag (`hours`), Sperrzeiten, Raster
-   `slot_minutes` im Modus `period`.
-   - **ToDo Ratenbegrenzung** für das Anfrageformular (Pentest 0.6.0, Befund 2): Jede
-     erfolgreiche Anfrage belegt einen Zeitraum und löst Mails aus, auch an fremde Adressen.
-     Grenze je Sitzung und gehashter IP (z. B. N Anfragen pro Stunde); Speicherort, Werte und
-     Meldung beim Planen festlegen. Bis dahin schützt nur das Captcha.
-2. **Wochenansicht** mit Stundenraster.
+1. **Wochenansicht** mit Stundenraster.
 
 ### Weitere offene Punkte
 - Mailversand im Zusammenspiel mit einem echten Mailserver testen (Eingang, sofort bestätigt,
@@ -554,5 +572,10 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 - Buchungseinstellungen je Objekt (0.6.0): Personen mit Unter- und Obergrenze, Vorlauf,
   Höchstvorlauf, Mindest- und Höchstdauer, Puffer; Vorgabewerte am Objekttyp, beim Anlegen
   kopiert. Mindest- und Höchstdauer gelten nur für Anfragen.
+- Verfügbarkeitsregeln (0.7.0): Öffnungszeiten je Objekt und Wochentag, Raster im Modus
+  `period`, Sperrzeiten über einen blockierenden Status; nur Beginn und Ende müssen in den
+  Öffnungszeiten liegen; Raster als Vorgabewert am Typ, Öffnungszeiten nicht.
+- Ratenbegrenzung (0.7.0): fest 3 Anfragen pro Stunde je Besucher und Abschnitt über einen
+  Hash der IP-Adresse; einstellbar erst später.
 - Objektliste im Backend: Spalten „Aktuelle Buchungen“ (laufende und künftige mit blockierendem Status, ohne offene Anfragen) und „Offene Anfragen“ (Rolle „neue Anfrage“); vergangene, stornierte und abgelehnte zählen nicht.
 - Objektbeschreibungen in WBCE: **1:1** ein news_img-Abschnitt je Reservations-Abschnitt (`settings.presentation_source`), Zuordnung je Objekt über `resources.presentation_ref`; Port `PresentationProvider` erst mit Catamaran, Vorschaubild vorerst nicht.

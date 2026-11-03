@@ -31,7 +31,32 @@ final class RequestRepository
             'privacy_accepted_at' => $r->privacyAcceptedAt,
             'created_at' => $r->createdAt,
             'purge_after' => $r->purgeAfter,
+            'client_hash' => $r->clientHash,
         ]);
+    }
+
+    /**
+     * Requests of one visitor in the section since $since, for the rate limit.
+     */
+    public function countRecent(int $sectionId, string $clientHash, DateTimeImmutable $since): int
+    {
+        return $this->db->fetchInt(
+            'SELECT COUNT(*) FROM ' . $this->db->table(self::TABLE) . ' r'
+            . ' JOIN ' . $this->db->table('bookings') . ' b ON b.booking_id = r.booking_id'
+            . ' WHERE b.section_id = ? AND r.client_hash = ? AND r.created_at > ?',
+            [$sectionId, $clientHash, $since],
+        );
+    }
+
+    /**
+     * Empties the visitor hashes of requests created before $before.
+     */
+    public function forgetClients(DateTimeImmutable $before): void
+    {
+        $this->db->run(
+            'UPDATE ' . $this->db->table(self::TABLE) . ' SET client_hash = NULL WHERE client_hash IS NOT NULL AND created_at < ?',
+            [$before],
+        );
     }
 
     public function findByBooking(int $sectionId, int $bookingId): ?Request
@@ -57,6 +82,7 @@ final class RequestRepository
             privacyAcceptedAt: $date('privacy_accepted_at'),
             createdAt: $date('created_at'),
             purgeAfter: $date('purge_after'),
+            clientHash: Row::nullableString($row, 'client_hash'),
         );
     }
 

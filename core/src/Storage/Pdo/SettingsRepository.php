@@ -45,6 +45,26 @@ final class SettingsRepository
         );
     }
 
+    /**
+     * Key for hashing visitor addresses, created on first use. Kept out of Settings,
+     * so saving the settings form can never empty it.
+     */
+    public function clientSecret(int $sectionId): string
+    {
+        $read = function () use ($sectionId): string {
+            $row = $this->db->fetchOne('SELECT client_secret FROM ' . $this->db->table(self::TABLE) . ' WHERE section_id = ?', [$sectionId]);
+            return $row === null ? '' : Row::string($row, 'client_secret');
+        };
+        if ($read() === '') {
+            // the condition keeps a second request at the same moment from replacing a fresh key
+            $this->db->run(
+                'UPDATE ' . $this->db->table(self::TABLE) . " SET client_secret = ? WHERE section_id = ? AND client_secret = ''",
+                [bin2hex(random_bytes(32)), $sectionId],
+            );
+        }
+        return $read();
+    }
+
     public function save(Settings $s): void
     {
         $this->db->update(self::TABLE, [

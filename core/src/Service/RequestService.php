@@ -35,6 +35,11 @@ final class RequestService
     public const MESSAGE_MAX = 65535;
     /** the column is a SMALLINT; the capacity of the object lowers it */
     public const PERSONS_MAX = 32767;
+    /** successful requests per visitor and section within RATE_WINDOW; a setting may follow later */
+    public const RATE_LIMIT = 3;
+    private const RATE_WINDOW = 'PT1H';
+    /** how long the visitor hash is kept */
+    private const CLIENT_KEEP = 'P1D';
 
     public function __construct(
         private readonly BookingService $bookingService,
@@ -49,6 +54,7 @@ final class RequestService
     }
 
     /**
+     * @param string $client the visitor's address for the rate limit; '' = unknown, no limit
      * @return Result value: new booking id
      */
     public function submit(
@@ -61,6 +67,7 @@ final class RequestService
         ?int $persons,
         string $message,
         bool $privacyAccepted,
+        string $client = '',
     ): Result {
         $name = trim($name);
         $email = trim($email);
@@ -140,6 +147,14 @@ final class RequestService
         if ($status === null) {
             return Result::fail('request.no_status', ['role' => $role->value]);
         }
+        // every request occupies a period and sends mails, also to foreign addresses; only the
+        // keyed hash is stored, the address itself never
+        // shortcut: counted outside the booking lock, so simultaneous requests of one visitor can
+        // pass the limit by a few; count inside a section lock if that is ever abused
+        $clientHash = $client === '' ? null : hash_hmac('sha256', $client, $this->settings->clientSecret($sectionId));
+        if ($clientHash !== null && $this->requests->countRecent($sectionId, $clientHash, $now->sub(new DateInterval(self::RATE_WINDOW))) >= self::RATE_LIMIT) {
+            return Result::fail('request.too_many', ['max' => self::RATE_LIMIT]);
+        }
 
         $request = fn (int $bookingId): Request => new Request(
             id: null,
@@ -152,6 +167,7 @@ final class RequestService
             privacyAcceptedAt: $now,
             createdAt: $now,
             purgeAfter: $range->end->add(new DateInterval('P' . $settings->retentionDays . 'D')),
+            clientHash: $clientHash,
         );
         return $this->bookingService->create(
             $sectionId,
@@ -257,12 +273,17 @@ final class RequestService
     }
 
     /**
-     * Empties the contact data of all requests whose retention has ended.
-     * WBCE has no cron; the wrapper calls this on backend and request calls.
+     * Empties the contact data of all requests whose retention has ended, and the
+     * visitor hashes after a day. WBCE has no cron; the wrapper calls this on
+     * backend and request calls.
+     *
+     * @return int number of requests whose contact data was emptied
      */
     public function purgeExpired(): int
     {
-        return $this->requests->purgeExpired($this->clock->now());
+        $now = $this->clock->now();
+        $this->requests->forgetClients($now->sub(new DateInterval(self::CLIENT_KEEP)));
+        return $this->requests->purgeExpired($now);
     }
 
     /**

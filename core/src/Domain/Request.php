@@ -9,6 +9,8 @@ use DateTimeImmutable;
 /**
  * Contact data of a booking request from the frontend; 1:1 to its booking.
  * After purgeAfter the personal fields are emptied, the booking stays.
+ * clientHash (HMAC of the visitor's address) serves the rate limit and is
+ * emptied after a day.
  */
 final readonly class Request
 {
@@ -23,6 +25,7 @@ final readonly class Request
         public ?DateTimeImmutable $privacyAcceptedAt = null,
         public ?DateTimeImmutable $createdAt = null,
         public ?DateTimeImmutable $purgeAfter = null,
+        public ?string $clientHash = null,
     ) {
     }
 }

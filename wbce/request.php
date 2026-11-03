@@ -101,6 +101,8 @@ $result = $service->submit(
     $old['persons'] === '' ? null : (int) $old['persons'],
     $old['message'],
     $old['privacy'],
+    // for the rate limit; behind a reverse proxy all visitors share its address (X-Forwarded-For can be forged)
+    is_string($_SERVER['REMOTE_ADDR'] ?? null) ? $_SERVER['REMOTE_ADDR'] : '',
 );
 if ($result->firstErrorKey() === 'booking.overlap') {
     // the conflicting dates may belong to hidden requests; visitors only learn that the period is taken

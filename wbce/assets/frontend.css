@@ -8,9 +8,11 @@
  *    used twice, our rules also win against template rules like
  *    "#content table tr:nth-child(even) td". Template rules with !important
  *    still win - nothing but !important could beat those.
+ * The captcha (.rsv-captcha) brings its own styles and stays out of both:
+ * ALTCHA positions its checkbox inside its own boxes, a reset breaks that.
  */
 .mod_reservations:not(#rsv):not(#rsv),
-.mod_reservations:not(#rsv):not(#rsv) :where(div, span, p, h3, table, caption, thead, tbody, tr, th, td, ul, li) {
+.mod_reservations:not(#rsv):not(#rsv) :where(div, span, p, h3, table, caption, thead, tbody, tr, th, td, ul, li):not(.rsv-captcha *) {
     all: revert;
 }
 
@@ -76,8 +78,9 @@
 
 /* request form; inputs and buttons keep the template's look */
 .mod_reservations:not(#rsv):not(#rsv) .rsv-request { margin: 1.5rem 0 0; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-request p { margin: 0 0 .8rem; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-request label { display: block; margin: 0 0 .2rem; font-weight: bold; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-request p:not(.rsv-captcha *) { margin: 0 0 .8rem; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-request label:not(.rsv-captcha *) { display: block; margin: 0 0 .2rem; font-weight: bold; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-captcha { margin: 0 0 .8rem; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-request .rsv-check label { display: inline; font-weight: normal; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-request :is(input:not([type="checkbox"]), select, textarea) { box-sizing: border-box; max-width: 100%; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-request textarea { width: 100%; }

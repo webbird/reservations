@@ -11,12 +11,15 @@
 <section class="rsv-request" aria-labelledby="rsv-request-title-{{ section_id }}">
     <h3 id="rsv-request-title-{{ section_id }}">{{ t('REQUEST_TITLE') }}</h3>
 
+    {# after sending, the confirmation takes the place of the form; an empty form again would look as if nothing happened #}
+    {% if r.success %}
+        <div class="rsv-msg rsv-msg--success" role="status">{{ r.success }}</div>
+        <p><a href="{{ r.return }}#rsv-request-{{ section_id }}">{{ t('REQUEST_ANOTHER') }}</a></p>
+    {% else %}
     {% if r.errors %}
         <div class="rsv-msg rsv-msg--error" id="rsv-request-error-{{ section_id }}" role="alert">
             <ul>{% for message in r.errors %}<li>{{ message }}</li>{% endfor %}</ul>
         </div>
-    {% elseif r.success %}
-        <div class="rsv-msg rsv-msg--success" role="status">{{ r.success }}</div>
     {% endif %}
 
     <form action="{{ r.action }}" method="post">
@@ -86,4 +89,5 @@
 
         <p><button type="submit">{{ t('REQUEST_SEND') }}</button></p>
     </form>
+    {% endif %}{# r.success #}
 </section>

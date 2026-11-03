@@ -149,7 +149,8 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
     // request.php rejects forms sent less than two seconds after this
     $_SESSION['mod_reservations_form_time'][$rsvSection] = time();
     $rsvCaptcha = '';
-    if ($rsvSettings->captcha && ReservationsWbce::captchaAvailable()) {
+    // after a successful request the confirmation replaces the form, which needs no captcha then
+    if (!isset($rsvFlash['success']) && $rsvSettings->captcha && ReservationsWbce::captchaAvailable()) {
         ob_start();
         call_captcha('all', '', 'rsv' . $rsvSection);
         $rsvCaptcha = (string) ob_get_clean();

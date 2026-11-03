@@ -58,12 +58,12 @@ final readonly class Settings
     }
 
     /**
-     * The requested view if it fits the display mode, otherwise the default one.
+     * The requested view if it fits the display and booking mode, otherwise the default one.
      */
     public function view(?CalendarView $requested): CalendarView
     {
         foreach ([$requested, $this->defaultView] as $view) {
-            if ($view !== null && $view->fits($this->displayMode)) {
+            if ($view !== null && $view->fits($this->displayMode, $this->bookingMode)) {
                 return $view;
             }
         }

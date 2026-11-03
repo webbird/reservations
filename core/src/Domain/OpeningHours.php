@@ -109,6 +109,23 @@ final readonly class OpeningHours
             || ($minutes === 0 && $this->contains($weekday === 1 ? 7 : $weekday - 1, self::DAY_END, true));
     }
 
+    /**
+     * Whether the hours of a weekday touch the minutes [from, to), e.g. for one
+     * row of a time grid; a row only partly open counts as open.
+     */
+    public function opensDuring(int $weekday, int $from, int $to): bool
+    {
+        if ($this->isAlwaysOpen()) {
+            return true;
+        }
+        foreach ($this->days[$weekday] ?? [] as [$open, $close]) {
+            if ($open < $to && $close > $from) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private function contains(int $weekday, int $minutes, bool $asEnd): bool
     {
         foreach ($this->days[$weekday] ?? [] as [$from, $to]) {

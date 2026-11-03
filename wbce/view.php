@@ -137,7 +137,7 @@ $rsvVars = [
         'key'     => strtoupper('VIEW_' . $v->value),
         'url'     => $rsvUrl($rsvMonth, $v),
         'current' => $v === $rsvView,
-    ], array_values(array_filter(CalendarView::cases(), static fn (CalendarView $v): bool => $v->fits($rsvSettings->displayMode)))),
+    ], array_values(array_filter(CalendarView::cases(), static fn (CalendarView $v): bool => $v->fits($rsvSettings->displayMode, $rsvSettings->bookingMode)))),
     'legend'        => $rsvLegend,
     'has_resources' => $rsvResources !== [],
     'request'       => null,

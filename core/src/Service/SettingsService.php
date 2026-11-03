@@ -45,7 +45,7 @@ final class SettingsService
         if ($s->futureMonths < 1 || $s->futureMonths > self::MONTHS_MAX) {
             return Result::fail('settings.invalid_months', ['max' => self::MONTHS_MAX], 'future_months');
         }
-        if (!$s->defaultView->fits($s->displayMode)) {
+        if (!$s->defaultView->fits($s->displayMode, $s->bookingMode)) {
             return Result::fail('settings.view_not_available', [], 'default_view');
         }
         if ($s->presentationSource !== null && mb_strlen($s->presentationSource) > self::PRESENTATION_SOURCE_MAX) {

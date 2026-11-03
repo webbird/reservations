@@ -104,6 +104,11 @@ final class SettingsServiceTest extends TestCase
         self::assertSame(CalendarView::Month, $single->view(CalendarView::Month));
         self::assertSame(CalendarView::List, $single->view(CalendarView::Plan));
         self::assertSame(CalendarView::Plan, (new Settings(1, defaultView: CalendarView::Month))->view(null));
+        // the week needs times: in period mode with one or several objects, never in day mode
+        self::assertSame(CalendarView::Week, (new Settings(1, bookingMode: BookingMode::Period))->view(CalendarView::Week));
+        self::assertSame(CalendarView::Week, (new Settings(1, DisplayMode::Single, bookingMode: BookingMode::Period))->view(CalendarView::Week));
+        self::assertSame(CalendarView::Plan, (new Settings(1))->view(CalendarView::Week));
+        self::assertSame('settings.view_not_available', $this->service->save(new Settings(1, defaultView: CalendarView::Week))->firstErrorKey());
     }
 
     public function testForResourceShowsOneObjectAsMonth(): void

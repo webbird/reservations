@@ -45,6 +45,7 @@ return [
             'ERR_TYPE_TITLE_TOO_LONG' => 'The name may have at most %d characters.',
             'ERR_TYPE_IN_USE'         => 'The object type is still used by objects and cannot be deleted.',
             'ERR_TYPE_LAST_ONE'       => 'Every section needs at least one object type.',
+            'ERR_TYPE_INVALID_DEFAULTS' => 'The default values for new objects are invalid.',
 
             'STATUSES'                => 'Statuses',
             'NEW_STATUS'              => 'New status',
@@ -291,6 +292,7 @@ return [
             'ERR_TYPE_TITLE_TOO_LONG' => 'Der Name darf höchstens %d Zeichen lang sein.',
             'ERR_TYPE_IN_USE'         => 'Der Objekttyp wird noch von Objekten verwendet und lässt sich nicht löschen.',
             'ERR_TYPE_LAST_ONE'       => 'Jeder Abschnitt braucht mindestens einen Objekttyp.',
+            'ERR_TYPE_INVALID_DEFAULTS' => 'Die Vorgabewerte für neue Objekte sind ungültig.',
 
             'STATUSES'                => 'Status',
             'NEW_STATUS'              => 'Neuer Status',

@@ -11,6 +11,9 @@ namespace Reservations\Core\Domain;
  */
 final readonly class BookableResource
 {
+    /** booking rules a type presets for its new resources (Type::$defaults), named like the properties */
+    public const RULE_KEYS = ['capacity', 'minPersons', 'autoConfirm', 'leadMinMinutes', 'leadMaxDays', 'minDuration', 'maxDuration', 'bufferBefore', 'bufferAfter'];
+
     public function __construct(
         public ?int $id,
         public int $sectionId,
@@ -42,5 +45,18 @@ final readonly class BookableResource
     public function requiredGapMinutes(): int
     {
         return $this->bufferBefore + $this->bufferAfter;
+    }
+
+    /**
+     * A copy with the given booking rules; keys other than RULE_KEYS are ignored.
+     *
+     * @param array<string, scalar|null> $rules
+     * @throws \TypeError if a value has the wrong type, e.g. "4" for the capacity
+     */
+    public function withRules(array $rules): self
+    {
+        $rules = array_intersect_key($rules, array_flip(self::RULE_KEYS));
+        // strict_types makes the constructor reject wrongly typed values, which PHPStan cannot see in a spread
+        return new self(...array_replace(get_object_vars($this), $rules)); // @phpstan-ignore argument.type
     }
 }

@@ -28,8 +28,16 @@ final class ResourceService
     ) {
     }
 
+    /**
+     * A new resource starts with the booking rules its type presets; they replace
+     * the passed values and can be changed per resource with update().
+     */
     public function create(BookableResource $resource): Result
     {
+        $type = $this->types->find($resource->sectionId, $resource->typeId);
+        if ($type !== null) {
+            $resource = $resource->withRules($type->defaults);
+        }
         return $this->validate($resource) ?? Result::ok($this->resources->insert($resource));
     }
 

@@ -8,6 +8,7 @@ use DateTimeZone;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use Reservations\Core\Domain\BookableResource;
+use Reservations\Core\Domain\Type;
 use Reservations\Core\Service\ResourceService;
 use Reservations\Core\Storage\Pdo\Connection;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
@@ -20,6 +21,7 @@ final class ResourceServiceTest extends TestCase
 {
     private ResourceService $service;
     private ResourceRepository $resources;
+    private TypeRepository $types;
     private int $type;
     private int $foreignType;
 
@@ -28,14 +30,14 @@ final class ResourceServiceTest extends TestCase
         $pdo = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
         $db = new Connection($pdo, 'test_', new DateTimeZone('Europe/Berlin'));
         Schema::install($db);
-        $types = new TypeRepository($db);
-        $setup = new SectionSetup($db, new StatusRepository($db), $types);
+        $this->types = new TypeRepository($db);
+        $setup = new SectionSetup($db, new StatusRepository($db), $this->types);
         $setup->run(1, 10);
         $setup->run(2, 20);
-        $this->type = (int) $types->listBySection(1)[0]->id;
-        $this->foreignType = (int) $types->listBySection(2)[0]->id;
+        $this->type = (int) $this->types->listBySection(1)[0]->id;
+        $this->foreignType = (int) $this->types->listBySection(2)[0]->id;
         $this->resources = new ResourceRepository($db);
-        $this->service = new ResourceService($this->resources, $types);
+        $this->service = new ResourceService($this->resources, $this->types);
     }
 
     public function testCreateAndUpdate(): void
@@ -79,6 +81,20 @@ final class ResourceServiceTest extends TestCase
         self::assertIsInt($result->value);
         $stored = $this->resources->find(1, $result->value);
         self::assertSame([2, 8, 3, 21, 1440, 365], [$stored?->minPersons, $stored?->capacity, $stored?->minDuration, $stored?->maxDuration, $stored?->leadMinMinutes, $stored?->leadMaxDays]);
+    }
+
+    public function testNewResourceTakesTheRulesOfItsType(): void
+    {
+        $type = $this->types->insert(new Type(null, 1, 'Ferienhaus', ['capacity' => 8, 'minPersons' => 2, 'autoConfirm' => true, 'minDuration' => 3]));
+        $result = $this->service->create(new BookableResource(null, 1, $type, 'Haus am See', capacity: 4, leadMaxDays: 365));
+        self::assertIsInt($result->value);
+        $stored = $this->resources->find(1, $result->value);
+        // preset rules replace the passed ones, the others stay
+        self::assertSame([8, 2, true, 3, 365], [$stored?->capacity, $stored?->minPersons, $stored?->autoConfirm, $stored?->minDuration, $stored?->leadMaxDays]);
+
+        // afterwards the resource keeps its own rules, a changed type does not reach it
+        self::assertTrue($this->service->update(new BookableResource($result->value, 1, $type, 'Haus am See', capacity: 6))->ok);
+        self::assertSame(6, $this->resources->find(1, $result->value)?->capacity);
     }
 
     public function testFindAcrossSections(): void

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Reservations\Core\Service;
 
+use Reservations\Core\Domain\BookableResource;
 use Reservations\Core\Domain\Type;
 use Reservations\Core\Result\Result;
 use Reservations\Core\Storage\Pdo\Connection;
 use Reservations\Core\Storage\Pdo\TypeRepository;
+use TypeError;
 
 /**
  * Maintains the object types of a section. A type in use cannot be deleted,
@@ -74,6 +76,15 @@ final class TypeService
         if (mb_strlen($title) > self::TITLE_MAX) {
             return Result::fail('type.title_too_long', ['max' => self::TITLE_MAX], 'title');
         }
-        return null;
+        // the defaults become the rules of new resources, so they follow the same rules
+        if (array_diff_key($type->defaults, array_flip(BookableResource::RULE_KEYS)) !== []) {
+            return Result::fail('type.invalid_defaults');
+        }
+        try {
+            $probe = (new BookableResource(null, $type->sectionId, 0, ''))->withRules($type->defaults);
+        } catch (TypeError) {
+            return Result::fail('type.invalid_defaults');
+        }
+        return ResourceService::validateRules($probe);
     }
 }

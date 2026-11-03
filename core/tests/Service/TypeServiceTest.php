@@ -56,6 +56,28 @@ final class TypeServiceTest extends TestCase
         self::assertSame('type.not_found', $this->service->update(new Type($this->seeded, 2, 'Fremd'))->firstErrorKey());
     }
 
+    public function testDefaultsFollowTheResourceRules(): void
+    {
+        $cases = [
+            'type.invalid_defaults' => ['color' => '#ff0000'],
+            'resource.min_persons_above_capacity' => ['capacity' => 4, 'minPersons' => 5],
+            'resource.invalid_lead' => ['leadMaxDays' => 0],
+            'resource.invalid_buffer' => ['bufferBefore' => -1],
+        ];
+        foreach ($cases as $key => $defaults) {
+            self::assertSame($key, $this->service->create(new Type(null, 1, 'Ferienwohnung', $defaults))->firstErrorKey());
+        }
+        // wrong types as they could come from a form or old JSON
+        foreach ([['capacity' => '4'], ['autoConfirm' => 1], ['leadMinMinutes' => null]] as $defaults) {
+            self::assertSame('type.invalid_defaults', $this->service->create(new Type(null, 1, 'Ferienwohnung', $defaults))->firstErrorKey());
+        }
+
+        $defaults = ['capacity' => 8, 'minPersons' => 2, 'autoConfirm' => true, 'minDuration' => 3, 'leadMaxDays' => null];
+        $result = $this->service->create(new Type(null, 1, 'Ferienwohnung', $defaults));
+        self::assertIsInt($result->value);
+        self::assertSame($defaults, $this->types->find(1, $result->value)?->defaults);
+    }
+
     public function testDeleteKeepsUsedAndLastTypes(): void
     {
         self::assertSame('type.last_one', $this->service->delete(1, $this->seeded)->firstErrorKey());

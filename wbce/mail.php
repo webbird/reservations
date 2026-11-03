@@ -8,8 +8,6 @@
 
 defined('WB_PATH') or die('This file cannot be accessed directly!');
 
-use Reservations\Core\Storage\Pdo\RequestRepository;
-
 final class ReservationsMail
 {
     /**
@@ -24,7 +22,7 @@ final class ReservationsMail
     public static function request(int $sectionId, int $bookingId, string $event): bool
     {
         $booking = ReservationsWbce::bookings()->find($sectionId, $bookingId);
-        $request = (new RequestRepository(ReservationsWbce::db()))->findByBooking($sectionId, $bookingId);
+        $request = ReservationsWbce::requests()->findByBooking($sectionId, $bookingId);
         $page = $GLOBALS['database']->fetchRow(
             'SELECT p.`page_id`, p.`language` FROM `{TP}sections` s JOIN `{TP}pages` p ON p.`page_id` = s.`page_id` WHERE s.`section_id` = ?',
             [$sectionId],

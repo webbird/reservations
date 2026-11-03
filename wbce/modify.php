@@ -131,7 +131,7 @@ if ($rsvParam('rsv_types') === 1) {
             'type_id'  => $rsvEdit->id ?? 0,
             'title'    => $rsvEdit->title ?? '',
             'position' => $rsvEdit->position ?? count($rsvTypes),
-        ] + ReservationsWbce::rulesToForm($rsvDefaults, $rsvWholeDays),
+        ] + ReservationsRules::toForm($rsvDefaults, $rsvWholeDays),
         'whole_days' => $rsvWholeDays,
         'url_types' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_types' => 1]),
     ]);
@@ -150,7 +150,7 @@ if ($rsvResource !== null) {
     }
 
     $rsvToday = new DateTimeImmutable('today', ReservationsWbce::timezone());
-    $rsvRequests = new Reservations\Core\Storage\Pdo\RequestRepository(ReservationsWbce::db());
+    $rsvRequests = ReservationsWbce::requests();
     $rsvRequestIds = array_flip($rsvRequests->bookingIds($rsvSection));
     $rsvRows = [];
     // no upper limit: a booking typed with a wrong year must stay visible and deletable
@@ -247,7 +247,7 @@ $rsvForm = $rsvOld ?? [
     'type_id'     => $rsvEdit->typeId ?? array_key_first($rsvTypes),
     'active'      => $rsvEdit->active ?? true,
     'post_id'     => ReservationsNewsImg::idOf($rsvEdit?->presentationRef) ?? 0,
-] + ($rsvEdit === null ? [] : ReservationsWbce::rulesToForm($rsvEdit, ReservationsWbce::wholeDays($rsvSection)));
+] + ($rsvEdit === null ? [] : ReservationsRules::toForm($rsvEdit, ReservationsWbce::wholeDays($rsvSection)));
 
 ReservationsWbce::twig()->display('modify_resources.twig', $rsvVars + [
     'resources'    => $rsvRows,

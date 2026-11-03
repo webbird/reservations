@@ -1,0 +1,85 @@
+<?php
+/**
+ * Reservations – rules.php
+ * Booking rules between the backend form (_booking_rules.twig) and the core:
+ * lead time in days (day mode) or hours, durations in nights or minutes,
+ * buffers only in period mode. The core stores minutes and checks the ranges.
+ * @module reservations  @version 0.6.0  @author Bianka Martinovic
+ * @license GNU General Public License   @platform WBCE 1.7.0+
+ */
+
+defined('WB_PATH') or die('This file cannot be accessed directly!');
+
+use Reservations\Core\Domain\BookableResource;
+use Reservations\Core\Service\ResourceService;
+
+final class ReservationsRules
+{
+    /** form field => BookableResource::RULE_KEYS, without the checkbox auto_confirm */
+    private const FIELDS = [
+        'capacity' => 'capacity', 'min_persons' => 'minPersons', 'lead_min' => 'leadMinMinutes', 'lead_max_days' => 'leadMaxDays',
+        'min_duration' => 'minDuration', 'max_duration' => 'maxDuration', 'buffer_before' => 'bufferBefore', 'buffer_after' => 'bufferAfter',
+    ];
+
+    /**
+     * The fields as posted, to show them again after an error.
+     *
+     * @param callable(string): string $post
+     * @return array<string, string|bool>
+     */
+    public static function input(callable $post): array
+    {
+        $input = ['auto_confirm' => $post('auto_confirm') === '1'];
+        foreach (array_keys(self::FIELDS) as $field) {
+            $input[$field] = $post($field);
+        }
+        return $input;
+    }
+
+    /**
+     * The rules in the units of the form; empty = no limit.
+     *
+     * @return array<string, int|string|bool>
+     */
+    public static function toForm(BookableResource $r, bool $wholeDays): array
+    {
+        $form = ['auto_confirm' => $r->autoConfirm];
+        foreach (self::FIELDS as $field => $key) {
+            $form[$field] = $r->{$key} ?? '';
+        }
+        // rounded up: a lead time entered in the other mode stays at least as long
+        $form['lead_min'] = (int) ceil($r->leadMinMinutes / ($wholeDays ? 1440 : 60));
+        return $form;
+    }
+
+    /**
+     * The rules of a form post, named like BookableResource::RULE_KEYS; null if a
+     * field is not a whole number. Day mode has no buffer fields, the stored buffers stay.
+     *
+     * @param callable(string): string $post
+     * @return array<string, int|bool|null>|null
+     */
+    public static function fromPost(callable $post, bool $wholeDays): ?array
+    {
+        $rules = ['autoConfirm' => $post('auto_confirm') === '1'];
+        foreach (self::FIELDS as $field => $key) {
+            if ($wholeDays && str_starts_with($field, 'buffer_')) {
+                continue;
+            }
+            // the limit keeps the conversion to minutes below overflow
+            $value = $post($field) === '' ? null : filter_var($post($field), FILTER_VALIDATE_INT, ['options' => ['max_range' => ResourceService::INT_MAX]]);
+            if ($value === false) {
+                return null;
+            }
+            $rules[$key] = $value;
+        }
+        // these have no "no limit": empty means 0
+        foreach (['leadMinMinutes', 'bufferBefore', 'bufferAfter'] as $key) {
+            if (array_key_exists($key, $rules)) {
+                $rules[$key] ??= 0;
+            }
+        }
+        $rules['leadMinMinutes'] *= $wholeDays ? 1440 : 60;
+        return $rules;
+    }
+}

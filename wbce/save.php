@@ -59,7 +59,7 @@ switch ($post('rsv_action')) {
     case 'resource_save':
         $id = (int) $post('resource_id');
         $old = ['resource_id' => $id, 'title' => $post('title'), 'type_id' => (int) $post('type_id'), 'active' => $post('active') === '1', 'post_id' => (int) $post('post_id')]
-            + ReservationsWbce::rulesInput($post);
+            + ReservationsRules::input($post);
         $existing = $id > 0 ? ReservationsWbce::resources()->find($sectionId, $id) : null;
         if ($id > 0 && $existing === null) {
             $finish(Result::fail('resource.not_found'), [], $old, '');
@@ -100,7 +100,7 @@ switch ($post('rsv_action')) {
         );
         // only the edit form has the booking rules; new objects take those of their type
         if ($existing !== null) {
-            $rules = ReservationsWbce::rulesFromPost($post, ReservationsWbce::wholeDays($sectionId));
+            $rules = ReservationsRules::fromPost($post, ReservationsWbce::wholeDays($sectionId));
             if ($rules === null) {
                 $finish(Result::fail('settings.invalid_value'), ['rsv_edit' => $id], $old, '');
             }
@@ -222,9 +222,9 @@ switch ($post('rsv_action')) {
 
     case 'type_save':
         $id = (int) $post('type_id');
-        $old = ['type_id' => $id, 'title' => $post('title'), 'position' => (int) $post('position')] + ReservationsWbce::rulesInput($post);
+        $old = ['type_id' => $id, 'title' => $post('title'), 'position' => (int) $post('position')] + ReservationsRules::input($post);
         $existing = $id > 0 ? ReservationsWbce::types()->find($sectionId, $id) : null;
-        $rules = ReservationsWbce::rulesFromPost($post, ReservationsWbce::wholeDays($sectionId));
+        $rules = ReservationsRules::fromPost($post, ReservationsWbce::wholeDays($sectionId));
         if ($rules === null) {
             $finish(Result::fail('settings.invalid_value'), ['rsv_types' => 1, 'rsv_type' => $id], $old, '');
         }

@@ -8,7 +8,6 @@
 
 defined('WB_PATH') or die('This file cannot be accessed directly!');
 
-use Reservations\Core\Domain\BookableResource;
 use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Port\Clock;
@@ -19,11 +18,11 @@ use Reservations\Core\Service\ResourceService;
 use Reservations\Core\Service\SettingsService;
 use Reservations\Core\Service\StatusService;
 use Reservations\Core\Service\TypeService;
-use Reservations\Core\Storage\Pdo\SettingsRepository;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
 use Reservations\Core\Storage\Pdo\RequestRepository;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
+use Reservations\Core\Storage\Pdo\SettingsRepository;
 use Reservations\Core\Storage\Pdo\StatusRepository;
 use Reservations\Core\Storage\Pdo\TypeRepository;
 use Reservations\Core\Storage\Schema;
@@ -47,13 +46,20 @@ spl_autoload_register(static function (string $class): void {
 Lang::loadLanguage(__DIR__);
 require_once __DIR__ . '/news_img.php';
 require_once __DIR__ . '/mail.php';
+require_once __DIR__ . '/rules.php';
 
+/**
+ * Entry point of the wrapper: database, texts and templates, repositories and
+ * services of the core, section setup and droplet, messages and small helpers.
+ */
 final class ReservationsWbce
 {
     public const NS = 'MOD_RESERVATIONS';
 
     /** @var array<string, object> */
     private static array $services = [];
+
+    // database, time, texts, templates
 
     public static function db(): Connection
     {
@@ -88,6 +94,19 @@ final class ReservationsWbce
         return $args === [] ? $text : vsprintf($text, $args);
     }
 
+    /**
+     * WBCE's getTwig() turns autoescaping off; our templates escape by default.
+     */
+    public static function twig(): \Twig\Environment
+    {
+        $twig = getTwig(__DIR__ . '/twig/');
+        $twig->getExtension(\Twig\Extension\EscaperExtension::class)->setDefaultStrategy('html');
+        $twig->addFunction(new \Twig\TwigFunction('t', self::t(...)));
+        return $twig;
+    }
+
+    // repositories, one per request
+
     public static function statuses(): StatusRepository
     {
         return self::$services['statuses'] ??= new StatusRepository(self::db());
@@ -108,14 +127,54 @@ final class ReservationsWbce
         return self::$services['bookings'] ??= new BookingRepository(self::db());
     }
 
+    public static function requests(): RequestRepository
+    {
+        return self::$services['requests'] ??= new RequestRepository(self::db());
+    }
+
     public static function settings(): SettingsRepository
     {
         return self::$services['settings'] ??= new SettingsRepository(self::db());
     }
 
+    // services of the core
+
     public static function settingsService(): SettingsService
     {
         return new SettingsService(self::settings(), self::resources(), self::bookings());
+    }
+
+    public static function resourceService(): ResourceService
+    {
+        return new ResourceService(self::resources(), self::types());
+    }
+
+    public static function statusService(): StatusService
+    {
+        return new StatusService(self::db(), self::statuses(), self::bookings(), self::resources());
+    }
+
+    public static function typeService(): TypeService
+    {
+        return new TypeService(self::db(), self::types());
+    }
+
+    public static function bookingService(): BookingService
+    {
+        return new BookingService(self::db(), self::resources(), self::settings(), self::statuses(), self::bookings(), self::clock());
+    }
+
+    public static function requestService(): RequestService
+    {
+        return new RequestService(
+            self::bookingService(),
+            self::settings(),
+            self::resources(),
+            self::statuses(),
+            self::bookings(),
+            self::requests(),
+            self::clock(),
+        );
     }
 
     public static function sectionSetup(): SectionSetup
@@ -123,10 +182,14 @@ final class ReservationsWbce
         return new SectionSetup(self::db(), self::statuses(), self::types());
     }
 
+    // section setup and droplet
+
     /**
-     * Creates missing tables and the section's defaults. Idempotent; used by add.php and
-     * as fallback in modify.php, because WBCE can register a module without running
-     * install.php (addon reload) and manual_install.php refuses junctioned module dirs.
+     * Creates missing tables and the section's defaults (statuses, a type, settings);
+     * a new section starts with the captcha if captcha_control is there. Also imports
+     * the droplet if it is missing. Idempotent; used by add.php and as fallback in
+     * modify.php, because WBCE can register a module without running install.php
+     * (addon reload) and manual_install.php refuses junctioned module dirs.
      */
     public static function ensureSection(int $sectionId, int $pageId): void
     {
@@ -199,38 +262,7 @@ final class ReservationsWbce
         return $html;
     }
 
-    public static function resourceService(): ResourceService
-    {
-        return new ResourceService(self::resources(), self::types());
-    }
-
-    public static function statusService(): StatusService
-    {
-        return new StatusService(self::db(), self::statuses(), self::bookings(), self::resources());
-    }
-
-    public static function typeService(): TypeService
-    {
-        return new TypeService(self::db(), self::types());
-    }
-
-    public static function bookingService(): BookingService
-    {
-        return new BookingService(self::db(), self::resources(), self::settings(),self::statuses(), self::bookings(), self::clock());
-    }
-
-    public static function requestService(): RequestService
-    {
-        return new RequestService(
-            self::bookingService(),
-            self::settings(),
-            self::resources(),
-            self::statuses(),
-            self::bookings(),
-            new RequestRepository(self::db()),
-            self::clock(),
-        );
-    }
+    // messages
 
     /**
      * Error keys from the core ("booking.overlap") map to ERR_BOOKING_OVERLAP.
@@ -281,104 +313,6 @@ final class ReservationsWbce
     }
 
     /**
-     * Whole days (date only) or period (date and time); the mode belongs to the
-     * section. Missing settings count as day mode, the default of every section.
-     */
-    public static function wholeDays(int $sectionId): bool
-    {
-        return (self::settings()->find($sectionId)->bookingMode ?? BookingMode::Day) === BookingMode::Day;
-    }
-
-    /**
-     * Form fields of the booking rules (_booking_rules.twig) => BookableResource::RULE_KEYS,
-     * without the checkbox auto_confirm.
-     */
-    private const RULE_FIELDS = [
-        'capacity' => 'capacity', 'min_persons' => 'minPersons', 'lead_min' => 'leadMinMinutes', 'lead_max_days' => 'leadMaxDays',
-        'min_duration' => 'minDuration', 'max_duration' => 'maxDuration', 'buffer_before' => 'bufferBefore', 'buffer_after' => 'bufferAfter',
-    ];
-
-    /**
-     * The booking rule fields as posted, to show them again after an error.
-     *
-     * @param callable(string): string $post
-     * @return array<string, string|bool>
-     */
-    public static function rulesInput(callable $post): array
-    {
-        $input = ['auto_confirm' => $post('auto_confirm') === '1'];
-        foreach (array_keys(self::RULE_FIELDS) as $field) {
-            $input[$field] = $post($field);
-        }
-        return $input;
-    }
-
-    /**
-     * Booking rules in the units of the form: lead time in days (day mode) or
-     * hours, durations as stored (nights or minutes); empty = no limit.
-     *
-     * @return array<string, int|string|bool>
-     */
-    public static function rulesToForm(BookableResource $r, bool $wholeDays): array
-    {
-        $form = ['auto_confirm' => $r->autoConfirm];
-        foreach (self::RULE_FIELDS as $field => $key) {
-            $form[$field] = $r->{$key} ?? '';
-        }
-        // rounded up: a lead time entered in the other mode stays at least as long
-        $form['lead_min'] = (int) ceil($r->leadMinMinutes / ($wholeDays ? 1440 : 60));
-        return $form;
-    }
-
-    /**
-     * Booking rules of a form post, named like BookableResource::RULE_KEYS; null
-     * if a field is not a whole number. The core checks the ranges. Day mode has
-     * no buffer fields, the stored buffers stay.
-     *
-     * @param callable(string): string $post
-     * @return array<string, int|bool|null>|null
-     */
-    public static function rulesFromPost(callable $post, bool $wholeDays): ?array
-    {
-        $rules = ['autoConfirm' => $post('auto_confirm') === '1'];
-        foreach (self::RULE_FIELDS as $field => $key) {
-            if ($wholeDays && str_starts_with($field, 'buffer_')) {
-                continue;
-            }
-            // the limit keeps the conversion to minutes below overflow
-            $value = $post($field) === '' ? null : filter_var($post($field), FILTER_VALIDATE_INT, ['options' => ['max_range' => ResourceService::INT_MAX]]);
-            if ($value === false) {
-                return null;
-            }
-            $rules[$key] = $value;
-        }
-        // these have no "no limit": empty means 0
-        foreach (['leadMinMinutes', 'bufferBefore', 'bufferAfter'] as $key) {
-            if (array_key_exists($key, $rules)) {
-                $rules[$key] ??= 0;
-            }
-        }
-        $rules['leadMinMinutes'] *= $wholeDays ? 1440 : 60;
-        return $rules;
-    }
-
-    /**
-     * The captcha of the module captcha_control (ALTCHA, without HTTPS a math task).
-     */
-    public static function captchaAvailable(): bool
-    {
-        return is_file(WB_PATH . '/modules/captcha_control/Captcha.php');
-    }
-
-    /**
-     * The news_img section that holds the object descriptions, or null.
-     */
-    public static function newsSection(int $sectionId): ?int
-    {
-        return ReservationsNewsImg::idOf(self::settings()->find($sectionId)?->presentationSource);
-    }
-
-    /**
      * Day mode shows arrival and departure date; the departure is the exclusive end.
      */
     public static function formatRange(DateTimeImmutable $start, DateTimeImmutable $end, bool $wholeDays): string
@@ -407,6 +341,33 @@ final class ReservationsWbce
         return is_array($data) ? $data : [];
     }
 
+    // helpers
+
+    /**
+     * Whole days (date only) or period (date and time); the mode belongs to the
+     * section. Missing settings count as day mode, the default of every section.
+     */
+    public static function wholeDays(int $sectionId): bool
+    {
+        return (self::settings()->find($sectionId)->bookingMode ?? BookingMode::Day) === BookingMode::Day;
+    }
+
+    /**
+     * The captcha of the module captcha_control (ALTCHA, without HTTPS a math task).
+     */
+    public static function captchaAvailable(): bool
+    {
+        return is_file(WB_PATH . '/modules/captcha_control/Captcha.php');
+    }
+
+    /**
+     * The news_img section that holds the object descriptions, or null.
+     */
+    public static function newsSection(int $sectionId): ?int
+    {
+        return ReservationsNewsImg::idOf(self::settings()->find($sectionId)?->presentationSource);
+    }
+
     /**
      * @param array<string, int|string> $params
      */
@@ -416,16 +377,5 @@ final class ReservationsWbce
         $anchor = defined('SEC_ANCHOR') && SEC_ANCHOR !== '' ? '#' . SEC_ANCHOR . $sectionId : '';
         // explicit separator: news_img sets arg_separator.output to '&amp;' for the whole request
         return ADMIN_URL . '/pages/modify.php?' . http_build_query($query, '', '&') . $anchor;
-    }
-
-    /**
-     * WBCE's getTwig() turns autoescaping off; our templates escape by default.
-     */
-    public static function twig(): \Twig\Environment
-    {
-        $twig = getTwig(__DIR__ . '/twig/');
-        $twig->getExtension(\Twig\Extension\EscaperExtension::class)->setDefaultStrategy('html');
-        $twig->addFunction(new \Twig\TwigFunction('t', self::t(...)));
-        return $twig;
     }
 }

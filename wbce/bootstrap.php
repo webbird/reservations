@@ -325,8 +325,10 @@ final class ReservationsWbce
         $messages = [];
         foreach ($result->errors as $error) {
             $message = self::t('ERR_' . strtoupper(strtr($error['key'], '.', '_')));
-            if (isset($error['params']['max']) && is_int($error['params']['max'])) {
-                $message = sprintf($message, $error['params']['max']);
+            // numeric limits fill the placeholders in this order: min, max
+            $limits = array_values(array_filter([$error['params']['min'] ?? null, $error['params']['max'] ?? null], 'is_int'));
+            if ($limits !== []) {
+                $message = vsprintf($message, $limits);
             }
             $pairs = [];
             foreach ((array) ($error['params']['conflicts'] ?? []) as $conflict) {

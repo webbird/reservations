@@ -18,6 +18,9 @@ final class ResourceService
 {
     public const TITLE_MAX = 255;
     public const PRESENTATION_REF_MAX = 100;
+    /** column limits; the database may run without strict mode and would clip silently */
+    public const SMALLINT_MAX = 32767;
+    public const INT_MAX = 2147483647;
 
     public function __construct(
         private readonly ResourceRepository $resources,
@@ -60,6 +63,33 @@ final class ResourceService
         }
         if ($this->types->find($resource->sectionId, $resource->typeId) === null) {
             return Result::fail('type.not_found', ['id' => $resource->typeId], 'type');
+        }
+        return self::validateRules($resource);
+    }
+
+    /**
+     * The booking rules of a resource: persons, lead times, durations, buffers.
+     */
+    public static function validateRules(BookableResource $r): ?Result
+    {
+        $between = static fn (?int $value, int $min, int $max): bool => $value === null || ($value >= $min && $value <= $max);
+        if (!$between($r->capacity, 1, self::SMALLINT_MAX) || !$between($r->minPersons, 1, self::SMALLINT_MAX)) {
+            return Result::fail('resource.invalid_persons', ['max' => self::SMALLINT_MAX], 'capacity');
+        }
+        if ($r->minPersons !== null && $r->capacity !== null && $r->minPersons > $r->capacity) {
+            return Result::fail('resource.min_persons_above_capacity', [], 'min_persons');
+        }
+        if (!$between($r->leadMinMinutes, 0, self::INT_MAX) || !$between($r->leadMaxDays, 1, self::INT_MAX)) {
+            return Result::fail('resource.invalid_lead', [], 'lead_min');
+        }
+        if (!$between($r->minDuration, 1, self::INT_MAX) || !$between($r->maxDuration, 1, self::INT_MAX)) {
+            return Result::fail('resource.invalid_duration', [], 'min_duration');
+        }
+        if ($r->minDuration !== null && $r->maxDuration !== null && $r->minDuration > $r->maxDuration) {
+            return Result::fail('resource.min_duration_above_max', [], 'min_duration');
+        }
+        if (!$between($r->bufferBefore, 0, self::SMALLINT_MAX) || !$between($r->bufferAfter, 0, self::SMALLINT_MAX)) {
+            return Result::fail('resource.invalid_buffer', ['max' => self::SMALLINT_MAX], 'buffer_before');
         }
         return null;
     }

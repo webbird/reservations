@@ -83,6 +83,7 @@ final class Schema
                     'position' => 'int=0',
                     'presentation_ref' => 'str?:100',
                     'capacity' => 'small?',
+                    'min_persons' => 'small?',
                     'auto_confirm' => 'bool=0',
                     'slot_minutes' => 'small=30',
                     'min_duration' => 'int?',

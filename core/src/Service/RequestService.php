@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Reservations\Core\Service;
 
 use DateInterval;
+use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\Request;
 use Reservations\Core\Domain\StatusRole;
 use Reservations\Core\Domain\TimeRange;
@@ -81,8 +82,14 @@ final class RequestService
         if (mb_strlen($phone) > self::PHONE_MAX) {
             return Result::fail('request.phone_too_long', ['max' => self::PHONE_MAX], 'phone');
         }
-        if ($persons !== null && ($persons < 1 || $persons > ($resource->capacity ?? self::PERSONS_MAX))) {
-            return Result::fail('request.invalid_persons', ['max' => $resource->capacity ?? self::PERSONS_MAX], 'persons');
+        // with a lower limit the number is required, otherwise an empty field would bypass it
+        if ($persons === null && $resource->minPersons !== null) {
+            return Result::fail('request.persons_required', [], 'persons');
+        }
+        $personsMin = $resource->minPersons ?? 1;
+        $personsMax = $resource->capacity ?? self::PERSONS_MAX;
+        if ($persons !== null && ($persons < $personsMin || $persons > $personsMax)) {
+            return Result::fail('request.invalid_persons', ['min' => $personsMin, 'max' => $personsMax], 'persons');
         }
         if (strlen($message) > self::MESSAGE_MAX) {
             return Result::fail('request.message_too_long', [], 'message');
@@ -99,6 +106,16 @@ final class RequestService
         }
         if ($resource->leadMaxDays !== null && $range->start > $now->add(new DateInterval('P' . $resource->leadMaxDays . 'D'))) {
             return Result::fail('request.too_late', ['max' => $resource->leadMaxDays], 'range');
+        }
+        // nights in day mode (both ends at midnight, so days of the difference), minutes in period mode
+        $wholeDays = $settings->bookingMode === BookingMode::Day;
+        $duration = $wholeDays ? $range->start->diff($range->end)->days : $range->durationMinutes();
+        $unit = $wholeDays ? 'nights' : 'minutes';
+        if ($resource->minDuration !== null && $duration < $resource->minDuration) {
+            return Result::fail('request.too_short_' . $unit, ['min' => $resource->minDuration], 'range');
+        }
+        if ($resource->maxDuration !== null && $duration > $resource->maxDuration) {
+            return Result::fail('request.too_long_' . $unit, ['max' => $resource->maxDuration], 'range');
         }
 
         $role = $resource->autoConfirm ? StatusRole::RequestConfirmed : StatusRole::RequestNew;

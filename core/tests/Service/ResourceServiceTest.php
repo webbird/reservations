@@ -60,6 +60,27 @@ final class ResourceServiceTest extends TestCase
         );
     }
 
+    public function testBookingRules(): void
+    {
+        $cases = [
+            'resource.invalid_persons' => new BookableResource(null, 1, $this->type, 'X', capacity: 0),
+            'resource.min_persons_above_capacity' => new BookableResource(null, 1, $this->type, 'X', capacity: 4, minPersons: 5),
+            'resource.invalid_lead' => new BookableResource(null, 1, $this->type, 'X', leadMaxDays: 0),
+            'resource.invalid_duration' => new BookableResource(null, 1, $this->type, 'X', minDuration: 0),
+            'resource.min_duration_above_max' => new BookableResource(null, 1, $this->type, 'X', minDuration: 7, maxDuration: 3),
+            'resource.invalid_buffer' => new BookableResource(null, 1, $this->type, 'X', bufferAfter: 40000),
+        ];
+        foreach ($cases as $key => $resource) {
+            self::assertSame($key, $this->service->create($resource)->firstErrorKey());
+        }
+
+        $result = $this->service->create(new BookableResource(null, 1, $this->type, 'FeWo', capacity: 8, minPersons: 2, minDuration: 3, maxDuration: 21, leadMinMinutes: 1440, leadMaxDays: 365));
+        self::assertTrue($result->ok);
+        self::assertIsInt($result->value);
+        $stored = $this->resources->find(1, $result->value);
+        self::assertSame([2, 8, 3, 21, 1440, 365], [$stored?->minPersons, $stored?->capacity, $stored?->minDuration, $stored?->maxDuration, $stored?->leadMinMinutes, $stored?->leadMaxDays]);
+    }
+
     public function testFindAcrossSections(): void
     {
         $inactive = $this->resources->insert(new BookableResource(null, 1, $this->type, 'Alt', active: false, presentationRef: 'news_img:12'));

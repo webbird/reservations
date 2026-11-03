@@ -6,6 +6,8 @@ namespace Reservations\Core\Domain;
 
 /**
  * Bookable thing (flat, room, person, device). Shown as "Objekt" in the UI.
+ * Durations count nights in day mode and minutes in period mode; the lead
+ * time is always stored in minutes.
  */
 final readonly class BookableResource
 {
@@ -19,6 +21,7 @@ final readonly class BookableResource
         public int $position = 0,
         public ?string $presentationRef = null,
         public ?int $capacity = null,
+        public ?int $minPersons = null,
         public bool $autoConfirm = false,
         public int $slotMinutes = 30,
         public ?int $minDuration = null,

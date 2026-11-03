@@ -85,6 +85,7 @@ switch ($post('rsv_action')) {
             position: $existing->position ?? 0,
             presentationRef: $presentationRef,
             capacity: $existing?->capacity,
+            minPersons: $existing?->minPersons,
             autoConfirm: $existing->autoConfirm ?? false,
             slotMinutes: $existing->slotMinutes ?? 30,
             minDuration: $existing?->minDuration,

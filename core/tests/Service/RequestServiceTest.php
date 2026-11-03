@@ -10,6 +10,7 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 use Reservations\Core\Domain\BookableResource;
 use Reservations\Core\Domain\Booking;
+use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\Settings;
 use Reservations\Core\Domain\StatusRole;
 use Reservations\Core\Domain\TimeRange;
@@ -165,6 +166,41 @@ final class RequestServiceTest extends TestCase
             1, $this->flat, TimeRange::fromLocal('2026-11-02 14:00', '2026-11-06 10:00', $this->tz), 'Erika', 'erika@example.com', '', null, '', true,
         )->firstErrorKey());
         self::assertSame(0, $this->db->fetchInt('SELECT COUNT(*) FROM ' . $this->db->table('bookings')));
+    }
+
+    public function testPersonsLimitsAndNights(): void
+    {
+        $type = (int) (new TypeRepository($this->db))->listBySection(1)[0]->id;
+        $big = $this->resources->insert(new BookableResource(null, 1, $type, 'FeWo groß', capacity: 8, minPersons: 2, minDuration: 3, maxDuration: 7));
+        $send = fn (?int $persons, string $start, string $end): Result => $this->service->submit(
+            1, $big, $this->range($start, $end), 'Erika', 'erika@example.com', '', $persons, '', true,
+        );
+
+        self::assertSame('request.persons_required', $send(null, '2026-11-02', '2026-11-05')->firstErrorKey());
+        $tooFew = $send(1, '2026-11-02', '2026-11-05');
+        self::assertSame('request.invalid_persons', $tooFew->firstErrorKey());
+        self::assertSame(['min' => 2, 'max' => 8], $tooFew->errors[0]['params']);
+        self::assertSame('request.invalid_persons', $send(9, '2026-11-02', '2026-11-05')->firstErrorKey());
+        self::assertSame('request.too_short_nights', $send(2, '2026-11-02', '2026-11-04')->firstErrorKey());
+        self::assertSame('request.too_long_nights', $send(2, '2026-11-02', '2026-11-10')->firstErrorKey());
+        // 3 and 7 nights are the limits themselves
+        $this->id($send(2, '2026-11-02', '2026-11-05'));
+        $this->id($send(8, '2026-11-10', '2026-11-17'));
+    }
+
+    public function testDurationInMinutesInPeriodMode(): void
+    {
+        $types = new TypeRepository($this->db);
+        (new SectionSetup($this->db, $this->statuses, $types))->run(3, 30);
+        (new SettingsRepository($this->db))->save(new Settings(3, bookingMode: BookingMode::Period, requestsEnabled: true));
+        $room = $this->resources->insert(new BookableResource(null, 3, (int) $types->listBySection(3)[0]->id, 'Raum', minDuration: 60, maxDuration: 240));
+        $send = fn (string $start, string $end): Result => $this->service->submit(
+            3, $room, TimeRange::fromLocal($start, $end, $this->tz), 'Erika', 'erika@example.com', '', null, '', true,
+        );
+
+        self::assertSame('request.too_short_minutes', $send('2026-11-02 10:00', '2026-11-02 10:30')->firstErrorKey());
+        self::assertSame('request.too_long_minutes', $send('2026-11-02 10:00', '2026-11-02 14:30')->firstErrorKey());
+        $this->id($send('2026-11-02 10:00', '2026-11-02 14:00'));
     }
 
     public function testConfirmAndReject(): void

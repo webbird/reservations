@@ -1,6 +1,6 @@
 # reservations – Konzept
 
-Stand: 03.11.2026 · Modulversion 0.7.1
+Stand: 03.11.2026 · Modulversion 0.8.0
 
 Nachfolger von `bookings_v2`, als eigenständiges Modul mit neuem Namen. Belegungs- und
 Reservierungskalender für beliebige buchbare Dinge: Ferienwohnungen, Besprechungsräume,
@@ -113,6 +113,24 @@ Konzept mit generischen Objekten und Objekttypen bereits ab.
 - Gespeichert wird als `DATETIME` in der Zeitzone von WBCE. Es gibt keine Enden mehr wie
   `23:59:59` (anders als in v2).
 
+### Wochenansicht (0.8.0, nur Modus `period`)
+- Je Objekt eine Tabelle untereinander: Tage als Spalten, Uhrzeiten als Zeilen. Die Woche
+  beginnt mit dem ersten Wochentag der Sprache; geblättert wird über `rsv_week_<Abschnitt>`
+  (Datum des Wochenanfangs), begrenzt auf das Kalenderfenster (`past_months`/`future_months`).
+  Ohne Parameter gilt die aktuelle Woche, beim Wechsel aus einem anderen Monat dessen erste
+  Woche.
+- Zeilen von 30 Minuten, bei einem Raster von 60 Minuten eine Stunde. Die Spanne reicht von der
+  frühesten Öffnung bis zur spätesten Schließung der Woche, ohne Öffnungszeiten 08:00–20:00,
+  erweitert um Beginn und Ende jeder Buchung der Woche. Was eine Buchung dazwischen abdeckt
+  (Ausleihe übers Wochenende), erweitert sie nicht.
+- `Calendar\Week` liefert je Tag Blöcke gleichen Zustands (frei, geschlossen, eine Buchung) mit
+  der Zahl ihrer Zeilen; die Ausgabe setzt sie als `rowspan`. Eine Zeile gehört zur ersten
+  Buchung, die sie berührt, sonst ist sie geschlossen, wenn die Öffnungszeiten sie nicht
+  berühren. Die Zeilen zählen in Ortszeit: Die beim Beginn der Sommerzeit fehlende Stunde
+  hängt am Block davor, die Beschriftung bleibt gleich.
+- Eine Buchung zeigt ihre genauen Zeiten (auf Block und Tag gekürzt), sichtbar ab zwei Zeilen
+  Höhe; geschlossene Zeiten sind grau schraffiert und stehen in der Legende.
+
 ### Status (konfigurierbar)
 Status werden pro Abschnitt angelegt. Der Kern wertet **nie den Namen** eines Status aus,
 nur seine Eigenschaften:
@@ -179,7 +197,7 @@ Tabellennamen: Präfix des CMS + `mod_reservations_` in WBCE. Der Kern bekommt d
 | section_id | INT PK | |
 | page_id | INT | |
 | display_mode | VARCHAR(20) | `single` oder `multi`; Einzelobjekt oder Belegungsplan |
-| default_view | VARCHAR(20) | `plan`, `month`, `week`, `list` |
+| default_view | VARCHAR(20) | `plan` (nur mehrere Objekte), `month` (nur Einzelobjekt), `week` (nur Modus `period`), `list` |
 | view | VARCHAR(50) | Darstellungsvariante (Ordner unter `views/`) |
 | plan_range | TINYINT | 1 oder 3 Monate |
 | show_labels | TINYINT(1) | öffentliche Beschriftungen anzeigen |
@@ -328,7 +346,14 @@ auch als 24:00 des Vortags. Im Backend wird je Wochentag ein Textfeld gepflegt
   Objekten die weiteste Spanne) und hat das Raster als Schrittweite, wenn alle Objekte
   dasselbe haben. Bei einem einzelnen Objekt stehen Personen- und Dauergrenzen im Label und
   als Eingabegrenzen, im Modus `period` die Öffnungszeiten unter den Datumsfeldern. Nach dem
-  Absenden ersetzt die Bestätigung das Formular.
+  Absenden ersetzt die Bestätigung das Formular. Die Umleitung nach einer erfolgreichen
+  Anfrage trägt `rsv_sent=<Abschnitt>`, die Rücksprungadresse des Formulars nicht; so lädt
+  der Link „Weitere Anfrage“ die Seite neu (ein Link, der sich nur im Anker unterscheidet,
+  springt nur).
+- Aufklappen (0.8.0): `frontend_body.js` macht die Überschrift des Formulars zum Schalter
+  (Disclosure-Muster, `aria-expanded`) und klappt das Formular zu. Offen bleibt es ohne
+  JavaScript, mit Fehlermeldung, nach dem Absenden und beim Sprung zum Anker
+  `#rsv-request-<Abschnitt>`.
 - Auswahl mehrerer Objekte (0.7.1): Unter der Auswahl steht je Objekt mit Grenzen eine Zeile
   (Personen, Dauer, frühester Beginn bei Vorlauf, Höchstvorlauf, Öffnungszeiten mit
   zusammengefassten Tagen wie „Mo.–Fr. 08:00–18:00“, „Buchung wird sofort bestätigt“), per
@@ -466,8 +491,12 @@ Es gelten die Konventionen aus news_img:
 
 ## 7. Barrierefreiheit (WCAG 2.2 AA)
 
-- Plan und Kalender als `<table>` mit `<th scope>`. Jede Zelle mit vollständigem Text für
-  Screenreader (Datum ausgeschrieben, Status, An- oder Abreise).
+- Plan, Kalender und Woche als `<table>` mit `<th scope>`. Jede Zelle mit vollständigem Text
+  für Screenreader (Datum ausgeschrieben, Status, An- oder Abreise; in der Woche Tag, Zeiten
+  und Zustand des Blocks).
+- Das Anfrageformular ist zugeklappt, der Schalter steckt in der Überschrift
+  (`<h3><button aria-expanded>`), damit die Überschriften-Navigation es findet; `<details>`
+  nicht, weil `<summary>` als Schalter die Überschrift darin verdeckt.
 - Status nie nur über die Farbe, sondern zusätzlich mit Muster oder Symbol und Rand. Muss
   auch im Kontrastmodus (`forced-colors`) funktionieren. Kontrast mindestens 4,5:1 für Text
   und 3:1 für Grafiken.
@@ -522,7 +551,7 @@ Bilder, Galerie, Kategorien) liegt in einem Modul des CMS, das dafür ohnehin ge
   - news_img braucht dafür keine Änderung.
 - Bekannte Grenze: erscheint derselbe Abschnitt zweimal auf einer Seite (Abschnitt und
   Droplet, oder zwei Droplets), teilen sich beide Anker und URL-Parameter (`rsv_month_<id>`,
-  `rsv_view_<id>`); Blättern wirkt dann auf beide.
+  `rsv_week_<id>`, `rsv_view_<id>`); Blättern wirkt dann auf beide.
 - news_img setzt `arg_separator.output` für die ganze Anfrage auf `&amp;`; URLs werden
   deshalb mit ausdrücklichem Trennzeichen gebaut.
 
@@ -550,9 +579,11 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 ## 10. Offene Punkte
 
 ### Nächste Schritte
-1. **Wochenansicht** mit Stundenraster.
+Noch festzulegen.
 
 ### Weitere offene Punkte
+- Wochenansicht: Klick auf einen freien Block füllt das Anfrageformular vor (Objekt, Beginn,
+  Ende) und klappt es auf.
 - Mailversand im Zusammenspiel mit einem echten Mailserver testen (Eingang, sofort bestätigt,
   Bestätigung, Ablehnung, Benachrichtigung).
 - Upgrade: Neue Spalten legt `upgrade.php` an (`Schema::install()`). Wer nur Dateien austauscht
@@ -574,7 +605,8 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 - Entwicklung in WBCE: Verzeichnisverknüpfung von `modules/reservations` auf `reservations/wbce`.
 - Einzelobjekt: das angezeigte Objekt wird in den Einstellungen gewählt (Spalte `settings.resource_id`), ohne Auswahl das erste aktive.
 - Belegungsplan über 3 Monate: drei Monatstabellen untereinander statt einer breiten Tabelle.
-- Wochenansicht mit Stundenraster (Objekte mit Uhrzeiten): eigener Schritt nach der Darstellung; bis dahin zeigt der Plan solche Objekte als Vormittag/Nachmittag.
+- Wochenansicht mit Stundenraster (0.8.0): nur im Modus `period`, je Objekt eine Tabelle, Spanne aus den Öffnungszeiten (sonst 08:00–20:00), Zeilen von 30 Minuten (60 bei Raster 60); als Startansicht wählbar. Plan und Monat zeigen solche Objekte weiter als Vormittag/Nachmittag.
+- Anfrageformular aufklappbar (0.8.0), ohne Einstellung dafür.
 - Gemischte Buchungsmodi in einem Abschnitt: **nein**. Der Modus gehört zum Abschnitt (`settings.booking_mode`); für einen anderen Modus einen zweiten Abschnitt anlegen.
 - Anfragen ohne Bestätigungslink blockieren den Zeitraum **sofort** (Double-Opt-in später); abschaltbar über „blockiert“ beim Status mit der Rolle „neue Anfrage“.
 - Spamschutz: FTAN und Honeypot immer, Captcha je Abschnitt wählbar.

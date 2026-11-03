@@ -1,6 +1,6 @@
 # reservations – Konzept
 
-Stand: 27.10.2026 · Arbeitsentwurf zur Abstimmung, noch kein Code
+Stand: 03.11.2026 · Modulversion 0.6.0
 
 Nachfolger von `bookings_v2`, als eigenständiges Modul mit neuem Namen. Belegungs- und
 Reservierungskalender für beliebige buchbare Dinge: Ferienwohnungen, Besprechungsräume,
@@ -202,11 +202,16 @@ Buchungen hat; sonst gingen beim nächsten Bearbeiten Uhrzeiten verloren.
 | type_id | INT PK AI | |
 | section_id | INT, Index | |
 | title | VARCHAR(100) | z. B. „Ferienwohnung“, „Besprechungsraum“ |
-| defaults | TEXT (JSON) | Vorgabewerte für neue Objekte dieses Typs (Raster, Puffer, An- und Abreisezeit …) |
+| defaults | TEXT (JSON) | Vorgabewerte für neue Objekte dieses Typs: die Buchungseinstellungen (siehe unten) |
 | position | INT | Reihenfolge, auch Gruppierung im Belegungsplan |
 
 Die Vorgabewerte werden beim Anlegen eines Objekts **kopiert**, nicht zur Laufzeit vererbt.
-Spätere Änderungen am Typ ändern also keine bestehenden Objekte. Beim Anlegen eines
+Spätere Änderungen am Typ ändern also keine bestehenden Objekte. Erlaubt sind nur die
+Schlüssel aus `BookableResource::RULE_KEYS` (`capacity`, `minPersons`, `autoConfirm`,
+`leadMinMinutes`, `leadMaxDays`, `minDuration`, `maxDuration`, `bufferBefore`,
+`bufferAfter`); geprüft wird mit denselben Regeln wie beim Objekt
+(`ResourceService::validateRules()`). Raster, An- und Abreisezeit folgen mit den
+Verfügbarkeitsregeln. Beim Anlegen eines
 Abschnitts gibt es einen Typ als Vorgabe („Objekt“). Ein Typ, den Objekte verwenden, und der
 letzte Typ eines Abschnitts lassen sich nicht löschen. Bis 0.2.0 stand der Buchungsmodus am
 Typ (`types.booking_mode`); die Installation entfernt diese Spalte.
@@ -236,13 +241,20 @@ Typ (`types.booking_mode`); die Installation entfernt diese Spalte.
 | active | TINYINT(1) | inaktiv: nicht im Frontend und nicht anfragbar |
 | position | INT | Reihenfolge |
 | presentation_ref | VARCHAR(100) NULL | neutraler Verweis auf die Präsentation, z. B. `news_img:12` (siehe Abschnitt 8) |
-| capacity | SMALLINT NULL | Personen, nur zur Information |
+| capacity | SMALLINT NULL | höchstens so viele Personen je Anfrage |
+| min_persons | SMALLINT NULL | mindestens so viele Personen je Anfrage; macht die Personenzahl zur Pflicht |
 | auto_confirm | TINYINT(1) | Anfrage sofort verbindlich |
 | slot_minutes | SMALLINT | Raster im Modus `period` (15/30/60) |
-| min_duration / max_duration | INT NULL | Minuten bzw. Nächte je nach Modus |
-| buffer_before / buffer_after | SMALLINT | Minuten |
-| lead_min_minutes | INT | frühestens X Minuten vorher buchbar |
-| lead_max_days | INT | höchstens X Tage im Voraus |
+| min_duration / max_duration | INT NULL | Minuten bzw. Nächte je nach Modus; nur für Anfragen |
+| buffer_before / buffer_after | SMALLINT | Minuten, nur Modus `period`; gelten für alle Buchungen |
+| lead_min_minutes | INT | Vorlauf; im Modus `day` in ganzen Tagen ab heute gezählt |
+| lead_max_days | INT NULL | höchstens X Tage im Voraus |
+
+**Buchungseinstellungen** pflegt der Admin beim Bearbeiten eines Objekts; neue Objekte
+übernehmen die Vorgabewerte ihres Typs. Das Formular zeigt die Einheiten des Modus: Vorlauf
+in Tagen (`day`) bzw. Stunden (`period`), Dauer in Nächten bzw. Minuten, Puffer nur im Modus
+`period`; gespeichert wird in den Einheiten der Tabelle. Personen, Vorlauf und Dauer gelten
+nur für Anfragen über die Website; im Backend lassen sich Buchungen frei eintragen.
 | checkin_time / checkout_time | TIME NULL | Modus `day`, nur Anzeige |
 
 ### hours (Verfügbarkeit, Modus `period`/`appointment`)
@@ -283,8 +295,14 @@ Keine Zeilen bedeutet: rund um die Uhr verfügbar.
 
 **Ablauf einer Anfrage** (`RequestService`):
 - Prüfung: Anfragen im Abschnitt aktiv, Objekt aktiv, Name, E-Mail, Telefon, Personen
-  (höchstens die Kapazität), Nachricht, Einwilligung, Vorlauf und Höchstvorlauf. Ganze Tage
-  beginnen um Mitternacht; die früheste Anreise ist der Tag nach „jetzt + Vorlauf“.
+  (zwischen `min_persons` und `capacity`, mit Untergrenze Pflicht), Nachricht, Einwilligung,
+  Vorlauf, Höchstvorlauf, Mindest- und Höchstdauer (Nächte bzw. Minuten).
+- Früheste Anreise (`earliestStart()`): im Modus `day` heute + Vorlauf in Tagen, nie vor
+  morgen (2 Tage an einem Montag: Mittwoch); im Modus `period` jetzt + Vorlauf. Die
+  Datumsauswahl im Formular nutzt dieselbe Methode.
+- Formular: Bei einem einzelnen Objekt stehen Personen- und Dauergrenzen im Label und als
+  Eingabegrenzen. Bei einer Auswahl mehrerer Objekte prüft nur der Server; die Datumsauswahl
+  beginnt beim frühesten Termin aller Objekte.
 - Buchung und Anfrage entstehen in **einer Transaktion** (`BookingService::create()` mit
   Rückruf), samt Prüfung auf Überschneidung. Status: Rolle „neue Anfrage“, bei
   `auto_confirm` gleich „Anfrage bestätigt“.
@@ -497,6 +515,10 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 - Upgrade: Neue Spalten legt `upgrade.php` an (`Schema::install()`). Wer nur Dateien austauscht
   und kein Modul-Upgrade auslöst, bekommt im Frontend einen Fehler, bis das Backend des
   Abschnitts einmal geöffnet wurde. In die Upgrade-Anleitung aufnehmen.
+- Puffer im Modus `day` („Tage frei zwischen zwei Buchungen“) bräuchte eigene Logik; nur bei
+  Bedarf.
+- An- und Abreisezeit (`checkin_time`/`checkout_time`) werden noch nirgends angezeigt;
+  zusammen mit der Anzeige im Formular und in den Mails.
 
 ### Erledigt
 - Objekttypen und Status: **pro Abschnitt**.
@@ -513,5 +535,8 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 - Gemischte Buchungsmodi in einem Abschnitt: **nein**. Der Modus gehört zum Abschnitt (`settings.booking_mode`); für einen anderen Modus einen zweiten Abschnitt anlegen.
 - Anfragen ohne Bestätigungslink blockieren den Zeitraum **sofort** (Double-Opt-in später); abschaltbar über „blockiert“ beim Status mit der Rolle „neue Anfrage“.
 - Spamschutz: FTAN und Honeypot immer, Captcha je Abschnitt wählbar.
+- Buchungseinstellungen je Objekt (0.6.0): Personen mit Unter- und Obergrenze, Vorlauf,
+  Höchstvorlauf, Mindest- und Höchstdauer, Puffer; Vorgabewerte am Objekttyp, beim Anlegen
+  kopiert. Mindest- und Höchstdauer gelten nur für Anfragen.
 - Objektliste im Backend: Spalten „Aktuelle Buchungen“ (laufende und künftige mit blockierendem Status, ohne offene Anfragen) und „Offene Anfragen“ (Rolle „neue Anfrage“); vergangene, stornierte und abgelehnte zählen nicht.
 - Objektbeschreibungen in WBCE: **1:1** ein news_img-Abschnitt je Reservations-Abschnitt (`settings.presentation_source`), Zuordnung je Objekt über `resources.presentation_ref`; Port `PresentationProvider` erst mit Catamaran, Vorschaubild vorerst nicht.

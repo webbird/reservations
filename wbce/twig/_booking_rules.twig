@@ -1,12 +1,13 @@
 {#
     reservations/twig/_booking_rules.twig – booking rules of an object, or the defaults of a type
-    Expects: rules (form values), whole_days, id (prefix for element ids)
+    Expects: rules (form values), whole_days, id (prefix for element ids);
+    optional: legend and note (language keys) for the defaults of a type
     Units: lead time in days (day mode) or hours, durations in nights or minutes,
     buffers only in period mode.
 #}
 <fieldset aria-describedby="{{ id }}-rules-hint">
-    <legend>{{ t('BOOKING_RULES') }}</legend>
-    <small id="{{ id }}-rules-hint">{{ t('BOOKING_RULES_HINT') }}</small>
+    <legend>{{ t(legend ?? 'BOOKING_RULES') }}</legend>
+    <small id="{{ id }}-rules-hint">{% if note is defined %}{{ t(note) }} {% endif %}{{ t('BOOKING_RULES_HINT') }}</small>
     <p>
         <label for="{{ id }}-min-persons">{{ t('MIN_PERSONS') }}</label>
         <input id="{{ id }}-min-persons" type="number" name="min_persons" value="{{ rules.min_persons }}" min="1" max="32767" inputmode="numeric">
@@ -23,7 +24,7 @@
     <p>
         <label for="{{ id }}-lead-min">{{ t(whole_days ? 'LEAD_MIN_DAYS' : 'LEAD_MIN_HOURS') }}</label>
         <input id="{{ id }}-lead-min" type="number" name="lead_min" value="{{ rules.lead_min }}" min="0" inputmode="numeric" aria-describedby="{{ id }}-lead-min-hint">
-        <small id="{{ id }}-lead-min-hint">{{ t('LEAD_MIN_HINT') }}</small>
+        <small id="{{ id }}-lead-min-hint">{{ t(whole_days ? 'LEAD_MIN_HINT_DAYS' : 'LEAD_MIN_HINT') }}</small>
     </p>
     <p>
         <label for="{{ id }}-lead-max">{{ t('LEAD_MAX_DAYS') }}</label>

@@ -99,8 +99,15 @@ final class RequestService
         }
 
         $now = $this->clock->now();
-        // whole days start at midnight, so in day mode the earliest arrival is the day after now + lead time
-        $earliest = $now->add(new DateInterval('PT' . $resource->leadMinMinutes . 'M'));
+        $wholeDays = $settings->bookingMode === BookingMode::Day;
+        if ($wholeDays) {
+            // days count from today (2 days lead on Monday: Wednesday), but today has begun, so never before tomorrow
+            $today = $now->setTime(0, 0);
+            $leadDays = max(1, (int) ceil($resource->leadMinMinutes / 1440));
+            $earliest = $today->add(new DateInterval('P' . $leadDays . 'D'));
+        } else {
+            $earliest = $now->add(new DateInterval('PT' . $resource->leadMinMinutes . 'M'));
+        }
         if ($range->start < $earliest) {
             return Result::fail('request.too_early', [], 'range');
         }
@@ -108,7 +115,6 @@ final class RequestService
             return Result::fail('request.too_late', ['max' => $resource->leadMaxDays], 'range');
         }
         // nights in day mode (both ends at midnight, so days of the difference), minutes in period mode
-        $wholeDays = $settings->bookingMode === BookingMode::Day;
         $duration = $wholeDays ? $range->start->diff($range->end)->days : $range->durationMinutes();
         $unit = $wholeDays ? 'nights' : 'minutes';
         if ($resource->minDuration !== null && $duration < $resource->minDuration) {

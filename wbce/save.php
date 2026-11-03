@@ -58,11 +58,8 @@ $finish = static function (Result $result, array $params, array $old, string $su
 switch ($post('rsv_action')) {
     case 'resource_save':
         $id = (int) $post('resource_id');
-        $old = ['resource_id' => $id, 'title' => $post('title'), 'type_id' => (int) $post('type_id'), 'active' => $post('active') === '1', 'post_id' => (int) $post('post_id')];
-        foreach (array_keys(ReservationsWbce::RULE_FIELDS) as $field) {
-            $old[$field] = $post($field);
-        }
-        $old['auto_confirm'] = $post('auto_confirm') === '1';
+        $old = ['resource_id' => $id, 'title' => $post('title'), 'type_id' => (int) $post('type_id'), 'active' => $post('active') === '1', 'post_id' => (int) $post('post_id')]
+            + ReservationsWbce::rulesInput($post);
         $existing = $id > 0 ? ReservationsWbce::resources()->find($sectionId, $id) : null;
         if ($id > 0 && $existing === null) {
             $finish(Result::fail('resource.not_found'), [], $old, '');
@@ -225,10 +222,14 @@ switch ($post('rsv_action')) {
 
     case 'type_save':
         $id = (int) $post('type_id');
-        $old = ['type_id' => $id, 'title' => $post('title'), 'position' => (int) $post('position')];
+        $old = ['type_id' => $id, 'title' => $post('title'), 'position' => (int) $post('position')] + ReservationsWbce::rulesInput($post);
         $existing = $id > 0 ? ReservationsWbce::types()->find($sectionId, $id) : null;
-        // defaults are not on the form and keep their stored values
-        $type = new Type($existing?->id, $sectionId, $old['title'], $existing->defaults ?? [], $old['position']);
+        $rules = ReservationsWbce::rulesFromPost($post, ReservationsWbce::wholeDays($sectionId));
+        if ($rules === null) {
+            $finish(Result::fail('settings.invalid_value'), ['rsv_types' => 1, 'rsv_type' => $id], $old, '');
+        }
+        // rules missing on the form (buffers in day mode) keep their stored defaults
+        $type = new Type($existing?->id, $sectionId, $old['title'], array_replace($existing->defaults ?? [], $rules), $old['position']);
         $service = ReservationsWbce::typeService();
         $result = $id > 0 ? $service->update($type) : $service->create($type);
         $finish($result, ['rsv_types' => 1] + ($result->ok ? [] : ['rsv_type' => $id]), $old, ReservationsWbce::t('MSG_TYPE_SAVED'));

@@ -57,6 +57,7 @@
                 <label for="rsv-type-position-{{ section_id }}">{{ t('POSITION') }}</label>
                 <input id="rsv-type-position-{{ section_id }}" type="number" name="position" value="{{ form.position }}" min="0" step="1" required>
             </p>
+            {% include '_booking_rules.twig' with {rules: form, id: 'rsv-type-rules-' ~ section_id, legend: 'TYPE_DEFAULTS', note: 'TYPE_DEFAULTS_HINT'} %}
             <p class="rsv-buttons">
                 <button type="submit" class="button ico-save">{{ L_('TEXT:SAVE') }}</button>
                 {% if form.type_id %}<a href="{{ url_types }}">{{ L_('TEXT:CANCEL') }}</a>{% endif %}

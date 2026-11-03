@@ -293,10 +293,25 @@ final class ReservationsWbce
      * Form fields of the booking rules (_booking_rules.twig) => BookableResource::RULE_KEYS,
      * without the checkbox auto_confirm.
      */
-    public const RULE_FIELDS = [
+    private const RULE_FIELDS = [
         'capacity' => 'capacity', 'min_persons' => 'minPersons', 'lead_min' => 'leadMinMinutes', 'lead_max_days' => 'leadMaxDays',
         'min_duration' => 'minDuration', 'max_duration' => 'maxDuration', 'buffer_before' => 'bufferBefore', 'buffer_after' => 'bufferAfter',
     ];
+
+    /**
+     * The booking rule fields as posted, to show them again after an error.
+     *
+     * @param callable(string): string $post
+     * @return array<string, string|bool>
+     */
+    public static function rulesInput(callable $post): array
+    {
+        $input = ['auto_confirm' => $post('auto_confirm') === '1'];
+        foreach (array_keys(self::RULE_FIELDS) as $field) {
+            $input[$field] = $post($field);
+        }
+        return $input;
+    }
 
     /**
      * Booking rules in the units of the form: lead time in days (day mode) or

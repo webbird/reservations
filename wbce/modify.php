@@ -122,13 +122,17 @@ if ($rsvParam('rsv_types') === 1) {
         ];
     }
     $rsvEdit = $rsvTypes[$rsvParam('rsv_type')] ?? null;
+    $rsvWholeDays = ReservationsWbce::wholeDays($rsvSection);
+    // the defaults shown as the rules of a resource that would take them
+    $rsvDefaults = (new Reservations\Core\Domain\BookableResource(null, $rsvSection, 0, ''))->withRules($rsvEdit->defaults ?? []);
     ReservationsWbce::twig()->display('modify_types.twig', $rsvVars + [
-        'types'     => $rsvRows,
-        'form'      => $rsvOld ?? [
+        'types'      => $rsvRows,
+        'form'       => $rsvOld ?? [
             'type_id'  => $rsvEdit->id ?? 0,
             'title'    => $rsvEdit->title ?? '',
             'position' => $rsvEdit->position ?? count($rsvTypes),
-        ],
+        ] + ReservationsWbce::rulesToForm($rsvDefaults, $rsvWholeDays),
+        'whole_days' => $rsvWholeDays,
         'url_types' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_types' => 1]),
     ]);
     return;

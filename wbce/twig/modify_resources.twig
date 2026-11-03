@@ -79,6 +79,10 @@
                 <input id="rsv-active-{{ section_id }}" type="checkbox" name="active" value="1"{% if form.active %} checked{% endif %}>
                 <label for="rsv-active-{{ section_id }}">{{ t('ACTIVE') }}</label>
             </p>
+            {# new objects take the defaults of their type #}
+            {% if form.resource_id %}
+                {% include '_booking_rules.twig' with {rules: form, id: 'rsv-rules-' ~ section_id} %}
+            {% endif %}
             <p class="rsv-buttons">
                 <button type="submit" class="button ico-save">{{ L_('TEXT:SAVE') }}</button>
                 {% if form.resource_id %}<a href="{{ url_list }}">{{ L_('TEXT:CANCEL') }}</a>{% endif %}

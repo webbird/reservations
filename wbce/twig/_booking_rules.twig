@@ -1,0 +1,51 @@
+{#
+    reservations/twig/_booking_rules.twig – booking rules of an object, or the defaults of a type
+    Expects: rules (form values), whole_days, id (prefix for element ids)
+    Units: lead time in days (day mode) or hours, durations in nights or minutes,
+    buffers only in period mode.
+#}
+<fieldset aria-describedby="{{ id }}-rules-hint">
+    <legend>{{ t('BOOKING_RULES') }}</legend>
+    <small id="{{ id }}-rules-hint">{{ t('BOOKING_RULES_HINT') }}</small>
+    <p>
+        <label for="{{ id }}-min-persons">{{ t('MIN_PERSONS') }}</label>
+        <input id="{{ id }}-min-persons" type="number" name="min_persons" value="{{ rules.min_persons }}" min="1" max="32767" inputmode="numeric">
+    </p>
+    <p>
+        <label for="{{ id }}-capacity">{{ t('MAX_PERSONS') }}</label>
+        <input id="{{ id }}-capacity" type="number" name="capacity" value="{{ rules.capacity }}" min="1" max="32767" inputmode="numeric">
+    </p>
+    <p>
+        <input id="{{ id }}-auto-confirm" type="checkbox" name="auto_confirm" value="1"{% if rules.auto_confirm %} checked{% endif %} aria-describedby="{{ id }}-auto-confirm-hint">
+        <label for="{{ id }}-auto-confirm">{{ t('AUTO_CONFIRM') }}</label>
+        <small id="{{ id }}-auto-confirm-hint">{{ t('AUTO_CONFIRM_HINT') }}</small>
+    </p>
+    <p>
+        <label for="{{ id }}-lead-min">{{ t(whole_days ? 'LEAD_MIN_DAYS' : 'LEAD_MIN_HOURS') }}</label>
+        <input id="{{ id }}-lead-min" type="number" name="lead_min" value="{{ rules.lead_min }}" min="0" inputmode="numeric" aria-describedby="{{ id }}-lead-min-hint">
+        <small id="{{ id }}-lead-min-hint">{{ t('LEAD_MIN_HINT') }}</small>
+    </p>
+    <p>
+        <label for="{{ id }}-lead-max">{{ t('LEAD_MAX_DAYS') }}</label>
+        <input id="{{ id }}-lead-max" type="number" name="lead_max_days" value="{{ rules.lead_max_days }}" min="1" inputmode="numeric">
+    </p>
+    <p>
+        <label for="{{ id }}-min-duration">{{ t(whole_days ? 'MIN_NIGHTS' : 'MIN_MINUTES') }}</label>
+        <input id="{{ id }}-min-duration" type="number" name="min_duration" value="{{ rules.min_duration }}" min="1" inputmode="numeric">
+    </p>
+    <p>
+        <label for="{{ id }}-max-duration">{{ t(whole_days ? 'MAX_NIGHTS' : 'MAX_MINUTES') }}</label>
+        <input id="{{ id }}-max-duration" type="number" name="max_duration" value="{{ rules.max_duration }}" min="1" inputmode="numeric">
+    </p>
+    {% if not whole_days %}
+        <p>
+            <label for="{{ id }}-buffer-before">{{ t('BUFFER_BEFORE') }}</label>
+            <input id="{{ id }}-buffer-before" type="number" name="buffer_before" value="{{ rules.buffer_before }}" min="0" max="32767" inputmode="numeric" aria-describedby="{{ id }}-buffer-hint">
+        </p>
+        <p>
+            <label for="{{ id }}-buffer-after">{{ t('BUFFER_AFTER') }}</label>
+            <input id="{{ id }}-buffer-after" type="number" name="buffer_after" value="{{ rules.buffer_after }}" min="0" max="32767" inputmode="numeric" aria-describedby="{{ id }}-buffer-hint">
+            <small id="{{ id }}-buffer-hint">{{ t('BUFFER_HINT') }}</small>
+        </p>
+    {% endif %}
+</fieldset>

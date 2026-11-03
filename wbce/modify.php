@@ -243,7 +243,7 @@ $rsvForm = $rsvOld ?? [
     'type_id'     => $rsvEdit->typeId ?? array_key_first($rsvTypes),
     'active'      => $rsvEdit->active ?? true,
     'post_id'     => ReservationsNewsImg::idOf($rsvEdit?->presentationRef) ?? 0,
-];
+] + ($rsvEdit === null ? [] : ReservationsWbce::rulesToForm($rsvEdit, ReservationsWbce::wholeDays($rsvSection)));
 
 ReservationsWbce::twig()->display('modify_resources.twig', $rsvVars + [
     'resources'    => $rsvRows,
@@ -251,6 +251,7 @@ ReservationsWbce::twig()->display('modify_resources.twig', $rsvVars + [
     'posts'        => $rsvNews === null ? [] : ReservationsNewsImg::choices($rsvNews),
     'types'        => array_map(static fn ($t) => ['id' => $t->id, 'title' => $t->title], array_values($rsvTypes)),
     'form'         => $rsvForm,
+    'whole_days'   => ReservationsWbce::wholeDays($rsvSection),
     'url_settings' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_settings' => 1]),
     'url_types'    => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_types' => 1]),
     'url_statuses' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_statuses' => 1]),

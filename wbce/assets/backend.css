@@ -53,7 +53,8 @@
 .mod_reservations:not(#rsv):not(#rsv) .rsv-form .rsv-choice p { margin: 0 0 .2em; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-form .rsv-choice label,
 .mod_reservations:not(#rsv):not(#rsv) .rsv-form label[for^="rsv-labels"],
-.mod_reservations:not(#rsv):not(#rsv) .rsv-form label[for^="rsv-blocks"] { display: inline; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form label[for^="rsv-blocks"],
+.mod_reservations:not(#rsv):not(#rsv) .rsv-form input[type="checkbox"] + label { display: inline; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-form input[type="number"] { width: 6em; }
 
 /* contact data of a request */

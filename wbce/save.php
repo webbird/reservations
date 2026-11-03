@@ -59,6 +59,10 @@ switch ($post('rsv_action')) {
     case 'resource_save':
         $id = (int) $post('resource_id');
         $old = ['resource_id' => $id, 'title' => $post('title'), 'type_id' => (int) $post('type_id'), 'active' => $post('active') === '1', 'post_id' => (int) $post('post_id')];
+        foreach (array_keys(ReservationsWbce::RULE_FIELDS) as $field) {
+            $old[$field] = $post($field);
+        }
+        $old['auto_confirm'] = $post('auto_confirm') === '1';
         $existing = $id > 0 ? ReservationsWbce::resources()->find($sectionId, $id) : null;
         if ($id > 0 && $existing === null) {
             $finish(Result::fail('resource.not_found'), [], $old, '');
@@ -97,6 +101,14 @@ switch ($post('rsv_action')) {
             checkinTime: $existing?->checkinTime,
             checkoutTime: $existing?->checkoutTime,
         );
+        // only the edit form has the booking rules; new objects take those of their type
+        if ($existing !== null) {
+            $rules = ReservationsWbce::rulesFromPost($post, ReservationsWbce::wholeDays($sectionId));
+            if ($rules === null) {
+                $finish(Result::fail('settings.invalid_value'), ['rsv_edit' => $id], $old, '');
+            }
+            $resource = $resource->withRules($rules);
+        }
         $service = ReservationsWbce::resourceService();
         $result = $existing === null ? $service->create($resource) : $service->update($resource);
         $finish($result, $result->ok ? [] : ['rsv_edit' => $id], $old, ReservationsWbce::t('MSG_RESOURCE_SAVED'));

@@ -170,38 +170,74 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
         return $unit === '' ? $text : $text . ' ' . ReservationsWbce::t($unit . (($min ?? $max) === 1 && ($min === null || $max === null) ? '' : 'S'));
     };
     $rsvRequests = ReservationsWbce::requestService();
-    // opening hours of a single object in period mode, e.g. "Monday: 09:00–12:00, 13:00–17:00"
-    $rsvHours = [];
-    if (!$rsvWholeDays && count($rsvResources) === 1) {
-        $rsvDayName = $rsvFmt('EEEE');
-        foreach (ReservationsWbce::hours()->find($rsvSection, (int) $rsvResources[0]->id)->days as $rsvDay => $rsvIntervals) {
-            // 5 January 2026 is a Monday
-            $rsvHours[] = ['day' => $rsvDayName->format(new DateTimeImmutable(sprintf('2026-01-%02d', 4 + $rsvDay), $rsvTz)), 'times' => OpeningHours::formatDay($rsvIntervals)];
-        }
-    }
-    // the grid only fits the date picker if all objects share it
-    $rsvSlots = array_unique(array_map(static fn ($r) => $r->slotMinutes, $rsvResources));
     $rsvFormat = $rsvWholeDays ? 'Y-m-d' : 'Y-m-d\TH:i';
+    $rsvDayName = $rsvFmt('EEEE');
+    $rsvDayShort = $rsvFmt('EEEEEE');
+    // 5 January 2026 is a Monday
+    $rsvDayOfWeek = static fn (int $day): DateTimeImmutable => new DateTimeImmutable(sprintf('2026-01-%02d', 4 + $day), $rsvTz);
+    // the limits of each object: as values for the form fields and as text; request.php checks them again
+    $rsvItems = [];
+    foreach ($rsvResources as $rsvResource) {
+        $rsvDays = $rsvWholeDays ? [] : ReservationsWbce::hours()->find($rsvSection, (int) $rsvResource->id)->days;
+        $rsvEarliest = $rsvRequests->earliestStart($rsvResource, $rsvWholeDays);
+        // consecutive days with the same hours as one: "Mo.–Fr. 08:00–18:00; Sa. 09:00–12:00"
+        $rsvHourGroups = [];
+        foreach ($rsvDays as $rsvDay => $rsvIntervals) {
+            $rsvTimes = OpeningHours::formatDay($rsvIntervals);
+            $rsvPrevGroup = array_key_last($rsvHourGroups);
+            if ($rsvPrevGroup !== null && $rsvHourGroups[$rsvPrevGroup]['times'] === $rsvTimes && $rsvHourGroups[$rsvPrevGroup]['to'] === $rsvDay - 1) {
+                $rsvHourGroups[$rsvPrevGroup]['to'] = $rsvDay;
+            } else {
+                $rsvHourGroups[] = ['from' => $rsvDay, 'to' => $rsvDay, 'times' => $rsvTimes];
+            }
+        }
+        $rsvHoursText = implode('; ', array_map(
+            static fn (array $g): string => $rsvDayShort->format($rsvDayOfWeek($g['from']))
+                . ($g['to'] > $g['from'] ? '–' . $rsvDayShort->format($rsvDayOfWeek($g['to'])) : '') . ' ' . $g['times'],
+            $rsvHourGroups,
+        ));
+        $rsvItems[] = [
+            'id'            => $rsvResource->id,
+            'title'         => $rsvResource->title,
+            'capacity'      => $rsvResource->capacity,
+            'min_persons'   => $rsvResource->minPersons,
+            'persons_note'  => $rsvLimit($rsvResource->minPersons, $rsvResource->capacity),
+            'duration_note' => $rsvLimit($rsvResource->minDuration, $rsvResource->maxDuration, $rsvWholeDays ? 'UNIT_NIGHT' : 'UNIT_MINUTE'),
+            'min'           => $rsvEarliest->format($rsvFormat),
+            'max'           => $rsvRequests->latestStart($rsvResource, $rsvSettings)->format($rsvFormat),
+            'step'          => $rsvWholeDays ? null : $rsvResource->slotMinutes * 60,
+            // a single object lists its hours under the date fields, e.g. "Monday: 09:00–12:00, 13:00–17:00"
+            'hours'         => array_map(
+                static fn (int $day, array $intervals): array => ['day' => $rsvDayName->format($rsvDayOfWeek($day)), 'times' => OpeningHours::formatDay($intervals)],
+                array_keys($rsvDays),
+                $rsvDays,
+            ),
+            // with a choice of objects one line each below the choice
+            'limits'        => array_values(array_filter([
+                $rsvLimit($rsvResource->minPersons, $rsvResource->capacity, 'UNIT_PERSON'),
+                $rsvLimit($rsvResource->minDuration, $rsvResource->maxDuration, $rsvWholeDays ? 'UNIT_NIGHT' : 'UNIT_MINUTE'),
+                $rsvResource->leadMinMinutes > 0 ? ReservationsWbce::t('LIMITS_EARLIEST', $rsvEarliest->format($rsvWholeDays ? DATE_FORMAT : DATE_FORMAT . ' ' . TIME_FORMAT)) : null,
+                $rsvResource->leadMaxDays !== null ? ReservationsWbce::t($rsvResource->leadMaxDays === 1 ? 'LIMITS_LEAD_MAX_ONE' : 'LIMITS_LEAD_MAX', $rsvResource->leadMaxDays) : null,
+                $rsvDays === [] ? null : ReservationsWbce::t('LIMITS_HOURS', $rsvHoursText) . (count($rsvDays) < 7 ? ', ' . ReservationsWbce::t('LIMITS_CLOSED_OTHERS') : ''),
+                $rsvResource->autoConfirm ? ReservationsWbce::t('LIMITS_AUTO_CONFIRM') : null,
+            ])),
+        ];
+    }
+    $rsvOnlyItem = count($rsvItems) === 1 ? $rsvItems[0] : null;
+    // the grid only fits the date picker if all objects share it
+    $rsvSteps = array_unique(array_column($rsvItems, 'step'));
     $rsvVars['request'] = [
         'action'     => WB_URL . '/modules/reservations/request.php',
         'return'     => (string) strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '#'),
         'ftan'       => $GLOBALS['wb']->getFTAN(),
-        // limits of a single object go into the form; with a choice of objects only request.php checks them
-        'resources'  => array_map(static fn ($r) => [
-            'id'            => $r->id,
-            'title'         => $r->title,
-            'capacity'      => $r->capacity,
-            'min_persons'   => $r->minPersons,
-            'persons_note'  => $rsvLimit($r->minPersons, $r->capacity),
-            'duration_note' => $rsvLimit($r->minDuration, $r->maxDuration, $rsvWholeDays ? 'UNIT_NIGHT' : 'UNIT_MINUTE'),
-        ], $rsvResources),
+        'resources'  => $rsvItems,
         'whole_days' => $rsvWholeDays,
-        // only hints for the date picker, request.php checks again: the widest range of all objects
-        'min'        => min(array_map(static fn ($r) => $rsvRequests->earliestStart($r, $rsvWholeDays), $rsvResources))->format($rsvFormat),
-        'max'        => max(array_map(static fn ($r) => $rsvRequests->latestStart($r, $rsvSettings), $rsvResources))->format($rsvFormat),
-        'step'       => !$rsvWholeDays && count($rsvSlots) === 1 ? reset($rsvSlots) * 60 : null,
-        'hours'      => $rsvHours,
-        'closed_days' => $rsvHours !== [] && count($rsvHours) < 7,
+        // without JavaScript the date picker offers the widest range of all objects (ISO strings sort like dates)
+        'min'        => min(array_column($rsvItems, 'min')),
+        'max'        => max(array_column($rsvItems, 'max')),
+        'step'       => count($rsvSteps) === 1 ? reset($rsvSteps) : null,
+        'hours'      => $rsvOnlyItem['hours'] ?? [],
+        'closed_days' => $rsvOnlyItem !== null && $rsvOnlyItem['hours'] !== [] && count($rsvOnlyItem['hours']) < 7,
         'retention'  => $rsvSettings->retentionDays,
         'captcha'    => $rsvCaptcha,
         'errors'     => $rsvFlash['errors'] ?? [],

@@ -32,14 +32,29 @@
             <input type="hidden" name="resource_id" value="{{ r.resources[0].id }}">
             <p>{{ t('RESOURCE') }}: <strong>{{ r.resources[0].title }}</strong></p>
         {% else %}
+            {% set limited = r.resources|filter(res => res.limits) %}
+            {% set limits_id = 'rsv-req-limits-' ~ section_id %}
             <p>
                 <label for="rsv-req-resource-{{ section_id }}">{{ t('RESOURCE') }} <span aria-hidden="true">*</span></label>
-                <select id="rsv-req-resource-{{ section_id }}" name="resource_id" required{{ r.field == 'resource' ? (' ' ~ invalid)|raw }}>
+                {# the data attributes let frontend_body.js set the limits of the chosen object on the fields #}
+                <select id="rsv-req-resource-{{ section_id }}" name="resource_id" required data-limits="{{ limits_id }}"
+                    {%- if r.field == 'resource' %} aria-invalid="true"{% endif %}
+                    {%- if r.field == 'resource' or limited %} aria-describedby="{{ [r.field == 'resource' ? 'rsv-request-error-' ~ section_id, limited ? limits_id]|filter(v => v)|join(' ') }}"{% endif %}>
                     {% for res in r.resources %}
-                        <option value="{{ res.id }}"{% if res.id == r.old.resource_id %} selected{% endif %}>{{ res.title }}</option>
+                        <option value="{{ res.id }}"{% if res.id == r.old.resource_id %} selected{% endif %} data-min="{{ res.min }}" data-max="{{ res.max }}"
+                            {%- if res.step %} data-step="{{ res.step }}"{% endif %} data-persons-min="{{ res.min_persons ?: 1 }}"
+                            {%- if res.capacity %} data-persons-max="{{ res.capacity }}"{% endif %}{% if res.min_persons %} data-persons-required="1"{% endif %}>{{ res.title }}</option>
                     {% endfor %}
                 </select>
             </p>
+            {# without JavaScript all lines are visible; with it only the one of the chosen object, announced on change #}
+            {% if limited %}
+                <div id="{{ limits_id }}" class="rsv-limits" aria-live="polite">
+                    {% for res in limited %}
+                        <p data-resource="{{ res.id }}"><strong>{{ res.title }}:</strong> {{ res.limits|join(' · ') }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
         {% endif %}
 
         <div class="rsv-pair">
@@ -73,7 +88,7 @@
             <input id="rsv-req-phone-{{ section_id }}" type="tel" name="phone" value="{{ r.old.phone }}" maxlength="50" autocomplete="tel"{{ r.field == 'phone' ? (' ' ~ invalid)|raw }}>
         </p>
         <p>
-            <label for="rsv-req-persons-{{ section_id }}">{{ t('PERSONS') }}{% if one.persons_note %} ({{ one.persons_note }}){% endif %}{% if one.min_persons %} <span aria-hidden="true">*</span>{% endif %}</label>
+            <label for="rsv-req-persons-{{ section_id }}">{{ t('PERSONS') }}{% if one.persons_note %} ({{ one.persons_note }}){% endif %}{% if one.min_persons %} <span aria-hidden="true">*</span>{% elseif not one %} <span aria-hidden="true" class="rsv-required-mark" hidden>*</span>{% endif %}</label>
             <input id="rsv-req-persons-{{ section_id }}" type="number" name="persons" value="{{ r.old.persons }}" min="{{ one.min_persons ?: 1 }}"{% if one.capacity %} max="{{ one.capacity }}"{% endif %}{% if one.min_persons %} required{% endif %} inputmode="numeric"{{ r.field == 'persons' ? (' ' ~ invalid)|raw }}>
         </p>
         <p>

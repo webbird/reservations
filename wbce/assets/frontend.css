@@ -15,6 +15,8 @@
 .mod_reservations:not(#rsv):not(#rsv) :where(div, span, p, h3, table, caption, thead, tbody, tr, th, td, ul, li):not(.rsv-captcha *) {
     all: revert;
 }
+/* the hidden attribute is an author-level hint, so the reset above cancels it */
+.mod_reservations:not(#rsv):not(#rsv) [hidden] { display: none; }
 
 .mod_reservations:not(#rsv):not(#rsv) .rsv-sr {
     position: absolute; width: 1px; height: 1px; overflow: hidden;
@@ -90,6 +92,8 @@
 .mod_reservations:not(#rsv):not(#rsv) .rsv-hours ul { margin: 0 0 .3rem; padding: 0 0 0 1.2em; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-request .rsv-hours p { margin: 0 0 .3rem; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-request .rsv-hours p:last-child { margin: 0; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-limits { margin: 0 0 .8rem; font-size: .9em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-request .rsv-limits p { margin: 0 0 .3rem; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-msg { margin: 0 0 1rem; padding: .6em .9em; border: 1px solid currentColor; border-left-width: 5px; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-msg ul { margin: 0; padding: 0 0 0 1.2em; }

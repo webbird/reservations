@@ -255,7 +255,9 @@ final class ReservationsWbce
             return $admin ? '<!-- reservations droplet: ' . htmlspecialchars($reason) . ' -->' : '';
         }
 
+        // WBCE loads these for sections of the module, a droplet on another page has to ask for them
         I::insertCssFile(WB_URL . '/modules/reservations/assets/frontend.css', 'head_late', [], 'mod_reservations_frontend');
+        I::insertJsFile(WB_URL . '/modules/reservations/assets/frontend_body.js', 'body_late', [], 'mod_reservations_frontend_js');
         $section_id = $sectionId;
         $rsvOnlyResource = $item?->id;
         // inside its own description a link to that description would lead nowhere new

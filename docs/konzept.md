@@ -1,6 +1,6 @@
 # reservations – Konzept
 
-Stand: 03.11.2026 · Modulversion 0.7.0
+Stand: 03.11.2026 · Modulversion 0.7.1
 
 Nachfolger von `bookings_v2`, als eigenständiges Modul mit neuem Namen. Belegungs- und
 Reservierungskalender für beliebige buchbare Dinge: Ferienwohnungen, Besprechungsräume,
@@ -327,9 +327,18 @@ auch als 24:00 des Vortags. Im Backend wird je Wochentag ein Textfeld gepflegt
 - Formular: Die Datumsauswahl reicht von `earliestStart()` bis `latestStart()` (bei mehreren
   Objekten die weiteste Spanne) und hat das Raster als Schrittweite, wenn alle Objekte
   dasselbe haben. Bei einem einzelnen Objekt stehen Personen- und Dauergrenzen im Label und
-  als Eingabegrenzen, im Modus `period` die Öffnungszeiten unter den Datumsfeldern. Bei einer
-  Auswahl mehrerer Objekte prüft der Server je Objekt. Nach dem Absenden ersetzt die
-  Bestätigung das Formular.
+  als Eingabegrenzen, im Modus `period` die Öffnungszeiten unter den Datumsfeldern. Nach dem
+  Absenden ersetzt die Bestätigung das Formular.
+- Auswahl mehrerer Objekte (0.7.1): Unter der Auswahl steht je Objekt mit Grenzen eine Zeile
+  (Personen, Dauer, frühester Beginn bei Vorlauf, Höchstvorlauf, Öffnungszeiten mit
+  zusammengefassten Tagen wie „Mo.–Fr. 08:00–18:00“, „Buchung wird sofort bestätigt“), per
+  `aria-describedby` an der Auswahl. Ohne JavaScript sind alle Zeilen sichtbar. Mit
+  `assets/frontend_body.js` (ohne Bibliothek; das Droplet bindet die Datei selbst ein) ist
+  nur die Zeile des gewählten Objekts sichtbar, in einer Live-Region angesagt, und die Grenzen
+  des Objekts stehen an den Feldern (`min`, `max`, `step`, Pflicht der Personenzahl samt
+  Sternchen). Die Werte kommen als `data-`Attribute an den Optionen. Der Server prüft wie
+  immer je Objekt. Weil `hidden` für den Browser ein Autoren-Hinweis ist, hebt die
+  CSS-Rücksetzung des Moduls es auf; eine eigene Regel stellt es wieder her.
 - Buchung und Anfrage entstehen in **einer Transaktion** (`BookingService::create()` mit
   Rückruf), samt Prüfung auf Überschneidung. Status: Rolle „neue Anfrage“, bei
   `auto_confirm` gleich „Anfrage bestätigt“.
@@ -577,5 +586,7 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
   Öffnungszeiten liegen; Raster als Vorgabewert am Typ, Öffnungszeiten nicht.
 - Ratenbegrenzung (0.7.0): fest 3 Anfragen pro Stunde je Besucher und Abschnitt über einen
   Hash der IP-Adresse; einstellbar erst später.
+- Grenzen bei einer Auswahl mehrerer Objekte im Anfrageformular sichtbar (0.7.1): eine Zeile
+  je Objekt, mit JavaScript nur die des gewählten und die Grenzen an den Feldern.
 - Objektliste im Backend: Spalten „Aktuelle Buchungen“ (laufende und künftige mit blockierendem Status, ohne offene Anfragen) und „Offene Anfragen“ (Rolle „neue Anfrage“); vergangene, stornierte und abgelehnte zählen nicht.
 - Objektbeschreibungen in WBCE: **1:1** ein news_img-Abschnitt je Reservations-Abschnitt (`settings.presentation_source`), Zuordnung je Objekt über `resources.presentation_ref`; Port `PresentationProvider` erst mit Catamaran, Vorschaubild vorerst nicht.

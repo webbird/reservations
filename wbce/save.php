@@ -129,6 +129,10 @@ switch ($post('rsv_action')) {
         $result = $bookingId > 0
             ? $service->update($sectionId, $bookingId, $resourceId, $range, $old['status_id'], $old['label'], $old['note'], $userId)
             : $service->create($sectionId, $resourceId, $range, $old['status_id'], $old['label'], $old['note'], $userId);
+        // a request keeps its contact data relative to the new period or status
+        if ($result->ok && $bookingId > 0) {
+            ReservationsWbce::requestService()->bookingChanged($sectionId, $bookingId);
+        }
         $finish($result, $result->ok ? ['rsv_bookings' => $resourceId] : $params, $old, ReservationsWbce::t('MSG_BOOKING_SAVED'));
 
     case 'settings_save':

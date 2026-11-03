@@ -160,10 +160,30 @@ final class RequestService
     {
         $result = $this->decide($sectionId, $bookingId, StatusRole::RequestRejected, $userId);
         if ($result->ok) {
-            $days = $this->settings->find($sectionId)->retentionDays ?? 90;
-            $this->requests->setPurgeAfter($bookingId, $this->clock->now()->add(new DateInterval('P' . $days . 'D')));
+            $this->bookingChanged($sectionId, $bookingId);
         }
         return $result;
+    }
+
+    /**
+     * Recomputes when the contact data of a request is emptied, after its booking
+     * was changed (new period, new status): retention_days after the end of the
+     * period, or - once rejected - after now at the latest. Bookings without a
+     * request and requests already emptied stay as they are.
+     */
+    public function bookingChanged(int $sectionId, int $bookingId): void
+    {
+        $booking = $this->bookings->find($sectionId, $bookingId);
+        $request = $this->requests->findByBooking($sectionId, $bookingId);
+        if ($booking === null || $request === null || $request->purgeAfter === null) {
+            return;
+        }
+        $days = new DateInterval('P' . ($this->settings->find($sectionId)->retentionDays ?? 90) . 'D');
+        $purge = $booking->range->end->add($days);
+        if ($this->statuses->find($sectionId, $booking->statusId)?->role === StatusRole::RequestRejected) {
+            $purge = min($request->purgeAfter, $this->clock->now()->add($days));
+        }
+        $this->requests->setPurgeAfter($bookingId, $purge);
     }
 
     /**

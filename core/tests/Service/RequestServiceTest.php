@@ -219,6 +219,35 @@ final class RequestServiceTest extends TestCase
         $this->id($this->submit($this->flat, $this->range('2026-11-10', '2026-11-12')));
     }
 
+    public function testChangedBookingMovesTheRetention(): void
+    {
+        $id = $this->id($this->submit($this->flat, $this->range('2026-12-10', '2026-12-12')));
+        $booking = $this->bookings->find(1, $id);
+        self::assertNotNull($booking);
+        $change = function (TimeRange $range, StatusRole $role) use ($booking): ?DateTimeImmutable {
+            $status = (int) $this->statuses->findByRole(1, $role)?->id;
+            $this->bookings->update(new Booking($booking->id, 1, $booking->resourceId, $range, $status, createdAt: $this->now, updatedAt: $this->now));
+            $this->service->bookingChanged(1, (int) $booking->id);
+            return $this->requests->findByBooking(1, (int) $booking->id)?->purgeAfter;
+        };
+
+        // moved to March: kept 30 days after the new end, not after the old one (11 Jan)
+        self::assertEquals(new DateTimeImmutable('2027-04-04 00:00', $this->tz), $change($this->range('2027-03-01', '2027-03-05'), StatusRole::RequestConfirmed));
+        // rejected by editing the status: 30 days from now
+        self::assertEquals($this->now->modify('+30 days'), $change($this->range('2027-03-01', '2027-03-05'), StatusRole::RequestRejected));
+        // editing a rejected booking again does not extend the retention
+        self::assertEquals($this->now->modify('+30 days'), $change($this->range('2027-06-01', '2027-06-05'), StatusRole::RequestRejected));
+        // taken back into the plan: again after the end of the period
+        self::assertEquals(new DateTimeImmutable('2027-07-05 00:00', $this->tz), $change($this->range('2027-06-01', '2027-06-05'), StatusRole::RequestConfirmed));
+
+        // emptied requests and bookings without a request stay as they are
+        $this->requests->setPurgeAfter((int) $booking->id, $this->now);
+        $this->service->purgeExpired();
+        $this->service->bookingChanged(1, (int) $booking->id);
+        self::assertNull($this->requests->findByBooking(1, (int) $booking->id)?->purgeAfter);
+        $this->service->bookingChanged(1, 999);
+    }
+
     public function testDecisionNeedsARequestOfTheSection(): void
     {
         $booked = (int) $this->statuses->findByRole(1, StatusRole::RequestConfirmed)?->id;

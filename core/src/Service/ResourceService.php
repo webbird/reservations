@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Reservations\Core\Service;
 
 use Reservations\Core\Domain\BookableResource;
+use Reservations\Core\Domain\OpeningHours;
 use Reservations\Core\Result\Result;
+use Reservations\Core\Storage\Pdo\Connection;
+use Reservations\Core\Storage\Pdo\HoursRepository;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
 use Reservations\Core\Storage\Pdo\TypeRepository;
 use Reservations\Core\Support\Color;
@@ -23,9 +26,30 @@ final class ResourceService
     public const INT_MAX = 2147483647;
 
     public function __construct(
+        private readonly Connection $db,
         private readonly ResourceRepository $resources,
         private readonly TypeRepository $types,
+        private readonly HoursRepository $hours,
     ) {
+    }
+
+    /**
+     * Replaces the opening hours of a resource; no intervals = open around the clock.
+     */
+    public function saveHours(int $sectionId, int $resourceId, OpeningHours $hours): Result
+    {
+        if ($this->resources->find($sectionId, $resourceId) === null) {
+            return Result::fail('resource.not_found', ['id' => $resourceId]);
+        }
+        $problem = $hours->problem();
+        if ($problem !== null) {
+            return Result::fail($problem, [], 'hours');
+        }
+        // all intervals or none: a failed insert must not leave half of the week
+        return $this->db->lockedTransaction('resources', 'resource_id', $resourceId, function () use ($sectionId, $resourceId, $hours): Result {
+            $this->hours->replace($sectionId, $resourceId, $hours);
+            return Result::ok($resourceId);
+        });
     }
 
     /**

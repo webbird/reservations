@@ -9,6 +9,7 @@ use DateTimeZone;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use Reservations\Core\Domain\BookableResource;
+use Reservations\Core\Domain\OpeningHours;
 use Reservations\Core\Domain\Settings;
 use Reservations\Core\Domain\StatusRole;
 use Reservations\Core\Domain\TimeRange;
@@ -17,6 +18,7 @@ use Reservations\Core\Service\BookingService;
 use Reservations\Core\Service\RequestService;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
+use Reservations\Core\Storage\Pdo\HoursRepository;
 use Reservations\Core\Storage\Pdo\RequestRepository;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
 use Reservations\Core\Storage\Pdo\SettingsRepository;
@@ -165,5 +167,13 @@ final class MysqlIntegrationTest extends TestCase
             self::assertSame('abort', $e->getMessage());
         }
         self::assertSame(1, $db->fetchInt('SELECT plan_range FROM ' . $db->table('settings') . ' WHERE section_id = 1'));
+    }
+
+    public function testHoursUntilMidnightRoundTrip(): void
+    {
+        // MySQL's TIME takes "24:00:00", which marks the end of the day
+        $hours = new HoursRepository($this->db());
+        $hours->replace(1, 5, new OpeningHours([6 => [[1080, OpeningHours::DAY_END]], 1 => [[540, 720]]]));
+        self::assertSame([1 => [[540, 720]], 6 => [[1080, 1440]]], $hours->find(1, 5)->days);
     }
 }

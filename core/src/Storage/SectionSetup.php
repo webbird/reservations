@@ -10,7 +10,6 @@ use Reservations\Core\Domain\StatusRole;
 use Reservations\Core\Domain\Type;
 use Reservations\Core\Domain\Visibility;
 use Reservations\Core\Storage\Pdo\Connection;
-use Reservations\Core\Storage\Pdo\Row;
 use Reservations\Core\Storage\Pdo\StatusRepository;
 use Reservations\Core\Storage\Pdo\TypeRepository;
 
@@ -85,16 +84,12 @@ final class SectionSetup
 
     public function remove(int $sectionId): void
     {
-        $rows = $this->db->fetchAll('SELECT resource_id FROM ' . $this->db->table('resources') . ' WHERE section_id = ?', [$sectionId]);
-        foreach ($rows as $row) {
-            $this->db->delete('hours', ['resource_id' => Row::int($row, 'resource_id')]);
-        }
         $this->db->run(
             'DELETE FROM ' . $this->db->table('requests') . ' WHERE booking_id IN (SELECT booking_id FROM '
             . $this->db->table('bookings') . ' WHERE section_id = ?)',
             [$sectionId],
         );
-        foreach (['bookings', 'resources', 'types', 'statuses', 'settings'] as $table) {
+        foreach (['hours', 'bookings', 'resources', 'types', 'statuses', 'settings'] as $table) {
             $this->db->delete($table, ['section_id' => $sectionId]);
         }
     }

@@ -100,6 +100,8 @@ final class Schema
             'hours' => [
                 'columns' => [
                     'hour_id' => 'pk',
+                    // since 0.7.0; a default because older installations get it by ALTER TABLE
+                    'section_id' => 'int=0',
                     'resource_id' => 'int',
                     'weekday' => 'small',
                     'start_time' => 'time',

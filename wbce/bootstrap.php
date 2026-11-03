@@ -20,6 +20,7 @@ use Reservations\Core\Service\StatusService;
 use Reservations\Core\Service\TypeService;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
+use Reservations\Core\Storage\Pdo\HoursRepository;
 use Reservations\Core\Storage\Pdo\RequestRepository;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
 use Reservations\Core\Storage\Pdo\SettingsRepository;
@@ -137,6 +138,11 @@ final class ReservationsWbce
         return self::$services['settings'] ??= new SettingsRepository(self::db());
     }
 
+    public static function hours(): HoursRepository
+    {
+        return self::$services['hours'] ??= new HoursRepository(self::db());
+    }
+
     // services of the core
 
     public static function settingsService(): SettingsService
@@ -146,7 +152,7 @@ final class ReservationsWbce
 
     public static function resourceService(): ResourceService
     {
-        return new ResourceService(self::resources(), self::types());
+        return new ResourceService(self::db(), self::resources(), self::types(), self::hours());
     }
 
     public static function statusService(): StatusService

@@ -8,9 +8,11 @@ use DateTimeZone;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use Reservations\Core\Domain\BookableResource;
+use Reservations\Core\Domain\OpeningHours;
 use Reservations\Core\Domain\Type;
 use Reservations\Core\Service\ResourceService;
 use Reservations\Core\Storage\Pdo\Connection;
+use Reservations\Core\Storage\Pdo\HoursRepository;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
 use Reservations\Core\Storage\Pdo\StatusRepository;
 use Reservations\Core\Storage\Pdo\TypeRepository;
@@ -22,6 +24,7 @@ final class ResourceServiceTest extends TestCase
     private ResourceService $service;
     private ResourceRepository $resources;
     private TypeRepository $types;
+    private HoursRepository $hours;
     private int $type;
     private int $foreignType;
 
@@ -37,7 +40,34 @@ final class ResourceServiceTest extends TestCase
         $this->type = (int) $this->types->listBySection(1)[0]->id;
         $this->foreignType = (int) $this->types->listBySection(2)[0]->id;
         $this->resources = new ResourceRepository($db);
-        $this->service = new ResourceService($this->resources, $this->types);
+        $this->hours = new HoursRepository($db);
+        $this->service = new ResourceService($db, $this->resources, $this->types, $this->hours);
+    }
+
+    public function testOpeningHours(): void
+    {
+        $id = $this->service->create(new BookableResource(null, 1, $this->type, 'Raum'))->value;
+        self::assertIsInt($id);
+        // Monday with lunch break (unsorted on purpose), Saturday until midnight
+        $hours = new OpeningHours([1 => [[13 * 60, 17 * 60], [9 * 60, 12 * 60]], 6 => [[18 * 60, OpeningHours::DAY_END]]]);
+        self::assertTrue($this->service->saveHours(1, $id, $hours)->ok);
+        self::assertSame([1 => [[540, 720], [780, 1020]], 6 => [[1080, 1440]]], $this->hours->find(1, $id)->days);
+        // another section neither sees nor changes them
+        self::assertTrue($this->hours->find(2, $id)->isAlwaysOpen());
+        self::assertSame('resource.not_found', $this->service->saveHours(2, $id, new OpeningHours())->firstErrorKey());
+
+        $invalid = [
+            'hours.invalid_weekday' => [8 => [[540, 600]]],
+            'hours.invalid_interval' => [1 => [[600, 540]]],
+            'hours.overlap' => [1 => [[540, 720], [700, 800]]],
+        ];
+        foreach ($invalid as $key => $days) {
+            self::assertSame($key, $this->service->saveHours(1, $id, new OpeningHours($days))->firstErrorKey());
+        }
+        // a failed save keeps the stored hours; an empty one means around the clock
+        self::assertCount(2, $this->hours->find(1, $id)->days);
+        self::assertTrue($this->service->saveHours(1, $id, new OpeningHours())->ok);
+        self::assertTrue($this->hours->find(1, $id)->isAlwaysOpen());
     }
 
     public function testCreateAndUpdate(): void

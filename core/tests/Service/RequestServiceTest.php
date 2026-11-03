@@ -144,6 +144,14 @@ final class RequestServiceTest extends TestCase
         $this->id($this->submit($this->limited, $this->range('2026-11-28', '2026-11-30')));
         self::assertSame('request.too_late', $this->submit($this->limited, $this->range('2026-11-29', '2026-12-01'))->firstErrorKey());
 
+        // without limits of its own the calendar window applies: 24 months ahead, up to 1 Nov 2028 (734 days)
+        $this->id($this->submit($this->flat, $this->range('2028-10-30', '2028-11-01')));
+        $late = $this->submit($this->flat, $this->range('2028-11-02', '2028-11-04'));
+        self::assertSame(['request.too_late', 734], [$late->firstErrorKey(), $late->errors[0]['params']['max'] ?? null]);
+        // one request cannot block the object for decades
+        $long = $this->submit($this->flat, $this->range('2027-01-01', '2099-01-01'));
+        self::assertSame(['request.too_long_nights', 734], [$long->firstErrorKey(), $long->errors[0]['params']['max'] ?? null]);
+
         // the date picker uses the same limit; in period mode it counts from now
         $limited = $this->resources->find(1, $this->limited);
         self::assertNotNull($limited);

@@ -300,6 +300,10 @@ Keine Zeilen bedeutet: rund um die Uhr verfügbar.
 - Früheste Anreise (`earliestStart()`): im Modus `day` heute + Vorlauf in Tagen, nie vor
   morgen (2 Tage an einem Montag: Mittwoch); im Modus `period` jetzt + Vorlauf. Die
   Datumsauswahl im Formular nutzt dieselbe Methode.
+- Ohne eigenen Höchstvorlauf bzw. eigene Höchstdauer gilt das Kalenderfenster: Beginn
+  spätestens zum Ende des letzten Monats, den Besucher ansteuern können (`future_months`),
+  Dauer höchstens so lang wie dieses Fenster. Sonst könnte eine einzige Anfrage ein Objekt
+  über Jahrzehnte sperren (gefunden beim Pentest, 0.6.0).
 - Formular: Bei einem einzelnen Objekt stehen Personen- und Dauergrenzen im Label und als
   Eingabegrenzen. Bei einer Auswahl mehrerer Objekte prüft nur der Server; die Datumsauswahl
   beginnt beim frühesten Termin aller Objekte.

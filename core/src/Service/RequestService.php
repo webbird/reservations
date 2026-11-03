@@ -105,8 +105,13 @@ final class RequestService
         if ($range->start < $this->earliestStart($resource, $wholeDays)) {
             return Result::fail('request.too_early', [], 'range');
         }
-        if ($resource->leadMaxDays !== null && $range->start > $now->add(new DateInterval('P' . $resource->leadMaxDays . 'D'))) {
-            return Result::fail('request.too_late', ['max' => $resource->leadMaxDays], 'range');
+        // without limits of its own an object takes the calendar window (up to the end of the last
+        // month visitors can browse to), so a single request cannot block it for decades
+        $today = $now->setTime(0, 0);
+        $horizon = $today->setDate((int) $today->format('Y'), (int) $today->format('n') + $settings->futureMonths + 1, 1);
+        $latest = $resource->leadMaxDays !== null ? $now->add(new DateInterval('P' . $resource->leadMaxDays . 'D')) : $horizon;
+        if ($range->start > $latest) {
+            return Result::fail('request.too_late', ['max' => $resource->leadMaxDays ?? $today->diff($horizon)->days], 'range');
         }
         // nights in day mode (both ends at midnight, so days of the difference), minutes in period mode
         $duration = $wholeDays ? $range->start->diff($range->end)->days : $range->durationMinutes();
@@ -114,8 +119,9 @@ final class RequestService
         if ($resource->minDuration !== null && $duration < $resource->minDuration) {
             return Result::fail('request.too_short_' . $unit, ['min' => $resource->minDuration], 'range');
         }
-        if ($resource->maxDuration !== null && $duration > $resource->maxDuration) {
-            return Result::fail('request.too_long_' . $unit, ['max' => $resource->maxDuration], 'range');
+        $maxDuration = $resource->maxDuration ?? ($wholeDays ? $today->diff($horizon)->days : intdiv($horizon->getTimestamp() - $today->getTimestamp(), 60));
+        if ($duration > $maxDuration) {
+            return Result::fail('request.too_long_' . $unit, ['max' => $maxDuration], 'range');
         }
 
         $role = $resource->autoConfirm ? StatusRole::RequestConfirmed : StatusRole::RequestNew;

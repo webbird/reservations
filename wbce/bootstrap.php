@@ -179,6 +179,7 @@ final class ReservationsWbce
             self::statuses(),
             self::bookings(),
             self::requests(),
+            self::hours(),
             self::clock(),
         );
     }

@@ -11,6 +11,7 @@ use PHPUnit\Framework\TestCase;
 use Reservations\Core\Domain\BookableResource;
 use Reservations\Core\Domain\Booking;
 use Reservations\Core\Domain\BookingMode;
+use Reservations\Core\Domain\OpeningHours;
 use Reservations\Core\Domain\Settings;
 use Reservations\Core\Domain\StatusRole;
 use Reservations\Core\Domain\TimeRange;
@@ -20,6 +21,7 @@ use Reservations\Core\Service\BookingService;
 use Reservations\Core\Service\RequestService;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
+use Reservations\Core\Storage\Pdo\HoursRepository;
 use Reservations\Core\Storage\Pdo\RequestRepository;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
 use Reservations\Core\Storage\Pdo\SettingsRepository;
@@ -36,6 +38,7 @@ final class RequestServiceTest extends TestCase
     private BookingRepository $bookings;
     private StatusRepository $statuses;
     private RequestRepository $requests;
+    private HoursRepository $hours;
     private ResourceRepository $resources;
     private int $flat;
     private int $instant;
@@ -79,7 +82,8 @@ final class RequestServiceTest extends TestCase
         $this->bookings = new BookingRepository($this->db);
         $this->requests = new RequestRepository($this->db);
         $bookingService = new BookingService($this->db, $this->resources, $settings, $this->statuses, $this->bookings, $clock);
-        $this->service = new RequestService($bookingService, $settings, $this->resources, $this->statuses, $this->bookings, $this->requests, $clock);
+        $this->hours = new HoursRepository($this->db);
+        $this->service = new RequestService($bookingService, $settings, $this->resources, $this->statuses, $this->bookings, $this->requests, $this->hours, $clock);
     }
 
     private function range(string $start, string $end): TimeRange
@@ -215,6 +219,39 @@ final class RequestServiceTest extends TestCase
         self::assertSame('request.too_short_minutes', $send('2026-11-02 10:00', '2026-11-02 10:30')->firstErrorKey());
         self::assertSame('request.too_long_minutes', $send('2026-11-02 10:00', '2026-11-02 14:30')->firstErrorKey());
         $this->id($send('2026-11-02 10:00', '2026-11-02 14:00'));
+    }
+
+    public function testGridAndOpeningHoursInPeriodMode(): void
+    {
+        $types = new TypeRepository($this->db);
+        (new SectionSetup($this->db, $this->statuses, $types))->run(3, 30);
+        (new SettingsRepository($this->db))->save(new Settings(3, bookingMode: BookingMode::Period, requestsEnabled: true));
+        $type = (int) $types->listBySection(3)[0]->id;
+        $room = $this->resources->insert(new BookableResource(null, 3, $type, 'Raum'));
+        // Monday 09–12 and 13–17; 2 Nov 2026 is a Monday
+        $this->hours->replace(3, $room, new OpeningHours([1 => [[540, 720], [780, 1020]]]));
+        $send = fn (string $start, string $end): Result => $this->service->submit(
+            3, $room, TimeRange::fromLocal($start, $end, $this->tz), 'Erika', 'erika@example.com', '', null, '', true,
+        );
+
+        $offGrid = $send('2026-11-02 10:15', '2026-11-02 11:00');
+        self::assertSame(['request.off_grid', 30], [$offGrid->firstErrorKey(), $offGrid->errors[0]['params']['min'] ?? null]);
+        self::assertSame('request.closed', $send('2026-11-02 08:00', '2026-11-02 10:00')->firstErrorKey());
+        self::assertSame('request.closed', $send('2026-11-02 11:00', '2026-11-02 12:30')->firstErrorKey(), 'ends in the lunch break');
+        self::assertSame('request.closed', $send('2026-11-02 16:00', '2026-11-02 18:00')->firstErrorKey());
+        // only start and end count: across the lunch break, or over a week to the next Monday
+        $this->id($send('2026-11-02 11:00', '2026-11-02 13:30'));
+        $this->id($send('2026-11-09 16:00', '2026-11-16 10:00'));
+
+        // now is Thursday 29 Oct 15:00; the next opening is Monday 09:00
+        $roomResource = $this->resources->find(3, $room);
+        self::assertNotNull($roomResource);
+        self::assertEquals(new DateTimeImmutable('2026-11-02 09:00', $this->tz), $this->service->earliestStart($roomResource, false));
+        // without hours: now + 7 minutes lead, up to the 20-minute grid
+        $device = $this->resources->insert(new BookableResource(null, 3, $type, 'Beamer', slotMinutes: 20, leadMinMinutes: 7));
+        $deviceResource = $this->resources->find(3, $device);
+        self::assertNotNull($deviceResource);
+        self::assertEquals(new DateTimeImmutable('2026-10-29 15:20', $this->tz), $this->service->earliestStart($deviceResource, false));
     }
 
     public function testConfirmAndReject(): void

@@ -139,6 +139,7 @@ final class MysqlIntegrationTest extends TestCase
             $statuses,
             $bookings,
             $requests,
+            new HoursRepository($db),
             $clock,
         );
 

@@ -14,6 +14,7 @@ use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Port\Clock;
 use Reservations\Core\Result\Result;
 use Reservations\Core\Storage\Pdo\BookingRepository;
+use Reservations\Core\Storage\Pdo\HoursRepository;
 use Reservations\Core\Storage\Pdo\RequestRepository;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
 use Reservations\Core\Storage\Pdo\SettingsRepository;
@@ -41,6 +42,7 @@ final class RequestService
         private readonly StatusRepository $statuses,
         private readonly BookingRepository $bookings,
         private readonly RequestRepository $requests,
+        private readonly HoursRepository $hours,
         private readonly Clock $clock,
     ) {
     }
@@ -102,6 +104,17 @@ final class RequestService
 
         $now = $this->clock->now();
         $wholeDays = $settings->bookingMode === BookingMode::Day;
+        // whole days have no times; in period mode start and end lie on the grid and in the opening
+        // hours, checked first because earliestStart() moves to the next opening
+        if (!$wholeDays) {
+            if (!self::onGrid($range->start, $resource->slotMinutes) || !self::onGrid($range->end, $resource->slotMinutes)) {
+                return Result::fail('request.off_grid', ['min' => $resource->slotMinutes], 'range');
+            }
+            $hours = $this->hours->find($sectionId, $resourceId);
+            if (!$hours->allowsStart($range->start) || !$hours->allowsEnd($range->end)) {
+                return Result::fail('request.closed', [], 'range');
+            }
+        }
         if ($range->start < $this->earliestStart($resource, $wholeDays)) {
             return Result::fail('request.too_early', [], 'range');
         }
@@ -172,25 +185,33 @@ final class RequestService
     }
 
     /**
+     * The earliest start a request may have, after the lead time of the object;
+     * in period mode on its grid and in its opening hours.
+     */
+    public function earliestStart(BookableResource $resource, bool $wholeDays): DateTimeImmutable
+    {
+        $now = $this->clock->now();
+        if ($wholeDays) {
+            // days count from today (2 days lead on Monday: Wednesday), but today has begun, so never before tomorrow
+            $leadDays = max(1, (int) ceil($resource->leadMinMinutes / 1440));
+            return $now->setTime(0, 0)->add(new DateInterval('P' . $leadDays . 'D'));
+        }
+        $slot = new DateInterval('PT' . $resource->slotMinutes . 'M');
+        $start = self::ceilToGrid($now->add(new DateInterval('PT' . $resource->leadMinMinutes . 'M')), $resource->slotMinutes);
+        $hours = $this->hours->find($resource->sectionId, (int) $resource->id);
+        // grid steps until the next opening; any opening day comes within a week
+        for ($step = 0; $step < 7 * 1440 / $resource->slotMinutes && !$hours->allowsStart($start); $step++) {
+            $start = $start->add($slot);
+        }
+        return $start;
+    }
+
+    /**
      * Recomputes when the contact data of a request is emptied, after its booking
      * was changed (new period, new status): retention_days after the end of the
      * period, or - once rejected - after now at the latest. Bookings without a
      * request and requests already emptied stay as they are.
      */
-    /**
-     * The earliest start a request may have, after the lead time of the object.
-     */
-    public function earliestStart(BookableResource $resource, bool $wholeDays): DateTimeImmutable
-    {
-        $now = $this->clock->now();
-        if (!$wholeDays) {
-            return $now->add(new DateInterval('PT' . $resource->leadMinMinutes . 'M'));
-        }
-        // days count from today (2 days lead on Monday: Wednesday), but today has begun, so never before tomorrow
-        $leadDays = max(1, (int) ceil($resource->leadMinMinutes / 1440));
-        return $now->setTime(0, 0)->add(new DateInterval('P' . $leadDays . 'D'));
-    }
-
     public function bookingChanged(int $sectionId, int $bookingId): void
     {
         $booking = $this->bookings->find($sectionId, $bookingId);
@@ -223,6 +244,26 @@ final class RequestService
     public function purgeExpired(): int
     {
         return $this->requests->purgeExpired($this->clock->now());
+    }
+
+    /**
+     * Wall-clock minutes on a multiple of the slot; the allowed slots divide an
+     * hour, so a daylight saving change keeps the grid.
+     */
+    private static function onGrid(DateTimeImmutable $moment, int $slotMinutes): bool
+    {
+        return $moment->format('s') === '00' && ((int) $moment->format('G') * 60 + (int) $moment->format('i')) % $slotMinutes === 0;
+    }
+
+    private static function ceilToGrid(DateTimeImmutable $moment, int $slotMinutes): DateTimeImmutable
+    {
+        $minute = $moment->setTime((int) $moment->format('G'), (int) $moment->format('i'));
+        // a started minute counts as a whole one
+        if ($moment->format('s') !== '00') {
+            $minute = $minute->add(new DateInterval('PT1M'));
+        }
+        $rest = ((int) $minute->format('G') * 60 + (int) $minute->format('i')) % $slotMinutes;
+        return $rest === 0 ? $minute : $minute->add(new DateInterval('PT' . ($slotMinutes - $rest) . 'M'));
     }
 
     private function decide(int $sectionId, int $bookingId, StatusRole $role, ?int $userId): Result

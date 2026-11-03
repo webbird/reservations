@@ -101,6 +101,7 @@ final class ResourceServiceTest extends TestCase
             'resource.invalid_duration' => new BookableResource(null, 1, $this->type, 'X', minDuration: 0),
             'resource.min_duration_above_max' => new BookableResource(null, 1, $this->type, 'X', minDuration: 7, maxDuration: 3),
             'resource.invalid_buffer' => new BookableResource(null, 1, $this->type, 'X', bufferAfter: 40000),
+            'resource.invalid_slot' => new BookableResource(null, 1, $this->type, 'X', slotMinutes: 7),
         ];
         foreach ($cases as $key => $resource) {
             self::assertSame($key, $this->service->create($resource)->firstErrorKey());

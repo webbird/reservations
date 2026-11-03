@@ -12,7 +12,7 @@ namespace Reservations\Core\Domain;
 final readonly class BookableResource
 {
     /** booking rules a type presets for its new resources (Type::$defaults), named like the properties */
-    public const RULE_KEYS = ['capacity', 'minPersons', 'autoConfirm', 'leadMinMinutes', 'leadMaxDays', 'minDuration', 'maxDuration', 'bufferBefore', 'bufferAfter'];
+    public const RULE_KEYS = ['capacity', 'minPersons', 'autoConfirm', 'slotMinutes', 'leadMinMinutes', 'leadMaxDays', 'minDuration', 'maxDuration', 'bufferBefore', 'bufferAfter'];
 
     public function __construct(
         public ?int $id,

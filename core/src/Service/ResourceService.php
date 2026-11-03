@@ -24,6 +24,8 @@ final class ResourceService
     /** column limits; the database may run without strict mode and would clip silently */
     public const SMALLINT_MAX = 32767;
     public const INT_MAX = 2147483647;
+    /** grid in period mode; each divides an hour, so a daylight saving change keeps it */
+    public const SLOT_MINUTES = [5, 10, 15, 20, 30, 60];
 
     public function __construct(
         private readonly Connection $db,
@@ -122,6 +124,9 @@ final class ResourceService
         }
         if (!$between($r->bufferBefore, 0, self::SMALLINT_MAX) || !$between($r->bufferAfter, 0, self::SMALLINT_MAX)) {
             return Result::fail('resource.invalid_buffer', ['max' => self::SMALLINT_MAX], 'buffer_before');
+        }
+        if (!in_array($r->slotMinutes, self::SLOT_MINUTES, true)) {
+            return Result::fail('resource.invalid_slot', [], 'slot_minutes');
         }
         return null;
     }

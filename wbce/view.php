@@ -14,6 +14,7 @@ require_once __DIR__ . '/bootstrap.php';
 
 use Reservations\Core\Calendar\Day;
 use Reservations\Core\Calendar\Occupancy;
+use Reservations\Core\Calendar\Week;
 use Reservations\Core\Domain\Booking;
 use Reservations\Core\Domain\CalendarView;
 use Reservations\Core\Domain\DisplayMode;
@@ -42,6 +43,24 @@ if (preg_match('/^\d{4}-\d{2}$/', $rsvGet('rsv_month')) === 1) {
     $rsvMonth = DateTimeImmutable::createFromFormat('!Y-m', $rsvGet('rsv_month'), $rsvTz) ?: $rsvThisMonth;
 }
 $rsvMonth = max($rsvFirst, min($rsvLast, $rsvMonth));
+
+// the week view pages by weeks; they start on the first day of the week of the language, as the month calendar
+// ICU counts 1 = Sunday … 7 = Saturday; converted to ISO 1 = Monday … 7 = Sunday
+$rsvIcu = IntlCalendar::createInstance($rsvTz, strtolower(LANGUAGE))?->getFirstDayOfWeek();
+$rsvFirstDay = is_int($rsvIcu) ? ($rsvIcu + 5) % 7 + 1 : 1;
+$rsvWeekOf = static fn (DateTimeImmutable $d): DateTimeImmutable => $d->setTime(0, 0)->modify('-' . (((int) $d->format('N') - $rsvFirstDay + 7) % 7) . ' days');
+$rsvWeekMin = $rsvWeekOf($rsvFirst);
+$rsvWeekMax = $rsvWeekOf($rsvLast->modify('+1 month -1 day'));
+// the current week, or the week the shown month starts with (coming from the plan or the month calendar)
+$rsvWeek = $rsvMonth == $rsvThisMonth ? $rsvWeekOf(new DateTimeImmutable('today', $rsvTz)) : $rsvWeekOf($rsvMonth);
+if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $rsvGet('rsv_week')) === 1) {
+    $rsvWeek = $rsvWeekOf(DateTimeImmutable::createFromFormat('!Y-m-d', $rsvGet('rsv_week'), $rsvTz) ?: $rsvWeek);
+}
+$rsvWeek = max($rsvWeekMin, min($rsvWeekMax, $rsvWeek));
+if ($rsvView === CalendarView::Week) {
+    // switching to another view keeps the month of the week
+    $rsvMonth = $rsvWeek->modify('first day of this month');
+}
 $rsvMonthCount = $rsvSingle ? 1 : $rsvSettings->planRange;
 $rsvEnd = $rsvMonth->modify('+' . $rsvMonthCount . ' months');
 
@@ -63,7 +82,9 @@ foreach (ReservationsWbce::statuses()->listBySection($rsvSection) as $rsvStatus)
     $rsvStatuses[(int) $rsvStatus->id] = $rsvStatus;
 }
 $rsvBookings = [];
-$rsvAll = ReservationsWbce::bookings()->listInRange($rsvSection, new TimeRange($rsvMonth, $rsvEnd));
+$rsvAll = ReservationsWbce::bookings()->listInRange($rsvSection, $rsvView === CalendarView::Week
+    ? new TimeRange($rsvWeek, $rsvWeek->modify('+7 days'))
+    : new TimeRange($rsvMonth, $rsvEnd));
 foreach (Occupancy::publicBookings($rsvAll, $rsvStatuses) as $rsvBooking) {
     $rsvBookings[$rsvBooking->resourceId][] = $rsvBooking;
 }
@@ -124,18 +145,31 @@ foreach ($rsvStatuses as $rsvStatus) {
     }
 }
 
-$rsvUrl = static function (DateTimeImmutable $month, CalendarView $view) use ($rsvSection): string {
+// $date: the first day of a week for the week view, any day of the month for the others
+$rsvUrl = static function (DateTimeImmutable $date, CalendarView $view) use ($rsvSection): string {
+    $query = ['rsv_month_' . $rsvSection => $date->format('Y-m'), 'rsv_view_' . $rsvSection => $view->value];
+    if ($view === CalendarView::Week) {
+        $query['rsv_week_' . $rsvSection] = $date->format('Y-m-d');
+    }
     // explicit separator: news_img sets arg_separator.output to '&amp;' for the whole request
-    return '?' . http_build_query(['rsv_month_' . $rsvSection => $month->format('Y-m'), 'rsv_view_' . $rsvSection => $view->value], '', '&') . '#rsv-' . $rsvSection;
+    return '?' . http_build_query($query, '', '&') . '#rsv-' . $rsvSection;
 };
+$rsvByWeek = $rsvView === CalendarView::Week;
 $rsvVars = [
     'section_id'    => $rsvSection,
-    'period'        => $rsvMonthFmt->format($rsvMonth) . ($rsvMonthCount > 1 ? ' – ' . $rsvMonthFmt->format($rsvEnd->modify('-1 month')) : ''),
-    'url_prev'      => $rsvMonth > $rsvFirst ? $rsvUrl($rsvMonth->modify('-1 month'), $rsvView) : null,
-    'url_next'      => $rsvMonth < $rsvLast ? $rsvUrl($rsvMonth->modify('+1 month'), $rsvView) : null,
+    'period'        => $rsvByWeek
+        ? ReservationsWbce::formatRange($rsvWeek, $rsvWeek->modify('+6 days'), true)
+        : $rsvMonthFmt->format($rsvMonth) . ($rsvMonthCount > 1 ? ' – ' . $rsvMonthFmt->format($rsvEnd->modify('-1 month')) : ''),
+    'by_week'       => $rsvByWeek,
+    'url_prev'      => $rsvByWeek
+        ? ($rsvWeek > $rsvWeekMin ? $rsvUrl($rsvWeek->modify('-7 days'), $rsvView) : null)
+        : ($rsvMonth > $rsvFirst ? $rsvUrl($rsvMonth->modify('-1 month'), $rsvView) : null),
+    'url_next'      => $rsvByWeek
+        ? ($rsvWeek < $rsvWeekMax ? $rsvUrl($rsvWeek->modify('+7 days'), $rsvView) : null)
+        : ($rsvMonth < $rsvLast ? $rsvUrl($rsvMonth->modify('+1 month'), $rsvView) : null),
     'views'         => array_map(static fn (CalendarView $v): array => [
         'key'     => strtoupper('VIEW_' . $v->value),
-        'url'     => $rsvUrl($rsvMonth, $v),
+        'url'     => $rsvUrl($v === CalendarView::Week ? $rsvWeek : $rsvMonth, $v),
         'current' => $v === $rsvView,
     ], array_values(array_filter(CalendarView::cases(), static fn (CalendarView $v): bool => $v->fits($rsvSettings->displayMode, $rsvSettings->bookingMode)))),
     'legend'        => $rsvLegend,
@@ -272,14 +306,69 @@ if ($rsvView === CalendarView::List) {
     return;
 }
 
+if ($rsvView === CalendarView::Week) {
+    // a time grid per object: days as columns, rows of 30 minutes (an hour for a grid of 60)
+    $rsvTime = static fn (DateTimeImmutable $t, DateTimeImmutable $day): string => $t >= $day->modify('+1 day') ? '24:00' : $t->format('H:i');
+    $rsvDates = [];
+    for ($i = 0; $i < 7; $i++) {
+        $rsvDates[] = $rsvWeek->modify('+' . $i . ' days');
+    }
+    $rsvDayHeads = array_map(static fn (DateTimeImmutable $d): array => [
+        'weekday' => $rsvWeekdayFmt->format($d),
+        'date'    => $d->format('j.n.'),
+        'long'    => (string) $rsvDateFmt->format($d),
+        'weekend' => (int) $d->format('N') >= 6,
+    ], $rsvDates);
+    $rsvTables = [];
+    $rsvAnyClosed = false;
+    foreach ($rsvResources as $rsvResource) {
+        $rsvRowMinutes = $rsvResource->slotMinutes >= 60 ? 60 : 30;
+        $rsvOwn = $rsvBookings[$rsvResource->id] ?? [];
+        $rsvOpen = ReservationsWbce::hours()->find($rsvSection, (int) $rsvResource->id);
+        [$rsvFrom, $rsvTo] = Week::span($rsvOwn, $rsvOpen, $rsvWeek, $rsvRowMinutes);
+        $rsvGrid = [];
+        for ($rsvMinute = $rsvFrom; $rsvMinute < $rsvTo; $rsvMinute += $rsvRowMinutes) {
+            $rsvGrid[] = ['time' => sprintf('%02d:%02d', intdiv($rsvMinute, 60), $rsvMinute % 60), 'cells' => []];
+        }
+        // each block becomes a cell spanning its rows, placed in the row it starts in
+        foreach (Week::days($rsvOwn, $rsvOpen, $rsvWeek, $rsvFrom, $rsvTo, $rsvRowMinutes) as $i => $rsvBlocks) {
+            $rsvRow = 0;
+            foreach ($rsvBlocks as $rsvBlock) {
+                $rsvBooking = $rsvBlock['booking'];
+                // a booking shows its own times on this day, the other blocks those of their rows
+                $rsvShown = $rsvBooking === null
+                    ? [$rsvBlock['start'], $rsvBlock['end']]
+                    : [max($rsvBlock['start'], $rsvBooking->range->start, $rsvDates[$i]), min($rsvBlock['end'], $rsvBooking->range->end, $rsvDates[$i]->modify('+1 day'))];
+                $rsvTimes = $rsvTime($rsvShown[0], $rsvDates[$i]) . '–' . $rsvTime($rsvShown[1], $rsvDates[$i]);
+                $rsvState = $rsvBooking !== null ? $rsvStatusText($rsvBooking) : ReservationsWbce::t($rsvBlock['closed'] ? 'CLOSED' : 'FREE');
+                $rsvAnyClosed = $rsvAnyClosed || $rsvBlock['closed'];
+                $rsvGrid[$rsvRow]['cells'][] = [
+                    'rows'    => $rsvBlock['rows'],
+                    'state'   => $rsvBooking !== null ? 'booked' : ($rsvBlock['closed'] ? 'closed' : 'free'),
+                    'half'    => $rsvHalf($rsvBooking),
+                    'weekend' => $rsvDayHeads[$i]['weekend'],
+                    // visible only where the cell is high enough
+                    'label'   => $rsvBooking !== null && $rsvBlock['rows'] >= 2 ? $rsvTimes : null,
+                    'text'    => $rsvDayHeads[$i]['long'] . ', ' . $rsvTimes . ': ' . $rsvState,
+                ];
+                $rsvRow += $rsvBlock['rows'];
+            }
+        }
+        $rsvTables[] = ['title' => $rsvResource->title, 'url' => $rsvLink($rsvResource), 'rows' => $rsvGrid];
+    }
+    ReservationsWbce::twig()->display('view_week.twig', $rsvVars + [
+        'days'          => $rsvDayHeads,
+        'tables'        => $rsvTables,
+        'legend_closed' => $rsvAnyClosed,
+    ]);
+    return;
+}
+
 if ($rsvView === CalendarView::Month) {
     $rsvResource = $rsvResources[0] ?? null;
     $rsvWeeks = [];
     $rsvWeekdays = [];
     if ($rsvResource !== null) {
-        // ICU counts 1 = Sunday … 7 = Saturday; converted to ISO 1 = Monday … 7 = Sunday
-        $rsvIcu = IntlCalendar::createInstance($rsvTz, $rsvLocale)?->getFirstDayOfWeek();
-        $rsvFirstDay = is_int($rsvIcu) ? ($rsvIcu + 5) % 7 + 1 : 1;
         $rsvCells = array_fill(0, ((int) $rsvMonth->format('N') - $rsvFirstDay + 7) % 7, null);
         foreach (Occupancy::days($rsvBookings[$rsvResource->id] ?? [], $rsvMonth, $rsvEnd, $rsvWholeDays) as $rsvDay) {
             $rsvCells[] = $rsvCell($rsvDay, $rsvWholeDays);

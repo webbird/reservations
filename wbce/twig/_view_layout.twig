@@ -14,9 +14,9 @@
             </ul>
         {% endif %}
         <div class="rsv-nav">
-            {% if url_prev %}<a href="{{ url_prev }}" rel="prev">‹ <span class="rsv-sr">{{ t('PREV_MONTH') }}</span></a>{% endif %}
+            {% if url_prev %}<a href="{{ url_prev }}" rel="prev">‹ <span class="rsv-sr">{{ t(by_week ? 'PREV_WEEK' : 'PREV_MONTH') }}</span></a>{% endif %}
             <span class="rsv-month">{{ period }}</span>
-            {% if url_next %}<a href="{{ url_next }}" rel="next"><span class="rsv-sr">{{ t('NEXT_MONTH') }}</span> ›</a>{% endif %}
+            {% if url_next %}<a href="{{ url_next }}" rel="next"><span class="rsv-sr">{{ t(by_week ? 'NEXT_WEEK' : 'NEXT_MONTH') }}</span> ›</a>{% endif %}
         </div>
     </div>
 
@@ -28,6 +28,7 @@
                 {% for item in legend %}
                     <li><span class="rsv-swatch rsv-pattern-{{ item.pattern }}" style="--rsv-color:{{ item.color }}" aria-hidden="true"></span> {{ item.text }}</li>
                 {% endfor %}
+                {% if legend_closed ?? false %}<li><span class="rsv-swatch rsv-closed" aria-hidden="true"></span> {{ t('CLOSED') }}</li>{% endif %}
             </ul>
         {% endif %}
         {% if request %}{% include '_request_form.twig' %}{% endif %}

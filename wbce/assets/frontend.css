@@ -64,6 +64,17 @@
 .mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-striped { background: repeating-linear-gradient(135deg, var(--rsv-color) 0 4px, #fff 4px 7px); }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-dotted { background: radial-gradient(var(--rsv-color) 1.5px, #fff 1.6px) 0 0 / 5px 5px; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-outline { background: #fff; box-shadow: inset 0 0 0 2px var(--rsv-color); }
+/* outside the opening hours: fine grey hatching, unlike any status pattern */
+.mod_reservations:not(#rsv):not(#rsv) .rsv-closed { background: repeating-linear-gradient(45deg, #d6dae0 0 1px, #f6f7f9 1px 5px); }
+
+/* week: days as columns, rows of the time grid */
+.mod_reservations:not(#rsv):not(#rsv) .rsv-week { border-collapse: collapse; width: 100%; min-width: 36em; table-layout: fixed; font-size: .85em; line-height: 1.2; margin: 0; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-week caption { text-align: left; font-weight: bold; padding: 0 0 .3em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-week thead th { font-weight: normal; padding: .2em; text-align: center; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-week thead th:first-child { width: 3.5em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-week tbody th { font-weight: normal; padding: 0 .4em 0 0; text-align: right; vertical-align: top; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-week td { border: 1px solid #c8ccd2; padding: 1px; height: 1.3em; vertical-align: top; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-slot-label { display: inline-block; padding: 0 3px; border-radius: 2px; background: #fff; color: #1f2933; font-size: .9em; font-variant-numeric: tabular-nums; }
 
 /* list */
 .mod_reservations:not(#rsv):not(#rsv) .rsv-group { margin: 0 0 1rem; }
@@ -104,6 +115,7 @@
 /* high contrast mode would drop the backgrounds; keep the authored patterns */
 @media (forced-colors: active) {
     .mod_reservations:not(#rsv):not(#rsv) .rsv-half,
+    .mod_reservations:not(#rsv):not(#rsv) .rsv-week td,
     .mod_reservations:not(#rsv):not(#rsv) .rsv-swatch { forced-color-adjust: none; }
     .mod_reservations:not(#rsv):not(#rsv) .rsv-views a[aria-current="page"] { outline: 2px solid LinkText; }
 }

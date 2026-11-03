@@ -1,0 +1,39 @@
+{#
+    reservations/twig/view_week.twig – week with a time grid, one table per object (period mode)
+    A cell spans the rows of one block (free, closed or one booking); its text names day, times and state.
+#}
+{% extends '_view_layout.twig' %}
+{% block content %}
+    {% for table in tables %}
+        <div class="rsv-scroll" tabindex="0" role="region" aria-label="{{ t('VIEW_WEEK') }} {{ table.title }}">
+            <table class="rsv-week">
+                <caption>{% if table.url %}<a href="{{ table.url }}">{{ table.title }}</a>{% else %}{{ table.title }}{% endif %}, {{ period }}</caption>
+                <thead>
+                    <tr>
+                        <th scope="col"><span class="rsv-sr">{{ t('TIME') }}</span></th>
+                        {% for day in days %}
+                            <th scope="col"{% if day.weekend %} class="rsv-weekend"{% endif %} abbr="{{ day.long }}">
+                                <span aria-hidden="true">{{ day.weekday }}<br>{{ day.date }}</span>
+                                <span class="rsv-sr">{{ day.long }}</span>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                {% for row in table.rows %}
+                    <tr>
+                        <th scope="row">{{ row.time }}</th>
+                        {% for cell in row.cells %}
+                            <td rowspan="{{ cell.rows }}" class="rsv-slot{{ cell.state == 'closed' ? ' rsv-closed' }}{{ cell.weekend ? ' rsv-weekend' }}{% if cell.half %} rsv-pattern-{{ cell.half.pattern }}{% endif %}"
+                                {%- if cell.half %} style="--rsv-color:{{ cell.half.color }}"{% endif %}{% if cell.state != 'free' %} title="{{ cell.text }}"{% endif %}>
+                                {%- if cell.label %}<span class="rsv-slot-label" aria-hidden="true">{{ cell.label }}</span>{% endif -%}
+                                <span class="rsv-sr">{{ cell.text }}</span>
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endfor %}
+{% endblock %}

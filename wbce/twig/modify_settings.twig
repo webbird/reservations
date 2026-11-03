@@ -53,6 +53,7 @@
                 <select id="rsv-view-{{ section_id }}" name="default_view">
                     <option value="plan"{% if form.default_view == 'plan' %} selected{% endif %}>{{ t('VIEW_PLAN') }} ({{ t('ONLY_MULTI') }})</option>
                     <option value="month"{% if form.default_view == 'month' %} selected{% endif %}>{{ t('VIEW_MONTH') }} ({{ t('ONLY_SINGLE') }})</option>
+                    <option value="week"{% if form.default_view == 'week' %} selected{% endif %}>{{ t('VIEW_WEEK') }} ({{ t('ONLY_PERIOD') }})</option>
                     <option value="list"{% if form.default_view == 'list' %} selected{% endif %}>{{ t('VIEW_LIST') }}</option>
                 </select>
             </p>

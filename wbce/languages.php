@@ -142,6 +142,7 @@ return [
             'DEFAULT_VIEW'         => 'Default view',
             'ONLY_MULTI'           => 'several objects only',
             'ONLY_SINGLE'          => 'single object only',
+            'ONLY_PERIOD'          => 'booking by period only',
             'PLAN_RANGE'           => 'Occupancy plan shows',
             'ONE_MONTH'            => '1 month',
             'THREE_MONTHS'         => '3 months',
@@ -220,7 +221,7 @@ return [
             'ERR_RESOURCE_PRESENTATION_REF_TOO_LONG'    => 'The reference to the description may have at most %d characters.',
             'ERR_SETTINGS_INVALID_PLAN_RANGE' => 'The occupancy plan can show 1 or 3 months.',
             'ERR_SETTINGS_INVALID_MONTHS'     => 'Please enter a number of months between 0 and %d (going ahead: at least 1).',
-            'ERR_SETTINGS_VIEW_NOT_AVAILABLE' => 'This default view is not available for the chosen display.',
+            'ERR_SETTINGS_VIEW_NOT_AVAILABLE' => 'This default view is not available for the chosen display or booking mode.',
             'ERR_SETTINGS_INVALID_EMAIL'      => 'Please enter a valid e-mail address for notifications or leave the field empty.',
             'ERR_SETTINGS_INVALID_RETENTION'  => 'Please enter a number of days between 1 and %d.',
 
@@ -446,6 +447,7 @@ return [
             'DEFAULT_VIEW'         => 'Startansicht',
             'ONLY_MULTI'           => 'nur bei mehreren Objekten',
             'ONLY_SINGLE'          => 'nur bei Einzelobjekt',
+            'ONLY_PERIOD'          => 'nur im Buchungsmodus Zeitraum',
             'PLAN_RANGE'           => 'Der Belegungsplan zeigt',
             'ONE_MONTH'            => '1 Monat',
             'THREE_MONTHS'         => '3 Monate',
@@ -524,7 +526,7 @@ return [
             'ERR_RESOURCE_PRESENTATION_REF_TOO_LONG'    => 'Der Verweis auf die Beschreibung darf höchstens %d Zeichen lang sein.',
             'ERR_SETTINGS_INVALID_PLAN_RANGE' => 'Der Belegungsplan kann 1 oder 3 Monate zeigen.',
             'ERR_SETTINGS_INVALID_MONTHS'     => 'Bitte eine Anzahl Monate zwischen 0 und %d eingeben (vorblättern: mindestens 1).',
-            'ERR_SETTINGS_VIEW_NOT_AVAILABLE' => 'Diese Startansicht gibt es für die gewählte Darstellung nicht.',
+            'ERR_SETTINGS_VIEW_NOT_AVAILABLE' => 'Diese Startansicht gibt es für die gewählte Darstellung oder den Buchungsmodus nicht.',
             'ERR_SETTINGS_INVALID_EMAIL'      => 'Bitte eine gültige E-Mail-Adresse für Benachrichtigungen eingeben oder das Feld leer lassen.',
             'ERR_SETTINGS_INVALID_RETENTION'  => 'Bitte eine Anzahl Tage zwischen 1 und %d eingeben.',
 

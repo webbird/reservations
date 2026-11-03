@@ -108,6 +108,11 @@
 .mod_reservations:not(#rsv):not(#rsv) .rsv-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-msg { margin: 0 0 1rem; padding: .6em .9em; border: 1px solid currentColor; border-left-width: 5px; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-msg ul { margin: 0; padding: 0 0 0 1.2em; }
+/* fold button of the request form (frontend_body.js): looks like the heading it sits in */
+.mod_reservations:not(#rsv):not(#rsv) .rsv-fold { all: unset; cursor: pointer; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-fold:focus-visible { outline: 2px solid; outline-offset: 2px; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-fold::before { content: "\25B8\00A0"; content: "\25B8\00A0" / ""; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-fold[aria-expanded="true"]::before { content: "\25BE\00A0"; content: "\25BE\00A0" / ""; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-msg--error { color: #a32d2d; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-msg--success { color: #1e6b34; }
 .mod_reservations:not(#rsv):not(#rsv) [aria-invalid="true"] { outline: 2px solid #a32d2d; outline-offset: 1px; }

@@ -8,8 +8,10 @@
 {% set invalid = 'aria-invalid="true" aria-describedby="rsv-request-error-' ~ section_id ~ '"' %}
 {# empty jump target for the redirect of request.php: templates may hide :target elements (sticky-nav trick) #}
 <span id="rsv-request-{{ section_id }}" class="rsv-anchor"></span>
-<section class="rsv-request" aria-labelledby="rsv-request-title-{{ section_id }}">
+{# frontend_body.js folds the form behind the heading; it stays open after sending, with errors and on a jump to the anchor #}
+<section class="rsv-request" aria-labelledby="rsv-request-title-{{ section_id }}"{% if not r.success and not r.errors %} data-fold="rsv-request-{{ section_id }}"{% endif %}>
     <h3 id="rsv-request-title-{{ section_id }}">{{ t('REQUEST_TITLE') }}</h3>
+    <div id="rsv-request-body-{{ section_id }}">
 
     {# after sending, the confirmation takes the place of the form; an empty form again would look as if nothing happened #}
     {% if r.success %}
@@ -112,4 +114,5 @@
         <p><button type="submit">{{ t('REQUEST_SEND') }}</button></p>
     </form>
     {% endif %}{# r.success #}
+    </div>
 </section>

@@ -217,6 +217,11 @@ final class RequestServiceTest extends TestCase
         self::assertEquals($this->now->modify('+30 days'), $this->requests->findByBooking(1, $b)?->purgeAfter);
         // the rejected period is free again
         $this->id($this->submit($this->flat, $this->range('2026-11-10', '2026-11-12')));
+
+        // decided requests stay as they are, e.g. a confirm from an older second tab
+        self::assertSame('request.already_decided', $this->service->confirm(1, $b)->firstErrorKey());
+        self::assertSame('request.already_decided', $this->service->reject(1, $a)->firstErrorKey());
+        self::assertSame($this->statuses->findByRole(1, StatusRole::RequestRejected)?->id, $this->bookings->find(1, $b)?->statusId);
     }
 
     public function testChangedBookingMovesTheRetention(): void

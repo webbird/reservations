@@ -52,7 +52,7 @@ Erweiterung `intl`. Datenbank: MySQL/MariaDB oder SQLite (beides unterstützt WB
 | später | Bearbeiten im Frontend für angemeldete Benutzer |
 | später | Stückzahl pro Ressource („noch 2 von 3 Beamern frei“) |
 | später | Bestätigungslink für Anfragen (Double-Opt-in) |
-| später | **Text beim Bestätigen oder Ablehnen:** der Admin gibt einen eigenen Text für die Mail an die anfragende Person ein oder wählt einen hinterlegten **Textblock** (pro Abschnitt gepflegt, z. B. „Schlüsselübergabe“, „Zeitraum leider belegt“) und passt ihn an. Der Text stammt vom Admin, darf also in die Mail; nur Eingaben des Besuchers bleiben draußen (siehe Abschnitt 6) |
+| später | **Text beim Bestätigen oder Ablehnen:** der Admin gibt einen eigenen Text für die Mail an die anfragende Person ein oder wählt einen hinterlegten **Textblock** (pro Abschnitt gepflegt, z. B. „Schlüsselübergabe“, „Zeitraum leider belegt“) und passt ihn an. Der Text stammt vom Admin, darf also in die Mail; nur Eingaben des Besuchers bleiben draußen (siehe Abschnitt 6). Zusammen damit: **Gast über Änderungen benachrichtigen** – beim Speichern einer Buchung mit Anfrage (Zeitraum, Objekt oder Status geändert) optional eine Mail mit den neuen Daten und demselben Text bzw. Textblock. Bis dahin lösen Änderungen über das Buchungsformular keine Mail aus |
 | später | Weitere Sprachen (DA, FR, NL, NO, SK wie in v2) |
 | später | **Serienbuchungen** (z. B. feste Trainingszeiten wöchentlich) – Voraussetzung für Kontingente und Auto-Stornierung |
 | später | **Kapazität nach Personenzahl (PAX):** eine Buchung belegt so viele Einheiten, wie für die Personenzahl nötig sind (z. B. 2 Plätze für 30 Personen). Braucht Buchungen über mehrere Ressourcen; verwandt mit „Stückzahl“ |

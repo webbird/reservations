@@ -201,6 +201,10 @@ final class RequestService
         if ($booking === null || $this->requests->findByBooking($sectionId, $bookingId) === null) {
             return Result::fail('request.not_found', ['id' => $bookingId]);
         }
+        // only open requests: a second tab or a resent form must not decide again and mail the guest twice
+        if ($this->statuses->find($sectionId, $booking->statusId)?->role !== StatusRole::RequestNew) {
+            return Result::fail('request.already_decided', ['id' => $bookingId]);
+        }
         $status = $this->statuses->findByRole($sectionId, $role);
         if ($status === null) {
             return Result::fail('request.no_status', ['role' => $role->value]);

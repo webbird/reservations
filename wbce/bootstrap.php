@@ -133,7 +133,10 @@ final class ReservationsWbce
         foreach (array_keys(SectionSetup::DEFAULT_TITLES) as $key) {
             $titles[$key] = self::t('SEED_' . strtoupper($key));
         }
-        self::sectionSetup()->run($sectionId, $pageId, $titles);
+        // new sections start with the captcha when it is there: without it bots can block the calendar with fake requests
+        if (self::sectionSetup()->run($sectionId, $pageId, $titles) && self::captchaAvailable()) {
+            self::db()->update('settings', ['captcha' => true], ['section_id' => $sectionId]);
+        }
         $droplets = is_file(WB_PATH . '/modules/droplets/functions.inc.php');
         if ($droplets && $GLOBALS['database']->fetchValue("SELECT `id` FROM `{TP}mod_droplets` WHERE `name` = 'reservations'") === '') {
             self::installDroplet();

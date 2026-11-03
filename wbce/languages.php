@@ -162,7 +162,7 @@ return [
             'RETENTION_DAYS'       => 'Delete contact data after (days)',
             'RETENTION_DAYS_HINT'  => 'Counted from the end of the requested period, after a rejection from the rejection. The booking stays.',
             'USE_CAPTCHA'          => 'Use captcha (module captcha_control)',
-            'USE_CAPTCHA_HINT'     => 'Form token and a hidden trap field are always active.',
+            'USE_CAPTCHA_HINT'     => 'Recommended: without a captcha, bots can block periods with fake requests. Form token and a hidden trap field are always active.',
 
             'REQUEST_TITLE'        => 'Request a booking',
             'REQUIRED_HINT'        => 'Fields marked with * are required.',
@@ -227,6 +227,7 @@ return [
             'ERR_REQUEST_TOO_LATE'         => 'Requests are possible at most %d days in advance.',
             'ERR_REQUEST_NO_STATUS'        => 'Requests are not set up completely. Please contact us directly.',
             'ERR_REQUEST_NOT_FOUND'        => 'The request does not exist.',
+            'ERR_REQUEST_ALREADY_DECIDED'  => 'This request has already been decided; the status was not changed.',
             'ERR_REQUEST_UNAVAILABLE'      => 'The object is not available in this period. Please choose another period.',
             'ERR_REQUEST_EXPIRED'          => 'The form has expired. Please send it again.',
             'ERR_REQUEST_REJECTED'         => 'The request could not be sent. Please wait a moment and send it again.',
@@ -407,7 +408,7 @@ return [
             'RETENTION_DAYS'       => 'Kontaktdaten löschen nach (Tagen)',
             'RETENTION_DAYS_HINT'  => 'Gezählt ab dem Ende des angefragten Zeitraums, nach einer Ablehnung ab der Ablehnung. Die Buchung bleibt erhalten.',
             'USE_CAPTCHA'          => 'Captcha verwenden (Modul captcha_control)',
-            'USE_CAPTCHA_HINT'     => 'Formular-Token und ein verstecktes Fallenfeld sind immer aktiv.',
+            'USE_CAPTCHA_HINT'     => 'Empfohlen: Ohne Captcha können Bots mit falschen Anfragen Zeiträume blockieren. Formular-Token und ein verstecktes Fallenfeld sind immer aktiv.',
 
             'REQUEST_TITLE'        => 'Buchung anfragen',
             'REQUIRED_HINT'        => 'Mit * markierte Felder sind Pflichtfelder.',
@@ -472,6 +473,7 @@ return [
             'ERR_REQUEST_TOO_LATE'         => 'Anfragen sind höchstens %d Tage im Voraus möglich.',
             'ERR_REQUEST_NO_STATUS'        => 'Anfragen sind nicht vollständig eingerichtet. Bitte wenden Sie sich direkt an uns.',
             'ERR_REQUEST_NOT_FOUND'        => 'Die Anfrage existiert nicht.',
+            'ERR_REQUEST_ALREADY_DECIDED'  => 'Über diese Anfrage wurde bereits entschieden; der Status wurde nicht geändert.',
             'ERR_REQUEST_UNAVAILABLE'      => 'Das Objekt ist in diesem Zeitraum nicht frei. Bitte wählen Sie einen anderen Zeitraum.',
             'ERR_REQUEST_EXPIRED'          => 'Das Formular ist abgelaufen. Bitte senden Sie es erneut.',
             'ERR_REQUEST_REJECTED'         => 'Die Anfrage konnte nicht gesendet werden. Bitte warten Sie einen Moment und senden Sie sie erneut.',

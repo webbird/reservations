@@ -160,6 +160,7 @@ switch ($post('rsv_action')) {
         if ($mode === null || $view === null || $bookingMode === null || $bookingMode === BookingMode::Appointment || !$newsSectionValid) {
             $finish(Result::fail('settings.invalid_value'), ['rsv_settings' => 1], $old, '');
         }
+        $retentionBefore = ReservationsWbce::settings()->find($sectionId)?->retentionDays;
         $result = ReservationsWbce::settingsService()->save(new Settings(
             sectionId: $sectionId,
             displayMode: $mode,
@@ -176,6 +177,9 @@ switch ($post('rsv_action')) {
             retentionDays: $old['retention_days'],
             captcha: $old['captcha'],
         ));
+        if ($result->ok && $retentionBefore !== $old['retention_days']) {
+            ReservationsWbce::requestService()->retentionChanged($sectionId);
+        }
         $finish($result, $result->ok ? [] : ['rsv_settings' => 1], $old, ReservationsWbce::t('MSG_SETTINGS_SAVED'));
 
     case 'status_save':
@@ -234,7 +238,7 @@ switch ($post('rsv_action')) {
         $service = ReservationsWbce::requestService();
         $result = $confirm ? $service->confirm($sectionId, $bookingId, $userId) : $service->reject($sectionId, $bookingId, $userId);
         // the decision stands even if the mail fails; the admin is told to contact the person
-        $mailed = $result->ok && ReservationsWbce::requestMails($sectionId, $bookingId, $confirm ? 'confirmed' : 'rejected');
+        $mailed = $result->ok && ReservationsMail::request($sectionId, $bookingId, $confirm ? 'confirmed' : 'rejected');
         $message = ReservationsWbce::t($confirm ? 'MSG_REQUEST_CONFIRMED' : 'MSG_REQUEST_REJECTED') . ($mailed ? '' : ' ' . ReservationsWbce::t('MSG_MAIL_FAILED'));
         $finish($result, ['rsv_bookings' => $resourceId, 'rsv_booking' => $bookingId], [], $message);
 

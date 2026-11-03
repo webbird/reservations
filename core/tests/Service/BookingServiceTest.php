@@ -150,7 +150,7 @@ final class BookingServiceTest extends TestCase
                 self::assertSame('request insert failed', $e->getMessage());
             }
         }
-        self::assertSame([], $this->bookings->countByResource(1));
+        self::assertFalse($this->bookings->hasBookings(1));
     }
 
     public function testBufferRequiresGapBetweenBookings(): void

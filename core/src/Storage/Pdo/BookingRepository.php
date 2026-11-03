@@ -48,22 +48,9 @@ final class BookingRepository
         $this->db->delete(self::TABLE, ['section_id' => $sectionId, 'booking_id' => $bookingId]);
     }
 
-    /**
-     * Number of bookings per resource; resources without bookings are missing.
-     *
-     * @return array<int, int> resource id => count
-     */
-    public function countByResource(int $sectionId): array
+    public function hasBookings(int $sectionId): bool
     {
-        $counts = [];
-        $rows = $this->db->fetchAll(
-            'SELECT resource_id, COUNT(*) AS cnt FROM ' . $this->db->table(self::TABLE) . ' WHERE section_id = ? GROUP BY resource_id',
-            [$sectionId],
-        );
-        foreach ($rows as $row) {
-            $counts[Row::int($row, 'resource_id')] = Row::int($row, 'cnt');
-        }
-        return $counts;
+        return $this->db->fetchValue('SELECT 1 FROM ' . $this->db->table(self::TABLE) . ' WHERE section_id = ? LIMIT 1', [$sectionId]) !== null;
     }
 
     /**

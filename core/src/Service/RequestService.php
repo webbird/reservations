@@ -187,6 +187,16 @@ final class RequestService
     }
 
     /**
+     * A changed retention applies to the stored requests as well, not only to new ones.
+     */
+    public function retentionChanged(int $sectionId): void
+    {
+        foreach ($this->requests->bookingIds($sectionId) as $bookingId) {
+            $this->bookingChanged($sectionId, $bookingId);
+        }
+    }
+
+    /**
      * Empties the contact data of all requests whose retention has ended.
      * WBCE has no cron; the wrapper calls this on backend and request calls.
      */

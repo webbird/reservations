@@ -88,13 +88,14 @@ final class BookingRepositoryTest extends TestCase
         self::assertSame([], $this->bookings->findBlockingOverlaps(2, $this->flat, $range));
     }
 
-    public function testCountByResourceIsPerSection(): void
+    public function testHasBookingsIsPerSection(): void
     {
-        $this->bookings->insert($this->booking($this->flat, '2026-11-02 00:00', '2026-11-06 00:00', $this->booked));
-        $this->bookings->insert($this->booking($this->flat, '2026-11-08 00:00', '2026-11-09 00:00', $this->cancelled));
         $this->bookings->insert($this->booking($this->otherFlat, '2026-11-03 00:00', '2026-11-04 00:00', $this->booked, 2));
+        self::assertFalse($this->bookings->hasBookings(1));
+        // cancelled bookings count too: they were entered for the current booking mode
+        $this->bookings->insert($this->booking($this->flat, '2026-11-08 00:00', '2026-11-09 00:00', $this->cancelled));
 
-        self::assertSame([$this->flat => 2], $this->bookings->countByResource(1));
+        self::assertTrue($this->bookings->hasBookings(1));
     }
 
     public function testCountCurrentSplitsRequestsAndSkipsPastOrCancelled(): void

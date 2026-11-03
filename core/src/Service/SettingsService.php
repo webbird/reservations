@@ -33,7 +33,7 @@ final class SettingsService
             return Result::fail('settings.not_found', ['id' => $s->sectionId]);
         }
         // existing bookings were entered for the old mode; day mode would drop their times on the next edit
-        if ($s->bookingMode !== $existing->bookingMode && $this->bookings->countByResource($s->sectionId) !== []) {
+        if ($s->bookingMode !== $existing->bookingMode && $this->bookings->hasBookings($s->sectionId)) {
             return Result::fail('settings.mode_locked', [], 'booking_mode');
         }
         if (!in_array($s->planRange, self::PLAN_RANGES, true)) {

@@ -253,6 +253,19 @@ final class RequestServiceTest extends TestCase
         $this->service->bookingChanged(1, 999);
     }
 
+    public function testChangedRetentionAppliesToStoredRequests(): void
+    {
+        $open = $this->id($this->submit($this->flat, $this->range('2026-12-10', '2026-12-12')));
+        $rejected = $this->id($this->submit($this->flat, $this->range('2026-12-20', '2026-12-22')));
+        self::assertTrue($this->service->reject(1, $rejected)->ok);
+
+        (new SettingsRepository($this->db))->save(new Settings(1, requestsEnabled: true, retentionDays: 10));
+        $this->service->retentionChanged(1);
+
+        self::assertEquals(new DateTimeImmutable('2026-12-22 00:00', $this->tz), $this->requests->findByBooking(1, $open)?->purgeAfter);
+        self::assertEquals($this->now->modify('+10 days'), $this->requests->findByBooking(1, $rejected)?->purgeAfter);
+    }
+
     public function testDecisionNeedsARequestOfTheSection(): void
     {
         $booked = (int) $this->statuses->findByRole(1, StatusRole::RequestConfirmed)?->id;

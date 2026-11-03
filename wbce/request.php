@@ -111,6 +111,6 @@ if ($result->ok && is_int($result->value)) {
     $bookingId = $result->value;
     $booked = ReservationsWbce::resources()->find($sectionId, $old['resource_id'])->autoConfirm ?? false;
     // the request is stored either way; a failed mail is logged and the backend still shows the request
-    $finish(Result::ok($booked), static fn () => ReservationsWbce::requestMails($sectionId, $bookingId, $booked ? 'booked' : 'received'));
+    $finish(Result::ok($booked), static fn () => ReservationsMail::request($sectionId, $bookingId, $booked ? 'booked' : 'received'));
 }
 $finish($result);

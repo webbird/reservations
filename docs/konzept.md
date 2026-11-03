@@ -292,7 +292,8 @@ Keine Zeilen bedeutet: rund um die Uhr verfügbar.
   Überschneidung.
 - `purge_after` = Ende des Zeitraums + `retention_days`, nach einer Ablehnung ab der
   Ablehnung. Geleert wird bei jedem Aufruf des Backends und des Anfrage-Endpunkts (WBCE hat
-  keinen Cron); die Buchung bleibt.
+  keinen Cron); die Buchung bleibt. Eine geänderte `retention_days` gilt auch für die
+  gespeicherten Anfragen.
 - Beim Löschen einer Buchung wird ihre Anfrage mitgelöscht.
 
 ### Ab 1.1: services, service_resources

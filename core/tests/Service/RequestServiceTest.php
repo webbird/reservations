@@ -143,6 +143,12 @@ final class RequestServiceTest extends TestCase
         $this->id($this->submit($this->limited, $this->range('2026-10-31', '2026-11-03')));
         $this->id($this->submit($this->limited, $this->range('2026-11-28', '2026-11-30')));
         self::assertSame('request.too_late', $this->submit($this->limited, $this->range('2026-11-29', '2026-12-01'))->firstErrorKey());
+
+        // the date picker uses the same limit; in period mode it counts from now
+        $limited = $this->resources->find(1, $this->limited);
+        self::assertNotNull($limited);
+        self::assertEquals(new DateTimeImmutable('2026-10-31 00:00', $this->tz), $this->service->earliestStart($limited, true));
+        self::assertEquals(new DateTimeImmutable('2026-10-31 15:00', $this->tz), $this->service->earliestStart($limited, false));
     }
 
     public function testValidation(): void

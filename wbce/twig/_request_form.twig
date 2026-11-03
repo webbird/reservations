@@ -3,6 +3,8 @@
     Errors come one at a time from request.php; the field concerned points to the message.
 #}
 {% set r = request %}
+{# the limits of a single object show in the form; with a choice of objects only the server checks them #}
+{% set one = r.resources|length == 1 ? r.resources[0] : null %}
 {% set invalid = 'aria-invalid="true" aria-describedby="rsv-request-error-' ~ section_id ~ '"' %}
 {# empty jump target for the redirect of request.php: templates may hide :target elements (sticky-nav trick) #}
 <span id="rsv-request-{{ section_id }}" class="rsv-anchor"></span>
@@ -43,7 +45,7 @@
                 <input id="rsv-req-start-{{ section_id }}" type="{{ r.whole_days ? 'date' : 'datetime-local' }}" name="start" value="{{ r.old.start }}" min="{{ r.min }}" required{{ r.field == 'range' ? (' ' ~ invalid)|raw }}>
             </p>
             <p>
-                <label for="rsv-req-end-{{ section_id }}">{{ t(r.whole_days ? 'DEPARTURE' : 'END') }} <span aria-hidden="true">*</span></label>
+                <label for="rsv-req-end-{{ section_id }}">{{ t(r.whole_days ? 'DEPARTURE' : 'END') }}{% if one.duration_note %} ({{ one.duration_note }}){% endif %} <span aria-hidden="true">*</span></label>
                 <input id="rsv-req-end-{{ section_id }}" type="{{ r.whole_days ? 'date' : 'datetime-local' }}" name="end" value="{{ r.old.end }}" min="{{ r.min }}" required>
             </p>
         </div>
@@ -61,8 +63,8 @@
             <input id="rsv-req-phone-{{ section_id }}" type="tel" name="phone" value="{{ r.old.phone }}" maxlength="50" autocomplete="tel"{{ r.field == 'phone' ? (' ' ~ invalid)|raw }}>
         </p>
         <p>
-            <label for="rsv-req-persons-{{ section_id }}">{{ t('PERSONS') }}</label>
-            <input id="rsv-req-persons-{{ section_id }}" type="number" name="persons" value="{{ r.old.persons }}" min="1"{% if r.resources|length == 1 and r.resources[0].capacity %} max="{{ r.resources[0].capacity }}"{% endif %} inputmode="numeric"{{ r.field == 'persons' ? (' ' ~ invalid)|raw }}>
+            <label for="rsv-req-persons-{{ section_id }}">{{ t('PERSONS') }}{% if one.persons_note %} ({{ one.persons_note }}){% endif %}{% if one.min_persons %} <span aria-hidden="true">*</span>{% endif %}</label>
+            <input id="rsv-req-persons-{{ section_id }}" type="number" name="persons" value="{{ r.old.persons }}" min="{{ one.min_persons ?: 1 }}"{% if one.capacity %} max="{{ one.capacity }}"{% endif %}{% if one.min_persons %} required{% endif %} inputmode="numeric"{{ r.field == 'persons' ? (' ' ~ invalid)|raw }}>
         </p>
         <p>
             <label for="rsv-req-message-{{ section_id }}">{{ t('MESSAGE') }}</label>

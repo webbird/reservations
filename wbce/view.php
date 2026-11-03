@@ -154,14 +154,37 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
         call_captcha('all', '', 'rsv' . $rsvSection);
         $rsvCaptcha = (string) ob_get_clean();
     }
+    // "2 to 6 nights", "at least 2", "at most 6"; null without limits
+    $rsvLimit = static function (?int $min, ?int $max, string $unit = ''): ?string {
+        if ($min === null && $max === null) {
+            return null;
+        }
+        $text = match (true) {
+            $min !== null && $max !== null => ReservationsWbce::t('LIMIT_RANGE', $min, $max),
+            $min !== null => ReservationsWbce::t('LIMIT_MIN', $min),
+            default => ReservationsWbce::t('LIMIT_MAX', (int) $max),
+        };
+        // singular only for a single limit of 1 ("at most 1 night")
+        return $unit === '' ? $text : $text . ' ' . ReservationsWbce::t($unit . (($min ?? $max) === 1 && ($min === null || $max === null) ? '' : 'S'));
+    };
+    $rsvRequests = ReservationsWbce::requestService();
     $rsvVars['request'] = [
         'action'     => WB_URL . '/modules/reservations/request.php',
         'return'     => (string) strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '#'),
         'ftan'       => $GLOBALS['wb']->getFTAN(),
-        'resources'  => array_map(static fn ($r) => ['id' => $r->id, 'title' => $r->title, 'capacity' => $r->capacity], $rsvResources),
+        // limits of a single object go into the form; with a choice of objects only request.php checks them
+        'resources'  => array_map(static fn ($r) => [
+            'id'            => $r->id,
+            'title'         => $r->title,
+            'capacity'      => $r->capacity,
+            'min_persons'   => $r->minPersons,
+            'persons_note'  => $rsvLimit($r->minPersons, $r->capacity),
+            'duration_note' => $rsvLimit($r->minDuration, $r->maxDuration, $rsvWholeDays ? 'UNIT_NIGHT' : 'UNIT_MINUTE'),
+        ], $rsvResources),
         'whole_days' => $rsvWholeDays,
-        // only a hint for the date picker; the lead time of the object is checked by the core
-        'min'        => $rsvWholeDays ? (new DateTimeImmutable('tomorrow', $rsvTz))->format('Y-m-d') : (new DateTimeImmutable('now', $rsvTz))->format('Y-m-d\TH:i'),
+        // only a hint for the date picker: the earliest start of any of the objects
+        'min'        => min(array_map(static fn ($r) => $rsvRequests->earliestStart($r, $rsvWholeDays), $rsvResources))
+            ->format($rsvWholeDays ? 'Y-m-d' : 'Y-m-d\TH:i'),
         'retention'  => $rsvSettings->retentionDays,
         'captcha'    => $rsvCaptcha,
         'errors'     => $rsvFlash['errors'] ?? [],

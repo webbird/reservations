@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Reservations\Core\Service;
 
 use DateInterval;
+use DateTimeImmutable;
+use Reservations\Core\Domain\BookableResource;
 use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\Request;
 use Reservations\Core\Domain\StatusRole;
@@ -100,15 +102,7 @@ final class RequestService
 
         $now = $this->clock->now();
         $wholeDays = $settings->bookingMode === BookingMode::Day;
-        if ($wholeDays) {
-            // days count from today (2 days lead on Monday: Wednesday), but today has begun, so never before tomorrow
-            $today = $now->setTime(0, 0);
-            $leadDays = max(1, (int) ceil($resource->leadMinMinutes / 1440));
-            $earliest = $today->add(new DateInterval('P' . $leadDays . 'D'));
-        } else {
-            $earliest = $now->add(new DateInterval('PT' . $resource->leadMinMinutes . 'M'));
-        }
-        if ($range->start < $earliest) {
+        if ($range->start < $this->earliestStart($resource, $wholeDays)) {
             return Result::fail('request.too_early', [], 'range');
         }
         if ($resource->leadMaxDays !== null && $range->start > $now->add(new DateInterval('P' . $resource->leadMaxDays . 'D'))) {
@@ -177,6 +171,20 @@ final class RequestService
      * period, or - once rejected - after now at the latest. Bookings without a
      * request and requests already emptied stay as they are.
      */
+    /**
+     * The earliest start a request may have, after the lead time of the object.
+     */
+    public function earliestStart(BookableResource $resource, bool $wholeDays): DateTimeImmutable
+    {
+        $now = $this->clock->now();
+        if (!$wholeDays) {
+            return $now->add(new DateInterval('PT' . $resource->leadMinMinutes . 'M'));
+        }
+        // days count from today (2 days lead on Monday: Wednesday), but today has begun, so never before tomorrow
+        $leadDays = max(1, (int) ceil($resource->leadMinMinutes / 1440));
+        return $now->setTime(0, 0)->add(new DateInterval('P' . $leadDays . 'D'));
+    }
+
     public function bookingChanged(int $sectionId, int $bookingId): void
     {
         $booking = $this->bookings->find($sectionId, $bookingId);

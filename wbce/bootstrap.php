@@ -298,6 +298,8 @@ final class ReservationsWbce
     private static function sendMail(string $to, string $replyTo, string $subject, string $body): bool
     {
         $mail = new Mailer();
+        // WBCE waits 30 s per SMTP connection; two mails would exceed PHP's usual time limit
+        $mail->Timeout = 10;
         $mail->isHTML(false);
         $mail->addAddress($to);
         if ($replyTo !== '') {

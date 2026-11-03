@@ -43,11 +43,30 @@ $old = [
     'message'     => $post('message'),
     'privacy'     => $post('privacy') === '1',
 ];
-$finish = static function (Result $result) use ($sectionId, $location, $old): never {
+/**
+ * Redirects back; $after runs once the visitor already has the redirect (mails, which may be slow).
+ */
+$finish = static function (Result $result, ?callable $after = null) use ($sectionId, $location, $old): never {
     $_SESSION['mod_reservations_request'][$sectionId] = $result->ok
         ? ['success' => ReservationsWbce::t($result->value === true ? 'MSG_REQUEST_BOOKED' : 'MSG_REQUEST_SENT')]
         : ['errors' => ReservationsWbce::errorMessages($result, $sectionId), 'field' => $result->errors[0]['field'] ?? null, 'old' => $old];
     header('Location: ' . $location);
+    if ($after !== null) {
+        // the next page reads this session; an open session would keep it waiting for $after
+        session_write_close();
+        ignore_user_abort(true);
+        header('Connection: close');
+        header('Content-Length: 0');
+        while (ob_get_level() > 0) {
+            ob_end_flush();
+        }
+        flush();
+        // PHP-FPM ends the response here; mod_php relies on Content-Length and flush()
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
+        $after();
+    }
     exit;
 };
 
@@ -93,9 +112,9 @@ if ($result->firstErrorKey() === 'booking.overlap') {
 }
 if ($result->ok && is_int($result->value)) {
     unset($_SESSION['mod_reservations_form_time'][$sectionId]);
+    $bookingId = $result->value;
     $booked = ReservationsWbce::resources()->find($sectionId, $old['resource_id'])->autoConfirm ?? false;
     // the request is stored either way; a failed mail is logged and the backend still shows the request
-    ReservationsWbce::requestMails($sectionId, $result->value, $booked ? 'booked' : 'received');
-    $result = Result::ok($booked);
+    $finish(Result::ok($booked), static fn () => ReservationsWbce::requestMails($sectionId, $bookingId, $booked ? 'booked' : 'received'));
 }
 $finish($result);

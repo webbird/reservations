@@ -262,7 +262,7 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
     $rsvSteps = array_unique(array_column($rsvItems, 'step'));
     $rsvVars['request'] = [
         'action'     => WB_URL . '/modules/reservations/request.php',
-        'return'     => (string) strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '#'),
+        'return'     => (string) preg_replace('/[?&]rsv_sent=\d+$/', '', (string) strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '#')),
         'ftan'       => $GLOBALS['wb']->getFTAN(),
         'resources'  => $rsvItems,
         'whole_days' => $rsvWholeDays,

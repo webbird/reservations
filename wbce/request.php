@@ -20,6 +20,9 @@ $sectionId = (int) $post('section_id');
 
 // back to the page with the form; ReturnUrl keeps the redirect on this site
 $location = ReturnUrl::resolve(WB_URL, $post('return'), 'rsv-request-' . $sectionId);
+// after a request the page is marked: the link "another request" leads to the unmarked page and so
+// loads it again (a link that differs only in its anchor just scrolls); view.php drops the mark from "return"
+$sent = ReturnUrl::resolve(WB_URL, $post('return') . (str_contains($post('return'), '?') ? '&' : '?') . 'rsv_sent=' . $sectionId, 'rsv-request-' . $sectionId);
 
 $module = $GLOBALS['database']->fetchValue('SELECT `module` FROM `{TP}sections` WHERE `section_id` = ?', [$sectionId]);
 $settings = ReservationsWbce::settings()->find($sectionId);
@@ -42,11 +45,11 @@ $old = [
 /**
  * Redirects back; $after runs once the visitor already has the redirect (mails, which may be slow).
  */
-$finish = static function (Result $result, ?callable $after = null) use ($sectionId, $location, $old): never {
+$finish = static function (Result $result, ?callable $after = null) use ($sectionId, $location, $sent, $old): never {
     $_SESSION['mod_reservations_request'][$sectionId] = $result->ok
         ? ['success' => ReservationsWbce::t($result->value === true ? 'MSG_REQUEST_BOOKED' : 'MSG_REQUEST_SENT')]
         : ['errors' => ReservationsWbce::errorMessages($result, $sectionId), 'field' => $result->errors[0]['field'] ?? null, 'old' => $old];
-    header('Location: ' . $location);
+    header('Location: ' . ($result->ok ? $sent : $location));
     if ($after !== null) {
         // the next page reads this session; an open session would keep it waiting for $after
         session_write_close();

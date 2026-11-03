@@ -164,6 +164,7 @@ return [
             'RETENTION_DAYS_HINT'  => 'Counted from the end of the requested period, after a rejection from the rejection. A change also applies to stored requests. The booking stays.',
             'USE_CAPTCHA'          => 'Use captcha (module captcha_control)',
             'USE_CAPTCHA_HINT'     => 'Recommended: without a captcha, bots can block periods with fake requests. Form token and a hidden trap field are always active.',
+            'CAPTCHA_MISSING'      => 'The captcha is switched on, but the module captcha_control is missing. The request form runs without a captcha until captcha_control is installed again.',
 
             'REQUEST_TITLE'        => 'Request a booking',
             'REQUIRED_HINT'        => 'Fields marked with * are required.',
@@ -438,6 +439,7 @@ return [
             'RETENTION_DAYS_HINT'  => 'Gezählt ab dem Ende des angefragten Zeitraums, nach einer Ablehnung ab der Ablehnung. Eine Änderung gilt auch für gespeicherte Anfragen. Die Buchung bleibt erhalten.',
             'USE_CAPTCHA'          => 'Captcha verwenden (Modul captcha_control)',
             'USE_CAPTCHA_HINT'     => 'Empfohlen: Ohne Captcha können Bots mit falschen Anfragen Zeiträume blockieren. Formular-Token und ein verstecktes Fallenfeld sind immer aktiv.',
+            'CAPTCHA_MISSING'      => 'Das Captcha ist eingeschaltet, aber das Modul captcha_control fehlt. Das Anfrageformular läuft ohne Captcha, bis captcha_control wieder installiert ist.',
 
             'REQUEST_TITLE'        => 'Buchung anfragen',
             'REQUIRED_HINT'        => 'Mit * markierte Felder sind Pflichtfelder.',

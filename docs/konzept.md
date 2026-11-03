@@ -415,11 +415,13 @@ Es gelten die Konventionen aus news_img:
 - Jede Ausgabe mit `htmlspecialchars(…, ENT_QUOTES)`
 - Anfrageformular (WBCE: eigener Endpunkt `request.php`, danach Rücksprung zur Seite):
   - immer: FTAN, Honeypot, mindestens 2 Sekunden zwischen Anzeige und Absenden
-  - optional je Abschnitt: Captcha aus captcha_control
+  - optional je Abschnitt: Captcha aus captcha_control. Fehlt das Modul später, läuft das
+    Formular ohne Captcha; die Einstellungen zeigen dann einen Hinweis, die Wahl bleibt
+    gespeichert und greift wieder, sobald captcha_control zurück ist
   - serverseitige Prüfung auf Verfügbarkeit (dem Browser wird nicht geglaubt); bei einer
     Überschneidung nennt die Meldung keine Termine, sie könnten zu verborgenen Anfragen gehören
   - Rücksprung nur auf Pfade unterhalb von `WB_URL`, der Host kommt immer aus `WB_URL`
-  - noch nicht umgesetzt: Ratenbegrenzung pro Sitzung
+  - noch nicht umgesetzt: Ratenbegrenzung, geplant im nächsten Schritt (siehe Abschnitt 10)
 - Mails ohne Double-Opt-in: Wer eine fremde Adresse einträgt, löst eine Mail an sie aus.
   Mails an die anfragende Person enthalten deshalb nur festen Text, Objekt und Zeitraum,
   nichts vom Besucher Eingegebenes. Alle Angaben gehen nur an die Benachrichtigungsadresse.
@@ -513,7 +515,17 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 ---
 
 ## 10. Offene Punkte
-- Ratenbegrenzung für das Anfrageformular (siehe Abschnitt 6).
+
+### Nächste Schritte
+1. **Verfügbarkeitsregeln:** Öffnungszeiten je Wochentag (`hours`), Sperrzeiten, Raster
+   `slot_minutes` im Modus `period`.
+   - **ToDo Ratenbegrenzung** für das Anfrageformular (Pentest 0.6.0, Befund 2): Jede
+     erfolgreiche Anfrage belegt einen Zeitraum und löst Mails aus, auch an fremde Adressen.
+     Grenze je Sitzung und gehashter IP (z. B. N Anfragen pro Stunde); Speicherort, Werte und
+     Meldung beim Planen festlegen. Bis dahin schützt nur das Captcha.
+2. **Wochenansicht** mit Stundenraster.
+
+### Weitere offene Punkte
 - Mailversand im Zusammenspiel mit einem echten Mailserver testen (Eingang, sofort bestätigt,
   Bestätigung, Ablehnung, Benachrichtigung).
 - Upgrade: Neue Spalten legt `upgrade.php` an (`Schema::install()`). Wer nur Dateien austauscht

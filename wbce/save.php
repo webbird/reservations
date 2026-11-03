@@ -158,8 +158,11 @@ switch ($post('rsv_action')) {
             'requests_enabled' => $post('requests_enabled') === '1',
             'notify_email'  => trim($post('notify_email')),
             'retention_days' => (int) $post('retention_days'),
-            // without captcha_control the form has no captcha field; never switch on what cannot run
-            'captcha'       => $post('captcha') === '1' && ReservationsWbce::captchaAvailable(),
+            // without captcha_control the form has no captcha field: the stored choice stays, so the
+            // warning remains and the captcha returns with the module
+            'captcha'       => ReservationsWbce::captchaAvailable()
+                ? $post('captcha') === '1'
+                : (ReservationsWbce::settings()->find($sectionId)->captcha ?? false),
         ];
         $mode = DisplayMode::tryFrom($old['display_mode']);
         $view = CalendarView::tryFrom($old['default_view']);

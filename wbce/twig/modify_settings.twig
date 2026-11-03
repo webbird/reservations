@@ -120,6 +120,9 @@
                         <label for="rsv-captcha-{{ section_id }}">{{ t('USE_CAPTCHA') }}</label>
                         <small id="rsv-captcha-hint-{{ section_id }}">{{ t('USE_CAPTCHA_HINT') }}</small>
                     </p>
+                {% elseif form.captcha %}
+                    {# switched on earlier, but captcha_control is gone: request.php then runs without captcha #}
+                    <p class="rsv-msg rsv-msg--error">{{ t('CAPTCHA_MISSING') }}</p>
                 {% endif %}
             </fieldset>
 

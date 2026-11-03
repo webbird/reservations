@@ -13,17 +13,13 @@ require_once __DIR__ . '/bootstrap.php';
 
 use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Result\Result;
+use Reservations\Core\Support\ReturnUrl;
 
 $post = static fn (string $name): string => is_string($_POST[$name] ?? null) ? trim($_POST[$name]) : '';
 $sectionId = (int) $post('section_id');
 
-// back to the page with the form: only a path below WB_URL, the host always comes from WB_URL
-$base = (string) parse_url(WB_URL, PHP_URL_PATH);
-$return = strtok($post('return'), '#') ?: '';
-if (!str_starts_with($return, $base . '/') || str_starts_with($return, '//') || preg_match('/[\r\n\\\\]/', $return) === 1) {
-    $return = $base . '/';
-}
-$location = preg_replace('#^(https?://[^/]+).*$#', '$1', WB_URL) . $return . '#rsv-request-' . $sectionId;
+// back to the page with the form; ReturnUrl keeps the redirect on this site
+$location = ReturnUrl::resolve(WB_URL, $post('return'), 'rsv-request-' . $sectionId);
 
 $module = $GLOBALS['database']->fetchValue('SELECT `module` FROM `{TP}sections` WHERE `section_id` = ?', [$sectionId]);
 $settings = ReservationsWbce::settings()->find($sectionId);

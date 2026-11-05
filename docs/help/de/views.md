@@ -25,6 +25,19 @@ Nur im Buchungsmodus Zeitraum. Je Objekt eine Tabelle mit den Tagen als Spalten 
 
 Immer verfügbar. Die belegten Zeiträume als Text, je Objekt gruppiert. Diese Ansicht ist am Handy und mit Screenreadern am einfachsten zu lesen.
 
+## Direkt aus dem Kalender anfragen
+
+Sind [Buchungsanfragen](requests.md) eingeschaltet, führt ein Klick in den Kalender zum Formular. Es klappt auf und enthält schon Objekt, Beginn und Ende. Der Besucher kann alles ändern, bevor er die Anfrage abschickt.
+
+- **Plan und Kalender, Buchungsmodus tageweise:** Ein Klick auf einen freien Tag setzt die Anreise, die Abreise ergibt sich aus der [Mindestdauer](booking-rules.md#dauer), sonst nach einer Nacht. An Wechseltagen mit freiem Nachmittag geht das auch.
+- **Woche:** Ein Klick auf eine freie Zeit setzt den Beginn auf diese Zeile. Das Ende ergibt sich aus der Mindestdauer, sonst nach einer Stunde, und liegt nie nach der nächsten Buchung. Per Tastatur beginnt der Vorschlag am Anfang des freien Blocks.
+- **Plan im Buchungsmodus Zeitraum:** kein Klick, denn ein Tag sagt nichts über die Uhrzeit. Dafür ist die Woche da.
+
+Tage und Zeiten außerhalb des [Vorlaufs](booking-rules.md#vorlauf) sind nicht klickbar. In Plan und Kalender ist der Klick eine Abkürzung für Maus und Touch. Mit Tastatur und Screenreader geht es dort über das Formular, durch die vielen Tage müsste man sonst einzeln durchspringen.
+
+> [!NOTE]
+> Der Klick ist nur ein Vorschlag. Ob der ganze Zeitraum frei ist, prüft Reservations erst beim Absenden. Zeigt ein Status eine Buchung gar nicht an, sieht die Zeit frei aus und lässt sich anklicken, die Anfrage wird beim Absenden aber abgelehnt.
+
 ## Was Besucher sehen
 
 Was eine Buchung auf der Website zeigt, hängt von ihrem [Status](statuses.md) ab:

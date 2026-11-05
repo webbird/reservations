@@ -8,6 +8,7 @@ use DateInterval;
 use DateTimeImmutable;
 use Reservations\Core\Domain\BookableResource;
 use Reservations\Core\Domain\BookingMode;
+use Reservations\Core\Domain\OpeningHours;
 use Reservations\Core\Domain\Request;
 use Reservations\Core\Domain\Settings;
 use Reservations\Core\Domain\StatusRole;
@@ -40,6 +41,8 @@ final class RequestService
     private const RATE_WINDOW = 'PT1H';
     /** how long the visitor hash is kept */
     private const CLIENT_KEEP = 'P1D';
+    /** suggested length of a period for objects without a minimum */
+    private const SUGGESTED_MINUTES = 60;
 
     public function __construct(
         private readonly BookingService $bookingService,
@@ -210,14 +213,8 @@ final class RequestService
             $leadDays = max(1, (int) ceil($resource->leadMinMinutes / 1440));
             return $now->setTime(0, 0)->add(new DateInterval('P' . $leadDays . 'D'));
         }
-        $slot = new DateInterval('PT' . $resource->slotMinutes . 'M');
         $start = self::ceilToGrid($now->add(new DateInterval('PT' . $resource->leadMinMinutes . 'M')), $resource->slotMinutes);
-        $hours = $this->hours->find($resource->sectionId, (int) $resource->id);
-        // grid steps until the next opening; any opening day comes within a week
-        for ($step = 0; $step < 7 * 1440 / $resource->slotMinutes && !$hours->allowsStart($start); $step++) {
-            $start = $start->add($slot);
-        }
-        return $start;
+        return self::nextOpening($this->hours->find($resource->sectionId, (int) $resource->id), $start, $resource->slotMinutes);
     }
 
     /**
@@ -229,6 +226,51 @@ final class RequestService
         return $resource->leadMaxDays !== null
             ? $this->clock->now()->add(new DateInterval('P' . $resource->leadMaxDays . 'D'))
             : $this->horizon($settings);
+    }
+
+    /**
+     * What a click on the calendar suggests for the request form. Whole days: the
+     * day as arrival, for the minimum stay. Periods: the first possible start from
+     * $from, for the minimum duration or else an hour; shorter if the opening hours
+     * or the next booking ($limit) end it sooner. Only a suggestion: whether the
+     * whole period is free, submit() finds out.
+     *
+     * @return ?TimeRange null if no request can begin there
+     */
+    public function suggest(BookableResource $resource, Settings $settings, DateTimeImmutable $from, ?DateTimeImmutable $limit = null): ?TimeRange
+    {
+        $wholeDays = $settings->bookingMode === BookingMode::Day;
+        $earliest = $this->earliestStart($resource, $wholeDays);
+        $latest = $this->latestStart($resource, $settings);
+        if ($wholeDays) {
+            $start = $from->setTime(0, 0);
+            return $start < $earliest || $start > $latest
+                ? null
+                : new TimeRange($start, $start->add(new DateInterval('P' . max(1, $resource->minDuration ?? 1) . 'D')));
+        }
+        // shortcut: two queries per free block of a week; hand the hours in if pages with many objects get slow
+        $hours = $this->hours->find($resource->sectionId, (int) $resource->id);
+        $start = self::nextOpening($hours, max($earliest, self::ceilToGrid($from, $resource->slotMinutes)), $resource->slotMinutes);
+        if ($start > $latest || !$hours->allowsStart($start)) {
+            return null;
+        }
+        $length = static fn (DateTimeImmutable $end): int => intdiv($end->getTimestamp() - $start->getTimestamp(), 60);
+        $wanted = $resource->minDuration ?? min(self::SUGGESTED_MINUTES, $resource->maxDuration ?? self::SUGGESTED_MINUTES);
+        $slot = new DateInterval('PT' . $resource->slotMinutes . 'M');
+        $end = null;
+        // the last end on the grid that the hours allow, up to the wanted length
+        for ($next = $start->add($slot); $limit === null || $next <= $limit; $next = $next->add($slot)) {
+            if ($resource->maxDuration !== null && $length($next) > $resource->maxDuration) {
+                break;
+            }
+            if ($hours->allowsEnd($next)) {
+                $end = $next;
+            }
+            if ($length($next) >= $wanted) {
+                break;
+            }
+        }
+        return $end === null || $length($end) < ($resource->minDuration ?? 0) ? null : new TimeRange($start, $end);
     }
 
     /**
@@ -293,6 +335,18 @@ final class RequestService
     private static function onGrid(DateTimeImmutable $moment, int $slotMinutes): bool
     {
         return $moment->format('s') === '00' && ((int) $moment->format('G') * 60 + (int) $moment->format('i')) % $slotMinutes === 0;
+    }
+
+    /**
+     * The first opening from $start on, in grid steps; any opening day comes within a week.
+     */
+    private static function nextOpening(OpeningHours $hours, DateTimeImmutable $start, int $slotMinutes): DateTimeImmutable
+    {
+        $slot = new DateInterval('PT' . $slotMinutes . 'M');
+        for ($step = 0; $step < 7 * 1440 / $slotMinutes && !$hours->allowsStart($start); $step++) {
+            $start = $start->add($slot);
+        }
+        return $start;
     }
 
     private static function ceilToGrid(DateTimeImmutable $moment, int $slotMinutes): DateTimeImmutable

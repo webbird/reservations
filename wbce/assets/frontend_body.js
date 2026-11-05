@@ -1,9 +1,10 @@
 /*
- * Reservations – frontend_body.js, two parts:
+ * Reservations – frontend_body.js, three parts:
  * 1. With a choice of objects in the request form: shows the limits of the chosen
  *    object and sets them on the fields (dates, number of persons). Without
  *    JavaScript all limit lines stay visible and request.php checks anyway.
  * 2. Folds the request form behind its heading.
+ * 3. Takes the row under the pointer when a free block of the week is clicked.
  */
 document.querySelectorAll('.rsv-request select[name="resource_id"]').forEach(function (select) {
     var form = select.form;
@@ -73,4 +74,30 @@ document.querySelectorAll('.rsv-request[data-fold]').forEach(function (section) 
         }
     });
     toggle(location.hash === anchor);
+});
+
+/*
+ * A free block of the week is one link, which suggests its first row. A click with
+ * the pointer suggests the row under it instead; the keyboard and pages without
+ * JavaScript stay with the first row.
+ */
+document.querySelectorAll('.rsv-pick').forEach(function (link) {
+    var href = link.href;
+    var pad = function (number) {
+        return String(number).padStart(2, '0');
+    };
+    link.addEventListener('click', function (event) {
+        var box = link.getBoundingClientRect();
+        // detail is 0 for a click by keyboard
+        if (!event.detail || !box.height) {
+            return;
+        }
+        var rows = Number(link.dataset.rows);
+        var row = Math.min(rows - 1, Math.floor((event.clientY - box.top) / box.height * rows));
+        var url = new URL(href);
+        var from = url.searchParams.get(link.dataset.param).split(/[T:]/);
+        var minutes = Number(from[1]) * 60 + Number(from[2]) + row * Number(link.dataset.rowMinutes);
+        url.searchParams.set(link.dataset.param, from[0] + 'T' + pad(Math.floor(minutes / 60)) + ':' + pad(minutes % 60));
+        link.href = url.href;
+    });
 });

@@ -27,7 +27,11 @@
                             <td rowspan="{{ cell.rows }}" class="rsv-slot{{ cell.state == 'closed' ? ' rsv-closed' }}{{ cell.weekend ? ' rsv-weekend' }}{% if cell.half %} rsv-pattern-{{ cell.half.pattern }}{% endif %}"
                                 {%- if cell.half %} style="--rsv-color:{{ cell.half.color }}"{% endif %}{% if cell.state != 'free' %} title="{{ cell.text }}"{% endif %}>
                                 {%- if cell.label %}<span class="rsv-slot-label" aria-hidden="true">{{ cell.label }}</span>{% endif -%}
-                                <span class="rsv-sr">{{ cell.text }}</span>
+                                {%- if cell.pick -%}
+                                    <a class="rsv-pick" href="{{ cell.pick }}" rel="nofollow" title="{{ t('REQUEST_PICK') }}" data-param="rsv_from_{{ section_id }}" data-rows="{{ cell.rows }}" data-row-minutes="{{ table.row_minutes }}"><span class="rsv-sr">{{ cell.text }}, {{ t('REQUEST_PICK') }}</span></a>
+                                {%- else -%}
+                                    <span class="rsv-sr">{{ cell.text }}</span>
+                                {%- endif -%}
                             </td>
                         {% endfor %}
                     </tr>

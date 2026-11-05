@@ -11,7 +11,7 @@ Mit eingeschalteten Buchungsanfragen steht unter dem Kalender das aufklappbare F
 
 ## Was bei einer Anfrage geschieht
 
-1. Der Besucher füllt das Formular aus. Reservations prüft die Regeln des Objekts und ob der Zeitraum frei ist.
+1. Der Besucher füllt das Formular aus, auf Wunsch [vorbelegt per Klick in den Kalender](views.md#direkt-aus-dem-kalender-anfragen). Reservations prüft die Regeln des Objekts und ob der Zeitraum frei ist.
 2. Es entsteht eine Buchung mit dem Status der Rolle „neue Anfrage“, mit den Vorgaben also „angefragt“. Sie blockiert den Zeitraum sofort.
 3. Der Besucher bekommt eine Eingangsbestätigung, Sie eine Benachrichtigung mit allen Angaben und einem Link ins Backend.
 4. Sie bestätigen oder lehnen ab. Die Person bekommt eine Mail.

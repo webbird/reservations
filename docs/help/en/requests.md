@@ -11,7 +11,7 @@ With booking requests switched on, the collapsible form "Request a booking" appe
 
 ## What happens with a request
 
-1. The visitor fills in the form. Reservations checks the rules of the object and whether the period is free.
+1. The visitor fills in the form, if they like [prefilled by a click in the calendar](views.md#request-right-from-the-calendar). Reservations checks the rules of the object and whether the period is free.
 2. A booking is created with the status of the role "new request", by default "Requested". It blocks the period at once.
 3. The visitor gets an acknowledgement, you get a notification with all details and a link into the backend.
 4. You confirm or reject. The person gets a mail.

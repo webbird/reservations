@@ -532,7 +532,11 @@ Es gelten die Konventionen aus news_img:
   oder Rahmen.
 - Die Listenansicht ist immer erreichbar.
 - Hauptweg zum Buchen ist das Formular mit nativen Feldern für Datum und Uhrzeit. Die
-  Auswahl im Plan ist nur eine Abkürzung.
+  Auswahl im Plan ist nur eine Abkürzung: Ein Klick auf einen freien Tag oder Block füllt
+  das Formular vor. Das sind echte Links, die `view.php` serverseitig auswertet, also ohne
+  JavaScript nutzbar. Plan und Kalender haben dafür keine Tab-Stopps (`tabindex="-1"`,
+  `aria-hidden`), sonst wären es bis zu 31 je Objekt und Monat; dort bleibt das Formular der
+  Weg für Tastatur und Screenreader. Die wenigen Blöcke der Woche sind erreichbar.
 - Termin-Auswahl (1.1) als Radio-Buttons in `<fieldset>`.
 - Ergebnis der Verfügbarkeitsprüfung über eine `aria-live`-Region. Fehler mit
   `aria-describedby` und `aria-invalid`, nach dem Absenden eine Fehlerzusammenfassung.
@@ -608,9 +612,7 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 ### Nächste Schritte
 Vor Version 1.0:
 
-1. **Vorbelegen per Klick:** Ein Klick auf einen freien Block der Woche (oder einen freien Tag
-   in Plan und Kalender) füllt das Anfrageformular vor (Objekt, Beginn, Ende) und klappt es auf.
-2. **Abschlussprüfung:** Barrierefreiheit nach Abschnitt 7, Mailversand mit einem echten
+1. **Abschlussprüfung:** Barrierefreiheit nach Abschnitt 7, Mailversand mit einem echten
    Mailserver (Eingang, sofort bestätigt, Bestätigung, Ablehnung, Benachrichtigung),
    Installation und Update aus dem ZIP.
 
@@ -619,6 +621,7 @@ Vor Version 1.0:
   Bedarf.
 
 ### Erledigt
+- Vorbelegen per Klick: `RequestService::suggest()` berechnet den Vorschlag, im Modus `period` gibt es Links nur in der Woche; der Klick lädt die Seite neu, Eingaben im Formular gehen dabei verloren.
 - Objekttypen und Status: **pro Abschnitt**.
 - Repository: `D:\00_Development\Development\reservations\`.
 - Testumgebung mit WBCE 1.7.0: besorgt Bianka.

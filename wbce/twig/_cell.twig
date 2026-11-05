@@ -1,7 +1,10 @@
 {#
     reservations/twig/_cell.twig – visual halves of a day (morning/afternoon) plus screen-reader text
+    On a day that can be requested the halves are a link to the form: a shortcut for pointer and touch
+    without a tab stop, as a plan has hundreds of days; the form itself is the way for everyone else.
 #}
-<span class="rsv-day" aria-hidden="true">
+{%- set tag = cell.pick ? 'a' : 'span' -%}
+<{{ tag }} class="rsv-day" aria-hidden="true"{% if cell.pick %} href="{{ cell.pick }}" rel="nofollow" tabindex="-1" title="{{ cell.am ? cell.text ~ ' – ' }}{{ t('REQUEST_PICK') }}"{% endif %}>
     {%- if cell.full -%}
         <span class="rsv-half rsv-whole rsv-pattern-{{ cell.am.pattern }}" style="--rsv-color:{{ cell.am.color }}"></span>
     {%- else -%}
@@ -9,4 +12,4 @@
             <span class="rsv-half{% if half %} rsv-pattern-{{ half.pattern }}{% endif %}"{% if half %} style="--rsv-color:{{ half.color }}"{% endif %}></span>
         {%- endfor -%}
     {%- endif -%}
-</span><span class="rsv-sr">{{ cell.text }}</span>
+</{{ tag }}><span class="rsv-sr">{{ cell.text }}</span>

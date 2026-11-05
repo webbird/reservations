@@ -95,8 +95,13 @@
 .mod_reservations:not(#rsv):not(#rsv) .rsv-week thead th { font-weight: normal; padding: .2em; text-align: center; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-week thead th:first-child { width: 3.5em; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-week tbody th { font-weight: normal; padding: 0 .4em 0 0; text-align: right; vertical-align: top; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-week td { border: 1px solid var(--rsv-line); padding: 1px; height: var(--rsv-week-row); vertical-align: top; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-week td { border: 1px solid var(--rsv-line); padding: 1px; height: var(--rsv-week-row); vertical-align: top; position: relative; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-slot-label { display: inline-block; padding: 0 3px; border-radius: 2px; background: var(--rsv-surface); color: var(--rsv-ink); font-size: .9em; font-variant-numeric: tabular-nums; }
+
+/* free days and blocks that lead to the request form; the outline sits inside, .rsv-scroll would clip it */
+.mod_reservations:not(#rsv):not(#rsv) .rsv-pick { position: absolute; inset: 0; }
+.mod_reservations:not(#rsv):not(#rsv) :is(a.rsv-day, .rsv-pick):is(:hover, :focus-visible) { outline: 2px solid currentColor; outline-offset: -2px; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-month-table .rsv-num { pointer-events: none; }
 
 /* list */
 .mod_reservations:not(#rsv):not(#rsv) .rsv-group { margin: 0 0 var(--rsv-space); }

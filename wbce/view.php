@@ -107,7 +107,7 @@ $rsvHalf = static fn (?Booking $b): ?array => $b === null ? null : [
     'color'   => $rsvStatuses[$b->statusId]->color,
 ];
 // one table cell: two halves plus the complete text for screen readers
-$rsvCell = static function (Day $day, bool $wholeDays) use ($rsvStatusText, $rsvHalf, $rsvDateFmt): array {
+$rsvCell = static function (Day $day, bool $wholeDays, ?string $pick) use ($rsvStatusText, $rsvHalf, $rsvDateFmt): array {
     // occupied, but neither arrival nor departure: the same booking covers the whole day
     $full = !$day->isFree() && !$day->isArrival() && !$day->isDeparture();
     $text = ReservationsWbce::t('FREE');
@@ -131,6 +131,7 @@ $rsvCell = static function (Day $day, bool $wholeDays) use ($rsvStatusText, $rsv
         'am'      => $rsvHalf($day->am),
         'pm'      => $rsvHalf($day->pm),
         'text'    => $text,
+        'pick'    => $pick,
     ];
 };
 
@@ -146,13 +147,17 @@ foreach ($rsvStatuses as $rsvStatus) {
 }
 
 // $date: the first day of a week for the week view, any day of the month for the others
-$rsvUrl = static function (DateTimeImmutable $date, CalendarView $view) use ($rsvSection): string {
+// $pick: the values of a click on a free day or block, which leads to the request form
+$rsvUrl = static function (DateTimeImmutable $date, CalendarView $view, array $pick = []) use ($rsvSection): string {
     $query = ['rsv_month_' . $rsvSection => $date->format('Y-m'), 'rsv_view_' . $rsvSection => $view->value];
     if ($view === CalendarView::Week) {
         $query['rsv_week_' . $rsvSection] = $date->format('Y-m-d');
     }
+    foreach ($pick as $name => $value) {
+        $query['rsv_' . $name . '_' . $rsvSection] = $value;
+    }
     // explicit separator: news_img sets arg_separator.output to '&amp;' for the whole request
-    return '?' . http_build_query($query, '', '&') . '#rsv-' . $rsvSection;
+    return '?' . http_build_query($query, '', '&') . ($pick === [] ? '#rsv-' : '#rsv-request-') . $rsvSection;
 };
 $rsvByWeek = $rsvView === CalendarView::Week;
 $rsvVars = [
@@ -176,6 +181,9 @@ $rsvVars = [
     'has_resources' => $rsvResources !== [],
     'request'       => null,
 ];
+
+// the link of a free day or block, null if no request can begin there; only with the form below
+$rsvPick = static fn (): ?string => null;
 
 // booking request form below the calendar; request.php handles the post and redirects back
 if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
@@ -205,6 +213,24 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
     };
     $rsvRequests = ReservationsWbce::requestService();
     $rsvFormat = $rsvWholeDays ? 'Y-m-d' : 'Y-m-d\TH:i';
+    // $before: the end of the day or block, $to: the next booking
+    $rsvPick = static function ($resource, DateTimeImmutable $from, DateTimeImmutable $before, ?DateTimeImmutable $to = null) use ($rsvRequests, $rsvSettings, $rsvUrl, $rsvFormat, $rsvView, $rsvByWeek, $rsvWeek, $rsvMonth): ?string {
+        $range = $rsvRequests->suggest($resource, $rsvSettings, $from, $to);
+        if ($range === null || $range->start >= $before) {
+            return null;
+        }
+        return $rsvUrl($rsvByWeek ? $rsvWeek : $rsvMonth, $rsvView, array_filter(['object' => $resource->id, 'from' => $from->format($rsvFormat), 'to' => $to?->format($rsvFormat)]));
+    };
+    // what such a link asks for: the object and, if it can still begin, its period
+    $rsvMoment = static function (string $value) use ($rsvFormat, $rsvTz): ?DateTimeImmutable {
+        $date = DateTimeImmutable::createFromFormat('!' . $rsvFormat, $value, $rsvTz);
+        return $date !== false && $date->format($rsvFormat) === $value ? $date : null;
+    };
+    $rsvPicked = array_values(array_filter($rsvResources, static fn ($r): bool => (string) $r->id === $rsvGet('rsv_object')))[0] ?? null;
+    $rsvPickFrom = $rsvMoment($rsvGet('rsv_from'));
+    $rsvRange = $rsvPicked === null || $rsvPickFrom === null ? null : $rsvRequests->suggest($rsvPicked, $rsvSettings, $rsvPickFrom, $rsvMoment($rsvGet('rsv_to')));
+    $rsvPrefill = ($rsvPicked === null ? [] : ['resource_id' => $rsvPicked->id])
+        + ($rsvRange === null ? [] : ['start' => $rsvRange->start->format($rsvFormat), 'end' => $rsvRange->end->format($rsvFormat)]);
     $rsvDayName = $rsvFmt('EEEE');
     $rsvDayShort = $rsvFmt('EEEEEE');
     // 5 January 2026 is a Monday
@@ -263,9 +289,11 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
     $rsvOnlyItem = count($rsvItems) === 1 ? $rsvItems[0] : null;
     // the grid only fits the date picker if all objects share it
     $rsvSteps = array_unique(array_column($rsvItems, 'step'));
+    // the way back leaves out what belongs to this visit: the mark of request.php and the values of a click
+    $rsvReturn = (string) preg_replace('/[?&]rsv_(?:sent|object_\d+|from_\d+|to_\d+)=[^&]*/', '', (string) strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '#'));
     $rsvVars['request'] = [
         'action'     => WB_URL . '/modules/reservations/request.php',
-        'return'     => (string) preg_replace('/[?&]rsv_sent=\d+$/', '', (string) strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '#')),
+        'return'     => (string) preg_replace('/^([^?]*)&/', '$1?', $rsvReturn),
         'ftan'       => $GLOBALS['wb']->getFTAN(),
         'resources'  => $rsvItems,
         'whole_days' => $rsvWholeDays,
@@ -280,9 +308,14 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
         'errors'     => $rsvFlash['errors'] ?? [],
         'field'      => $rsvFlash['field'] ?? null,
         'success'    => $rsvFlash['success'] ?? null,
-        'old'        => $rsvFlash['old'] ?? [],
+        'old'        => $rsvFlash['old'] ?? $rsvPrefill,
     ];
 }
+
+// by day only: in period mode a day says nothing about the time, the week view does
+$rsvDayPick = static fn ($resource, Day $day): ?string => $rsvWholeDays && $day->pm === null
+    ? $rsvPick($resource, $day->date, $day->date->modify('+1 day'))
+    : null;
 
 // debug aid for admins: ?rsv_debug=1 prints the computed half days as an HTML comment
 if (isset($_GET['rsv_debug']) && isset($wb) && $wb->isAdmin()) {
@@ -345,6 +378,8 @@ if ($rsvView === CalendarView::Week) {
                 $rsvTimes = $rsvTime($rsvShown[0], $rsvDates[$i]) . '–' . $rsvTime($rsvShown[1], $rsvDates[$i]);
                 $rsvState = $rsvBooking !== null ? $rsvStatusText($rsvBooking) : ReservationsWbce::t($rsvBlock['closed'] ? 'CLOSED' : 'FREE');
                 $rsvAnyClosed = $rsvAnyClosed || $rsvBlock['closed'];
+                // a period may run over closed times and nights, so only the next booking ends it
+                $rsvLater = array_values(array_filter($rsvOwn, static fn (Booking $b): bool => $b->range->start >= $rsvBlock['end']));
                 $rsvGrid[$rsvRow]['cells'][] = [
                     'rows'    => $rsvBlock['rows'],
                     'state'   => $rsvBooking !== null ? 'booked' : ($rsvBlock['closed'] ? 'closed' : 'free'),
@@ -353,11 +388,12 @@ if ($rsvView === CalendarView::Week) {
                     // visible only where the cell is high enough
                     'label'   => $rsvBooking !== null && $rsvBlock['rows'] >= 2 ? $rsvTimes : null,
                     'text'    => $rsvDayHeads[$i]['long'] . ', ' . $rsvTimes . ': ' . $rsvState,
+                    'pick'    => $rsvBooking === null && !$rsvBlock['closed'] ? $rsvPick($rsvResource, $rsvBlock['start'], $rsvBlock['end'], ($rsvLater[0] ?? null)?->range->start) : null,
                 ];
                 $rsvRow += $rsvBlock['rows'];
             }
         }
-        $rsvTables[] = ['title' => $rsvResource->title, 'url' => $rsvLink($rsvResource), 'rows' => $rsvGrid];
+        $rsvTables[] = ['title' => $rsvResource->title, 'url' => $rsvLink($rsvResource), 'rows' => $rsvGrid, 'row_minutes' => $rsvRowMinutes];
     }
     ReservationsWbce::twig()->display('view_week.twig', $rsvVars + [
         'days'          => $rsvDayHeads,
@@ -374,7 +410,7 @@ if ($rsvView === CalendarView::Month) {
     if ($rsvResource !== null) {
         $rsvCells = array_fill(0, ((int) $rsvMonth->format('N') - $rsvFirstDay + 7) % 7, null);
         foreach (Occupancy::days($rsvBookings[$rsvResource->id] ?? [], $rsvMonth, $rsvEnd, $rsvWholeDays) as $rsvDay) {
-            $rsvCells[] = $rsvCell($rsvDay, $rsvWholeDays);
+            $rsvCells[] = $rsvCell($rsvDay, $rsvWholeDays, $rsvDayPick($rsvResource, $rsvDay));
         }
         $rsvWeeks = array_chunk(array_pad($rsvCells, (int) ceil(count($rsvCells) / 7) * 7, null), 7);
         $rsvLongFmt = $rsvFmt('EEEE');
@@ -411,7 +447,7 @@ for ($rsvM = $rsvMonth; $rsvM < $rsvEnd; $rsvM = $rsvM->modify('+1 month')) {
             'title' => $rsvResource->title,
             'url'   => $rsvLink($rsvResource),
             'cells' => array_map(
-                static fn (Day $d): array => $rsvCell($d, $rsvWholeDays),
+                static fn (Day $d): array => $rsvCell($d, $rsvWholeDays, $rsvDayPick($rsvResource, $d)),
                 Occupancy::days($rsvBookings[$rsvResource->id] ?? [], $rsvM, $rsvNext, $rsvWholeDays),
             ),
         ];

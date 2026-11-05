@@ -261,6 +261,73 @@ final class RequestServiceTest extends TestCase
         self::assertEquals(new DateTimeImmutable('2026-10-29 15:20', $this->tz), $this->service->earliestStart($deviceResource, false));
     }
 
+    public function testSuggestionByDay(): void
+    {
+        $types = new TypeRepository($this->db);
+        $settings = new Settings(1, requestsEnabled: true);
+        $suggest = function (int $id, string $day) use ($settings): ?array {
+            $resource = $this->resources->find(1, $id);
+            self::assertNotNull($resource);
+            $range = $this->service->suggest($resource, $settings, new DateTimeImmutable($day, $this->tz));
+            return $range === null ? null : [$range->start->format('Y-m-d H:i'), $range->end->format('Y-m-d H:i')];
+        };
+
+        // now is 29 Oct
+        self::assertNull($suggest($this->flat, '2026-10-29'), 'today has begun');
+        self::assertSame(['2026-10-30 00:00', '2026-10-31 00:00'], $suggest($this->flat, '2026-10-30'));
+        // lead of 2 days, at most 30 days ahead
+        self::assertNull($suggest($this->limited, '2026-10-30'));
+        self::assertNotNull($suggest($this->limited, '2026-10-31'));
+        self::assertNotNull($suggest($this->limited, '2026-11-28'));
+        self::assertNull($suggest($this->limited, '2026-11-29'));
+
+        $type = (int) $types->listBySection(1)[0]->id;
+        $stay = $this->resources->insert(new BookableResource(null, 1, $type, 'FeWo Woche', minDuration: 7));
+        self::assertSame(['2026-11-02 00:00', '2026-11-09 00:00'], $suggest($stay, '2026-11-02'));
+    }
+
+    public function testSuggestionByPeriod(): void
+    {
+        $types = new TypeRepository($this->db);
+        (new SectionSetup($this->db, $this->statuses, $types))->run(3, 30);
+        $settings = new Settings(3, bookingMode: BookingMode::Period, requestsEnabled: true);
+        (new SettingsRepository($this->db))->save($settings);
+        $type = (int) $types->listBySection(3)[0]->id;
+        // Monday 09–12 and 13–17; 2 Nov 2026 is a Monday, now is Thursday 29 Oct
+        $hours = new OpeningHours([1 => [[540, 720], [780, 1020]]]);
+        $object = function (string $title, ?int $min = null, ?int $max = null) use ($type, $hours): BookableResource {
+            $id = $this->resources->insert(new BookableResource(null, 3, $type, $title, minDuration: $min, maxDuration: $max));
+            $this->hours->replace(3, $id, $hours);
+            $resource = $this->resources->find(3, $id);
+            self::assertNotNull($resource);
+            return $resource;
+        };
+        $suggest = function (BookableResource $resource, string $from, ?string $limit = null) use ($settings): ?string {
+            $range = $this->service->suggest(
+                $resource,
+                $settings,
+                new DateTimeImmutable($from, $this->tz),
+                $limit === null ? null : new DateTimeImmutable($limit, $this->tz),
+            );
+            return $range === null ? null : $range->start->format('d. H:i') . '–' . $range->end->format('d. H:i');
+        };
+
+        $room = $object('Raum');
+        self::assertSame('02. 09:00–02. 10:00', $suggest($room, '2026-11-02 09:00'));
+        self::assertSame('02. 09:30–02. 10:30', $suggest($room, '2026-11-02 09:10'), 'up to the grid');
+        self::assertSame('02. 09:00–02. 10:00', $suggest($room, '2026-11-02 08:00'), 'to the next opening');
+        self::assertSame('02. 09:00–02. 10:00', $suggest($room, '2026-10-29 09:00'), 'not before the earliest start');
+        self::assertSame('02. 11:30–02. 12:00', $suggest($room, '2026-11-02 11:30'), 'cut at closing');
+        self::assertSame('02. 09:00–02. 09:30', $suggest($room, '2026-11-02 09:00', '2026-11-02 09:40'), 'cut on the grid before the next booking');
+        self::assertNull($suggest($room, '2026-11-02 09:00', '2026-11-02 09:00'), 'a booking follows at once');
+
+        self::assertSame('02. 09:00–02. 11:00', $suggest($object('Minimum', 120), '2026-11-02 09:00'));
+        // only start and end count, as in submit()
+        self::assertSame('02. 11:30–02. 13:30', $suggest($object('Mittag', 120), '2026-11-02 11:30'));
+        self::assertNull($suggest($object('Zu kurz', 120), '2026-11-02 09:00', '2026-11-02 10:00'), 'the minimum does not fit');
+        self::assertSame('02. 09:00–02. 09:30', $suggest($object('Kurz', null, 30), '2026-11-02 09:00'));
+    }
+
     public function testRateLimitPerVisitor(): void
     {
         $send = fn (string $start, string $end, string $client): Result => $this->service->submit(

@@ -69,8 +69,14 @@ Konzept mit generischen Objekten und Objekttypen bereits ab.
 - Gruppen aus v2. Die Unterscheidung übernehmen jetzt die Objekte.
 - Quartals- und Drei-Monats-Ansicht aus v2. Der Zeitraum von 3 Monaten im Belegungsplan
   bleibt als Umschaltung erhalten.
-- Kopf, Fuß und Stylesheet als Textfelder pro Abschnitt. Stattdessen gibt es Views mit
-  CSS-Variablen wie in news_img.
+- Kopf, Fuß und Stylesheet als Textfelder pro Abschnitt. Stattdessen setzt ein Template
+  CSS-Variablen auf `.mod_reservations` (`--rsv-line`, `--rsv-surface`, `--rsv-ink`,
+  `--rsv-weekend`, `--rsv-closed`, `--rsv-closed-ground`, `--rsv-error`, `--rsv-success`,
+  `--rsv-radius`, `--rsv-space`, `--rsv-plan-row`, `--rsv-month-row`, `--rsv-week-row`). Die
+  Standardwerte stehen in `:where(.mod_reservations)` mit Spezifität 0, ein einfacher Selektor
+  gewinnt also. Auf `:root` oder `body` wirken sie nicht.
+- Darstellungsvarianten als Ordner (`views/<view>/`, Spalte `settings.view`): nie gebaut, mit
+  den CSS-Variablen unnötig; die Spalte entfällt.
 
 ---
 
@@ -198,7 +204,6 @@ Tabellennamen: Präfix des CMS + `mod_reservations_` in WBCE. Der Kern bekommt d
 | page_id | INT | |
 | display_mode | VARCHAR(20) | `single` oder `multi`; Einzelobjekt oder Belegungsplan |
 | default_view | VARCHAR(20) | `plan` (nur mehrere Objekte), `month` (nur Einzelobjekt), `week` (nur Modus `period`), `list` |
-| view | VARCHAR(50) | Darstellungsvariante (Ordner unter `views/`) |
 | plan_range | TINYINT | 1 oder 3 Monate |
 | show_labels | TINYINT(1) | öffentliche Beschriftungen anzeigen |
 | requests_enabled | TINYINT(1) | Anfrageformular aktiv (Standard aus) |
@@ -407,7 +412,7 @@ reservations/                    Repository
     add.php delete.php view.php modify.php     Einstiegspunkte, dünn
     backend/ ajax/                             Aktionen
     Adapter/                                   WBCE-Umsetzungen der Ports
-    templates/ views/<view>/                   Ausgabe (Backend und Frontend)
+    twig/ assets/                              Ausgabe (Backend und Frontend), CSS und JavaScript
     languages/                                 Texte der WBCE-Oberfläche
   catamaran/                     später: Symfony-Bundle
   docs/

@@ -27,7 +27,6 @@ final class Schema
                     'page_id' => 'int',
                     'display_mode' => "str:20='multi'",
                     'default_view' => "str:20='plan'",
-                    'view' => "str:50='default'",
                     'plan_range' => 'small=1',
                     'show_labels' => 'bool=1',
                     'requests_enabled' => 'bool=0',
@@ -42,8 +41,9 @@ final class Schema
                     // key for hashing visitor addresses (rate limit of requests), created on first use
                     'client_secret' => "str:64=''",
                 ],
-                // the visibility of the status with role request_new decides that since 0.5.0
-                'dropped' => ['show_requests'],
+                // show_requests: the visibility of the status with role request_new decides that since 0.5.0
+                // view: variants as folders were never built, CSS variables replace them
+                'dropped' => ['show_requests', 'view'],
                 'primary' => ['section_id'],
             ],
             'types' => [

@@ -10,7 +10,29 @@
  *    still win - nothing but !important could beat those.
  * The captcha (.rsv-captcha) brings its own styles and stays out of both:
  * ALTCHA positions its checkbox inside its own boxes, a reset breaks that.
+ *
+ * To adapt the look, a template sets these variables, e.g.
+ * ".mod_reservations { --rsv-line: #999; }". :where() keeps the defaults at
+ * specificity 0, so such a rule wins whatever the order of the stylesheets;
+ * "all: revert" leaves custom properties alone. On :root or body they have no
+ * effect, the defaults here sit closer to the elements.
  */
+:where(.mod_reservations) {
+    --rsv-line: #c8ccd2;          /* lines of tables, lists and swatches */
+    --rsv-surface: #fff;          /* ground of status patterns and of labels on them */
+    --rsv-ink: #1f2933;           /* text on that ground */
+    --rsv-weekend: #f1f3f5;
+    --rsv-closed: #d6dae0;        /* hatching of closed times */
+    --rsv-closed-ground: #f6f7f9;
+    --rsv-error: #a32d2d;
+    --rsv-success: #1e6b34;
+    --rsv-radius: 4px;            /* view switcher */
+    --rsv-space: 1rem;            /* below tables, groups and messages */
+    --rsv-plan-row: 1.8em;
+    --rsv-month-row: 2.8em;
+    --rsv-week-row: 1.3em;
+}
+
 .mod_reservations:not(#rsv):not(#rsv),
 .mod_reservations:not(#rsv):not(#rsv) :where(div, span, p, h3, table, caption, thead, tbody, tr, th, td, ul, li):not(.rsv-captcha *) {
     all: revert;
@@ -26,7 +48,7 @@
 /* head: view switcher and period navigation */
 .mod_reservations:not(#rsv):not(#rsv) .rsv-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1.5rem; margin: 0 0 .6rem; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-views { display: flex; gap: .4rem; list-style: none; margin: 0; padding: 0; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-views a { display: inline-block; min-height: 24px; padding: .2em .8em; border: 1px solid currentColor; border-radius: 4px; text-decoration: none; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-views a { display: inline-block; min-height: 24px; padding: .2em .8em; border: 1px solid currentColor; border-radius: var(--rsv-radius); text-decoration: none; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-views a[aria-current="page"] { font-weight: bold; box-shadow: inset 0 -3px 0 currentColor; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-nav { display: flex; align-items: center; gap: 1rem; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-nav a { display: inline-block; min-width: 24px; min-height: 24px; text-align: center; text-decoration: none; font-size: 1.4em; line-height: 1; padding: 0 .3em; }
@@ -35,37 +57,37 @@
 .mod_reservations:not(#rsv):not(#rsv) .rsv-scroll:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
 /* occupancy plan */
-.mod_reservations:not(#rsv):not(#rsv) .rsv-scroll { display: block; overflow-x: auto; position: relative; margin: 0 0 1rem; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-scroll { display: block; overflow-x: auto; position: relative; margin: 0 0 var(--rsv-space); }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-plan { border-collapse: collapse; font-size: .85em; line-height: 1.3; margin: 0; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-plan caption { text-align: left; font-weight: bold; padding: 0 0 .3em; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-plan th,
-.mod_reservations:not(#rsv):not(#rsv) .rsv-plan td { border: 1px solid #c8ccd2; padding: 0; text-align: center; vertical-align: middle; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-plan td { border: 1px solid var(--rsv-line); padding: 0; text-align: center; vertical-align: middle; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-plan thead th { padding: .2em; min-width: 1.8em; font-weight: normal; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-plan tbody th { padding: .2em .6em; text-align: left; white-space: nowrap; font-weight: bold; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-plan .rsv-day { height: 1.8em; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-plan .rsv-day { height: var(--rsv-plan-row); }
 
 /* month calendar */
-.mod_reservations:not(#rsv):not(#rsv) .rsv-month-table { border-collapse: collapse; width: 100%; max-width: 32em; table-layout: fixed; margin: 0 0 1rem; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-month-table { border-collapse: collapse; width: 100%; max-width: 32em; table-layout: fixed; margin: 0 0 var(--rsv-space); }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-month-table caption { text-align: left; font-weight: bold; padding: 0 0 .3em; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-month-table th { font-weight: normal; padding: .2em; text-align: center; font-size: .85em; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-month-table td { border: 1px solid #c8ccd2; padding: 0; height: 2.8em; position: relative; vertical-align: top; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-month-table td { border: 1px solid var(--rsv-line); padding: 0; height: var(--rsv-month-row); position: relative; vertical-align: top; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-month-table td.rsv-blank { border: 0; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-month-table .rsv-day { position: absolute; inset: 0; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-month-table .rsv-num { position: absolute; top: 2px; left: 3px; z-index: 1; font-size: .8em; line-height: 1.2; padding: 0 3px; border-radius: 2px; background: #fff; color: #1f2933; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-month-table .rsv-num { position: absolute; top: 2px; left: 3px; z-index: 1; font-size: .8em; line-height: 1.2; padding: 0 3px; border-radius: 2px; background: var(--rsv-surface); color: var(--rsv-ink); }
 
 /* day cell: two halves, morning left and afternoon right */
 .mod_reservations:not(#rsv):not(#rsv) .rsv-day { display: flex; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-half { display: block; flex: 1 1 50%; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-whole { flex-basis: 100%; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-weekend { background-color: #f1f3f5; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-weekend { background-color: var(--rsv-weekend); }
 
 /* status colours: the pattern carries the meaning together with the screen-reader text */
 .mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-solid { background: var(--rsv-color); }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-striped { background: repeating-linear-gradient(135deg, var(--rsv-color) 0 4px, #fff 4px 7px); }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-dotted { background: radial-gradient(var(--rsv-color) 1.5px, #fff 1.6px) 0 0 / 5px 5px; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-outline { background: #fff; box-shadow: inset 0 0 0 2px var(--rsv-color); }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-striped { background: repeating-linear-gradient(135deg, var(--rsv-color) 0 4px, var(--rsv-surface) 4px 7px); }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-dotted { background: radial-gradient(var(--rsv-color) 1.5px, var(--rsv-surface) 1.6px) 0 0 / 5px 5px; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-outline { background: var(--rsv-surface); box-shadow: inset 0 0 0 2px var(--rsv-color); }
 /* outside the opening hours: fine grey hatching, unlike any status pattern */
-.mod_reservations:not(#rsv):not(#rsv) .rsv-closed { background: repeating-linear-gradient(45deg, #d6dae0 0 1px, #f6f7f9 1px 5px); }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-closed { background: repeating-linear-gradient(45deg, var(--rsv-closed) 0 1px, var(--rsv-closed-ground) 1px 5px); }
 
 /* week: days as columns, rows of the time grid */
 .mod_reservations:not(#rsv):not(#rsv) .rsv-week { border-collapse: collapse; width: 100%; min-width: 36em; table-layout: fixed; font-size: .85em; line-height: 1.2; margin: 0; }
@@ -73,21 +95,21 @@
 .mod_reservations:not(#rsv):not(#rsv) .rsv-week thead th { font-weight: normal; padding: .2em; text-align: center; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-week thead th:first-child { width: 3.5em; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-week tbody th { font-weight: normal; padding: 0 .4em 0 0; text-align: right; vertical-align: top; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-week td { border: 1px solid #c8ccd2; padding: 1px; height: 1.3em; vertical-align: top; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-slot-label { display: inline-block; padding: 0 3px; border-radius: 2px; background: #fff; color: #1f2933; font-size: .9em; font-variant-numeric: tabular-nums; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-week td { border: 1px solid var(--rsv-line); padding: 1px; height: var(--rsv-week-row); vertical-align: top; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-slot-label { display: inline-block; padding: 0 3px; border-radius: 2px; background: var(--rsv-surface); color: var(--rsv-ink); font-size: .9em; font-variant-numeric: tabular-nums; }
 
 /* list */
-.mod_reservations:not(#rsv):not(#rsv) .rsv-group { margin: 0 0 1rem; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-group { margin: 0 0 var(--rsv-space); }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-group-title { font-size: 1.05em; font-weight: bold; margin: 0 0 .3em; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-list { list-style: none; margin: 0; padding: 0; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-list li { display: flex; flex-wrap: wrap; align-items: center; gap: .3em .8em; padding: .35em 0; border-bottom: 1px solid #d6dae0; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-list li { display: flex; flex-wrap: wrap; align-items: center; gap: .3em .8em; padding: .35em 0; border-bottom: 1px solid var(--rsv-line); }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-range { min-width: 13em; font-variant-numeric: tabular-nums; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-empty { margin: 0; }
 
 /* legend */
 .mod_reservations:not(#rsv):not(#rsv) .rsv-legend { display: flex; flex-wrap: wrap; gap: .4em 1.4em; list-style: none; padding: 0; margin: .6em 0 0; font-size: .9em; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-legend li { display: flex; align-items: center; gap: .4em; margin: 0; padding: 0; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-swatch { display: inline-block; width: 1.2em; height: 1.2em; border: 1px solid #c8ccd2; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-swatch { display: inline-block; width: 1.2em; height: 1.2em; border: 1px solid var(--rsv-line); }
 
 /* request form; inputs and buttons keep the template's look */
 .mod_reservations:not(#rsv):not(#rsv) .rsv-request { margin: 1.5rem 0 0; }
@@ -106,16 +128,16 @@
 .mod_reservations:not(#rsv):not(#rsv) .rsv-limits { margin: 0 0 .8rem; font-size: .9em; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-request .rsv-limits p { margin: 0 0 .3rem; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-msg { margin: 0 0 1rem; padding: .6em .9em; border: 1px solid currentColor; border-left-width: 5px; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-msg { margin: 0 0 var(--rsv-space); padding: .6em .9em; border: 1px solid currentColor; border-left-width: 5px; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-msg ul { margin: 0; padding: 0 0 0 1.2em; }
 /* fold button of the request form (frontend_body.js): looks like the heading it sits in */
 .mod_reservations:not(#rsv):not(#rsv) .rsv-fold { all: unset; cursor: pointer; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-fold:focus-visible { outline: 2px solid; outline-offset: 2px; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-fold::before { content: "\25B8\00A0"; content: "\25B8\00A0" / ""; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-fold[aria-expanded="true"]::before { content: "\25BE\00A0"; content: "\25BE\00A0" / ""; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-msg--error { color: #a32d2d; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-msg--success { color: #1e6b34; }
-.mod_reservations:not(#rsv):not(#rsv) [aria-invalid="true"] { outline: 2px solid #a32d2d; outline-offset: 1px; }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-msg--error { color: var(--rsv-error); }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-msg--success { color: var(--rsv-success); }
+.mod_reservations:not(#rsv):not(#rsv) [aria-invalid="true"] { outline: 2px solid var(--rsv-error); outline-offset: 1px; }
 
 /* high contrast mode would drop the backgrounds; keep the authored patterns */
 @media (forced-colors: active) {

@@ -55,7 +55,8 @@ final class SectionSetup
         $this->db->insert('settings', ['section_id' => $sectionId, 'page_id' => $pageId]);
 
         $defaults = [
-            ['requested', true, Visibility::Hidden, '#f5c26b', Pattern::Dotted, StatusRole::RequestNew],
+            // visible: a blocked period that looks free would turn requests down without a reason
+            ['requested', true, Visibility::Label, '#f5c26b', Pattern::Dotted, StatusRole::RequestNew],
             ['reserved', true, Visibility::Label, '#85b7eb', Pattern::Striped, null],
             ['booked', true, Visibility::Label, '#185fa5', Pattern::Solid, StatusRole::RequestConfirmed],
             ['blocked', true, Visibility::Busy, '#5f5e5a', Pattern::Striped, null],

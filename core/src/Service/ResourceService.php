@@ -6,7 +6,9 @@ namespace Reservations\Core\Service;
 
 use Reservations\Core\Domain\BookableResource;
 use Reservations\Core\Domain\OpeningHours;
+use Reservations\Core\Port\Clock;
 use Reservations\Core\Result\Result;
+use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
 use Reservations\Core\Storage\Pdo\HoursRepository;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
@@ -32,7 +34,30 @@ final class ResourceService
         private readonly ResourceRepository $resources,
         private readonly TypeRepository $types,
         private readonly HoursRepository $hours,
+        private readonly BookingRepository $bookings,
+        private readonly Clock $clock,
     ) {
+    }
+
+    /**
+     * Deletes a resource with its past, cancelled and rejected bookings, their
+     * requests and its opening hours. Running or future bookings and open
+     * requests keep it: nobody should lose a confirmed booking by accident.
+     * In the lock of the resource, so no booking can slip in meanwhile.
+     */
+    public function delete(int $sectionId, int $resourceId): Result
+    {
+        if ($this->resources->find($sectionId, $resourceId) === null) {
+            return Result::fail('resource.not_found', ['id' => $resourceId]);
+        }
+        return $this->db->lockedTransaction('resources', 'resource_id', $resourceId, function () use ($sectionId, $resourceId): Result {
+            $counts = $this->bookings->countCurrentByResource($sectionId, $this->clock->now())[$resourceId] ?? [];
+            if (array_sum($counts) > 0) {
+                return Result::fail('resource.in_use');
+            }
+            $this->resources->delete($sectionId, $resourceId);
+            return Result::ok($resourceId);
+        });
     }
 
     /**
@@ -127,6 +152,11 @@ final class ResourceService
         }
         if (!in_array($r->slotMinutes, self::SLOT_MINUTES, true)) {
             return Result::fail('resource.invalid_slot', [], 'slot_minutes');
+        }
+        foreach (['checkin_time' => $r->checkinTime, 'checkout_time' => $r->checkoutTime] as $field => $time) {
+            if ($time !== null && preg_match('/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/', $time) !== 1) {
+                return Result::fail('resource.invalid_time', [], $field);
+            }
         }
         return null;
     }

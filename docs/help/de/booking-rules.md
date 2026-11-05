@@ -26,6 +26,10 @@ Der Vorlauf ist der Mindestabstand zwischen Anfrage und Beginn.
 
 **Mindestdauer** und **Höchstdauer** zählen tageweise in Nächten, im Modus Zeitraum in Minuten. Ohne Höchstdauer ist eine Anfrage höchstens so lang wie das Kalenderfenster.
 
+## An- und Abreisezeit
+
+Nur im Buchungsmodus Tageweise. **Anreise ab** und **Abreise bis** erscheinen im Anfrageformular und in den Mails, etwa „Anreise ab 15:00“. Sie dienen nur der Information und schränken Buchungen nicht ein.
+
 ## Raster
 
 Nur im Modus Zeitraum. Beginn und Ende einer Anfrage liegen auf dem Raster: Bei 30 Minuten auf :00 und :30. Möglich sind 5, 10, 15, 20, 30 und 60 Minuten.

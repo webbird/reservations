@@ -234,6 +234,7 @@ foreach ($rsvItems as $rsvItem) {
         'id'           => $rsvItem->id,
         'title'        => $rsvItem->title,
         'type'         => $rsvTypes[$rsvItem->typeId]->title ?? '?',
+        'position'     => $rsvItem->position,
         'active'       => $rsvItem->active,
         'bookings'     => $rsvCounts[(int) $rsvItem->id]['bookings'] ?? 0,
         'requests'     => $rsvCounts[(int) $rsvItem->id]['requests'] ?? 0,
@@ -250,6 +251,7 @@ $rsvForm = $rsvOld ?? [
     'resource_id' => $rsvEdit->id ?? 0,
     'title'       => $rsvEdit->title ?? '',
     'type_id'     => $rsvEdit->typeId ?? array_key_first($rsvTypes),
+    'position'    => $rsvEdit->position ?? count($rsvItems),
     'active'      => $rsvEdit->active ?? true,
     'post_id'     => ReservationsNewsImg::idOf($rsvEdit?->presentationRef) ?? 0,
 ] + ($rsvEdit === null ? [] : ReservationsRules::toForm($rsvEdit, ReservationsWbce::wholeDays($rsvSection)) + [

@@ -3,7 +3,7 @@
     Expects: rules (form values), whole_days, slot_choices, id (prefix for element ids);
     optional: legend and note (language keys) for the defaults of a type
     Units: lead time in days (day mode) or hours, durations in nights or minutes,
-    grid and buffers only in period mode.
+    grid and buffers only in period mode, arrival and departure time only in day mode.
 #}
 <fieldset aria-describedby="{{ id }}-rules-hint">
     <legend>{{ t(legend ?? 'BOOKING_RULES') }}</legend>
@@ -58,6 +58,16 @@
             <label for="{{ id }}-buffer-after">{{ t('BUFFER_AFTER') }}</label>
             <input id="{{ id }}-buffer-after" type="number" name="buffer_after" value="{{ rules.buffer_after }}" min="0" max="32767" inputmode="numeric" aria-describedby="{{ id }}-buffer-hint">
             <small id="{{ id }}-buffer-hint">{{ t('BUFFER_HINT') }}</small>
+        </p>
+    {% else %}
+        <p>
+            <label for="{{ id }}-checkin">{{ t('CHECKIN_TIME') }}</label>
+            <input id="{{ id }}-checkin" type="time" name="checkin_time" value="{{ rules.checkin_time }}" aria-describedby="{{ id }}-check-hint">
+        </p>
+        <p>
+            <label for="{{ id }}-checkout">{{ t('CHECKOUT_TIME') }}</label>
+            <input id="{{ id }}-checkout" type="time" name="checkout_time" value="{{ rules.checkout_time }}" aria-describedby="{{ id }}-check-hint">
+            <small id="{{ id }}-check-hint">{{ t('CHECK_TIMES_HINT') }}</small>
         </p>
     {% endif %}
 </fieldset>

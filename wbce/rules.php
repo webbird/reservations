@@ -22,6 +22,8 @@ final class ReservationsRules
     ];
     /** fields only the period mode has; in day mode their stored values stay */
     private const PERIOD_ONLY = ['slot_minutes', 'buffer_before', 'buffer_after'];
+    /** form field => BookableResource::RULE_KEYS; only the day mode has them, and they are times, not numbers */
+    private const DAY_ONLY = ['checkin_time' => 'checkinTime', 'checkout_time' => 'checkoutTime'];
 
     /**
      * The fields as posted, to show them again after an error.
@@ -32,7 +34,7 @@ final class ReservationsRules
     public static function input(callable $post): array
     {
         $input = ['auto_confirm' => $post('auto_confirm') === '1'];
-        foreach (array_keys(self::FIELDS) as $field) {
+        foreach ([...array_keys(self::FIELDS), ...array_keys(self::DAY_ONLY)] as $field) {
             $input[$field] = $post($field);
         }
         return $input;
@@ -49,6 +51,10 @@ final class ReservationsRules
         foreach (self::FIELDS as $field => $key) {
             $form[$field] = $r->{$key} ?? '';
         }
+        foreach (self::DAY_ONLY as $field => $key) {
+            // MySQL returns 15:00:00, a time input takes 15:00
+            $form[$field] = substr($r->{$key} ?? '', 0, 5);
+        }
         // rounded up: a lead time entered in the other mode stays at least as long
         $form['lead_min'] = (int) ceil($r->leadMinMinutes / ($wholeDays ? 1440 : 60));
         return $form;
@@ -59,7 +65,7 @@ final class ReservationsRules
      * field is not a whole number. Day mode has no grid and buffer fields, the stored values stay.
      *
      * @param callable(string): string $post
-     * @return array<string, int|bool|null>|null
+     * @return array<string, int|string|bool|null>|null
      */
     public static function fromPost(callable $post, bool $wholeDays): ?array
     {
@@ -82,6 +88,9 @@ final class ReservationsRules
             }
         }
         $rules['leadMinMinutes'] *= $wholeDays ? 1440 : 60;
+        foreach ($wholeDays ? self::DAY_ONLY : [] as $field => $key) {
+            $rules[$key] = $post($field) === '' ? null : $post($field);
+        }
         return $rules;
     }
 }

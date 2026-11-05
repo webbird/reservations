@@ -40,7 +40,7 @@ Beim Bestätigen prüft Reservations erneut, ob der Zeitraum frei ist. Nach dem 
 | Anfrage bestätigt | Besucher |
 | Anfrage abgelehnt | Besucher |
 
-Die Mail an den Besucher enthält nur festen Text, Objekt und Zeitraum. Die übrigen Angaben gehen nur an die Benachrichtigungsadresse. Die Mails nutzen den Mailversand von WBCE, in der Sprache der Seite.
+Die Mail an den Besucher enthält nur festen Text, Objekt, Zeitraum und, wenn eingetragen, die [An- und Abreisezeit](booking-rules.md#an-und-abreisezeit). Die übrigen Angaben gehen nur an die Benachrichtigungsadresse. Die Mails nutzen den Mailversand von WBCE, in der Sprache der Seite.
 
 Ändern Sie eine Buchung im Formular, geht keine Mail hinaus. Melden Sie sich dann selbst bei der Person.
 

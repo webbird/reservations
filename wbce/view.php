@@ -230,6 +230,7 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
                 . ($g['to'] > $g['from'] ? '–' . $rsvDayShort->format($rsvDayOfWeek($g['to'])) : '') . ' ' . $g['times'],
             $rsvHourGroups,
         ));
+        $rsvChecks = $rsvWholeDays ? ReservationsWbce::checkTimes($rsvResource, ReservationsWbce::t(...)) : [];
         $rsvItems[] = [
             'id'            => $rsvResource->id,
             'title'         => $rsvResource->title,
@@ -240,6 +241,7 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
             'min'           => $rsvEarliest->format($rsvFormat),
             'max'           => $rsvRequests->latestStart($rsvResource, $rsvSettings)->format($rsvFormat),
             'step'          => $rsvWholeDays ? null : $rsvResource->slotMinutes * 60,
+            'check'         => implode(' · ', $rsvChecks),
             // a single object lists its hours under the date fields, e.g. "Monday: 09:00–12:00, 13:00–17:00"
             'hours'         => array_map(
                 static fn (int $day, array $intervals): array => ['day' => $rsvDayName->format($rsvDayOfWeek($day)), 'times' => OpeningHours::formatDay($intervals)],
@@ -253,6 +255,7 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
                 $rsvResource->leadMinMinutes > 0 ? ReservationsWbce::t('LIMITS_EARLIEST', $rsvEarliest->format($rsvWholeDays ? DATE_FORMAT : DATE_FORMAT . ' ' . TIME_FORMAT)) : null,
                 $rsvResource->leadMaxDays !== null ? ReservationsWbce::t($rsvResource->leadMaxDays === 1 ? 'LIMITS_LEAD_MAX_ONE' : 'LIMITS_LEAD_MAX', $rsvResource->leadMaxDays) : null,
                 $rsvDays === [] ? null : ReservationsWbce::t('LIMITS_HOURS', $rsvHoursText) . (count($rsvDays) < 7 ? ', ' . ReservationsWbce::t('LIMITS_CLOSED_OTHERS') : ''),
+                ...$rsvChecks,
                 $rsvResource->autoConfirm ? ReservationsWbce::t('LIMITS_AUTO_CONFIRM') : null,
             ])),
         ];

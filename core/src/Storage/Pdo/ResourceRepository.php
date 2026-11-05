@@ -24,6 +24,24 @@ final class ResourceRepository
         $this->db->update(self::TABLE, $this->row($resource), ['resource_id' => (int) $resource->id, 'section_id' => $resource->sectionId]);
     }
 
+    /**
+     * Removes a resource and all that hangs on it. Call it inside a transaction.
+     * A single-object display chosen on it falls back to the first active resource.
+     */
+    public function delete(int $sectionId, int $resourceId): void
+    {
+        $where = ['section_id' => $sectionId, 'resource_id' => $resourceId];
+        $this->db->run(
+            'DELETE FROM ' . $this->db->table('requests') . ' WHERE booking_id IN (SELECT booking_id FROM '
+            . $this->db->table('bookings') . ' WHERE section_id = ? AND resource_id = ?)',
+            [$sectionId, $resourceId],
+        );
+        $this->db->delete('bookings', $where);
+        $this->db->delete('hours', $where);
+        $this->db->update('settings', ['resource_id' => null], $where);
+        $this->db->delete(self::TABLE, $where);
+    }
+
     public function find(int $sectionId, int $resourceId): ?BookableResource
     {
         $row = $this->db->fetchOne(

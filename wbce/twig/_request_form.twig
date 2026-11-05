@@ -69,6 +69,7 @@
                 <input id="rsv-req-end-{{ section_id }}" type="{{ r.whole_days ? 'date' : 'datetime-local' }}" name="end" value="{{ r.old.end }}" min="{{ r.min }}"{% if r.step %} step="{{ r.step }}"{% endif %} required>
             </p>
         </div>
+        {% if one.check %}<p class="rsv-hint">{{ one.check }}</p>{% endif %}
         {% if r.hours %}
             <div class="rsv-hours">
                 <p class="rsv-hint">{{ t('HOURS_PUBLIC') }}</p>

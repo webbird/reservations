@@ -33,9 +33,14 @@ final class ReservationsMail
         }
         $texts = self::texts((string) $page['language']);
         $t = static fn (string $key, string ...$args): string => vsprintf($texts[$key] ?? $key, $args);
-        $object = ReservationsWbce::resources()->find($sectionId, $booking->resourceId)->title ?? '?';
-        $period = ReservationsWbce::formatRange($booking->range->start, $booking->range->end, ReservationsWbce::wholeDays($sectionId));
+        $resource = ReservationsWbce::resources()->find($sectionId, $booking->resourceId);
+        $object = $resource->title ?? '?';
+        $wholeDays = ReservationsWbce::wholeDays($sectionId);
+        $period = ReservationsWbce::formatRange($booking->range->start, $booking->range->end, $wholeDays);
         $facts = $t('RESOURCE') . ': ' . $object . "\n" . $t('MAIL_PERIOD') . ': ' . $period . "\n";
+        foreach ($wholeDays && $resource !== null ? ReservationsWbce::checkTimes($resource, $t) : [] as $line) {
+            $facts .= $line . "\n";
+        }
         $notify = ReservationsWbce::settings()->find($sectionId)->notifyEmail ?? '';
 
         $sent = self::send(

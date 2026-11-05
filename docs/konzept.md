@@ -47,6 +47,7 @@ Erweiterung `intl`. Datenbank: MySQL/MariaDB oder SQLite (beides unterstützt WB
 | Version | Inhalt |
 |---|---|
 | 1.1 | Buchungsmodus **Termin**: Leistungen mit fester Dauer, Berechnung freier Termine, Auswahl im Frontend (Leistung, Tag, Uhrzeit) |
+| später | **Reihenfolge der Objekte per Auf- und Ab-Buttons** in der Objektliste, statt nur über das Zahlenfeld |
 | später | **Import aus bookings_v2** (Abschnitt wird Objekt, Gruppenname wird interne Notiz) |
 | später | **LeafletMaps**: Ressourcen als Marker auf einer Karte, nach dem Muster von openimmo (siehe Abschnitt 9) |
 | später | Bearbeiten im Frontend für angemeldete Benutzer |
@@ -153,7 +154,9 @@ nur seine Eigenschaften:
 
 **Rollen:** Der Ablauf bei Anfragen braucht drei feste Ziele. Jede Rolle ist pro Abschnitt
 genau einem Status zugeordnet:
-- *neue Anfrage*: Status für eingehende Anfragen (Vorgabe: „angefragt“, blockierend)
+- *neue Anfrage*: Status für eingehende Anfragen (Vorgabe: „angefragt“, blockierend, seit
+  0.9.0 öffentlich mit Bezeichnung: ein blockierter Zeitraum, der frei aussieht, lehnt
+  Anfragen ohne erkennbaren Grund ab; bestehende Abschnitte bleiben unverändert)
 - *Anfrage bestätigt*: Status nach „Bestätigen“ und bei sofort verbindlichen Ressourcen
   (Vorgabe: „gebucht“)
 - *Anfrage abgelehnt*: Status nach „Ablehnen“ (Vorgabe: „abgelehnt“, nicht blockierend,
@@ -162,7 +165,7 @@ genau einem Status zugeordnet:
 **Vorgaben beim Anlegen eines Abschnitts:**
 | Status | blockiert | öffentlich | Rolle |
 |---|---|---|---|
-| angefragt | ja | gar nicht (einstellbar) | neue Anfrage |
+| angefragt | ja | mit Bezeichnung (einstellbar) | neue Anfrage |
 | reserviert | ja | mit Bezeichnung | – |
 | gebucht | ja | mit Bezeichnung | Anfrage bestätigt |
 | gesperrt | ja | als „belegt“ | – |
@@ -586,16 +589,7 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 ### Nächste Schritte
 Vor Version 1.0:
 
-1. **Objekte löschen:** Im Backend gibt es nur „deaktivieren“. Löschen mit Rückfrage und
-   klarer Regel für vorhandene Buchungen und Anfragen. Die Hilfe (`objects.md`) anpassen.
-2. **Objekte sortieren:** Sie stehen in der Reihenfolge des Anlegens, `resources.position`
-   hat kein Feld im Backend. Die Hilfe (`objects.md`, `faq.md`) anpassen.
-3. **Status „angefragt“:** Die Vorgabe blockiert, ist aber öffentlich unsichtbar. Für Besucher
-   sieht der Zeitraum frei aus, die Anfrage wird trotzdem abgelehnt. Vorgabe für neue
-   Abschnitte prüfen (etwa „als belegt“), bestehende bleiben unverändert.
-4. **An- und Abreisezeit:** `checkin_time`/`checkout_time` lassen sich noch nicht pflegen und
-   werden nirgends angezeigt. Felder am Objekt (nur Modus `day`), Anzeige im Formular und in
-   den Mails.
+1. **Hilfe:** englische Fassung, Bildschirmfotos, Abschnitt im Konzept.
 
 ### Weitere offene Punkte
 - Wochenansicht: Klick auf einen freien Block füllt das Anfrageformular vor (Objekt, Beginn,
@@ -621,6 +615,9 @@ Vor Version 1.0:
 - Belegungsplan über 3 Monate: drei Monatstabellen untereinander statt einer breiten Tabelle.
 - Wochenansicht mit Stundenraster (0.8.0): nur im Modus `period`, je Objekt eine Tabelle, Spanne aus den Öffnungszeiten (sonst 08:00–20:00), Zeilen von 30 Minuten (60 bei Raster 60); als Startansicht wählbar. Plan und Monat zeigen solche Objekte weiter als Vormittag/Nachmittag.
 - Anfrageformular aufklappbar (0.8.0), ohne Einstellung dafür.
+- Objekte löschen (0.9.0): nur ohne laufende oder künftige blockierende Buchungen und ohne offene Anfragen, geprüft in der Sperre des Objekts. Vergangene, stornierte und abgelehnte Buchungen gehen samt Anfragen und Öffnungszeiten mit; `settings.resource_id` wird geleert.
+- Objekte sortieren (0.9.0): Zahlenfeld „Reihenfolge“ wie bei Status und Typen (`resources.position`).
+- An- und Abreisezeit (0.9.0): Teil der Buchungsregeln (`RULE_KEYS`), also auch Vorgabewert am Typ; nur Modus `day`, reine Information im Formular und in den Mails.
 - Gemischte Buchungsmodi in einem Abschnitt: **nein**. Der Modus gehört zum Abschnitt (`settings.booking_mode`); für einen anderen Modus einen zweiten Abschnitt anlegen.
 - Anfragen ohne Bestätigungslink blockieren den Zeitraum **sofort** (Double-Opt-in später); abschaltbar über „blockiert“ beim Status mit der Rolle „neue Anfrage“.
 - Spamschutz: FTAN und Honeypot immer, Captcha je Abschnitt wählbar.

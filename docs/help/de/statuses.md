@@ -6,7 +6,7 @@ Der Status einer Buchung bestimmt, ob sie den Zeitraum belegt und was Besucher d
 
 | Status | Blockiert | Auf der Website | Rolle |
 |---|---|---|---|
-| angefragt | ja | gar nicht | neue Anfrage |
+| angefragt | ja | mit Bezeichnung | neue Anfrage |
 | reserviert | ja | mit Bezeichnung | keine |
 | gebucht | ja | mit Bezeichnung | Anfrage bestätigt |
 | gesperrt | ja | als „belegt“ | keine |
@@ -26,9 +26,9 @@ Der Status einer Buchung bestimmt, ob sie den Zeitraum belegt und was Besucher d
 | Aktiv, Reihenfolge | nur aktive Status stehen in der Auswahl bei Buchungen |
 
 > [!NOTE]
-> „Gar nicht“ versteckt nur die Anzeige. Ein Status mit „Blockiert den Zeitraum“ belegt den Zeitraum trotzdem. Mit den Vorgaben sieht eine offene Anfrage auf der Website also frei aus, eine zweite Anfrage für denselben Zeitraum wird aber abgelehnt.
+> „Gar nicht“ versteckt nur die Anzeige. Ein Status mit „Blockiert den Zeitraum“ belegt den Zeitraum trotzdem. Stellen Sie „angefragt“ auf „gar nicht“, sieht eine offene Anfrage auf der Website frei aus, eine zweite Anfrage für denselben Zeitraum wird aber abgelehnt.
 
-Soll eine angefragte Zeit öffentlich sichtbar sein, stellen Sie beim Status „angefragt“ unter **Auf der Website** etwas anderes ein. Soll eine Anfrage den Zeitraum gar nicht belegen, nehmen Sie dort das Häkchen bei **Blockiert den Zeitraum** heraus.
+Abschnitte, die vor Version 0.9.0 angelegt wurden, zeigen „angefragt“ noch nicht öffentlich. Das ändern Sie beim Status unter **Auf der Website**. Soll eine Anfrage den Zeitraum gar nicht belegen, nehmen Sie dort das Häkchen bei **Blockiert den Zeitraum** heraus.
 
 ## Rollen
 

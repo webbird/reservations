@@ -8,6 +8,7 @@
 
 defined('WB_PATH') or die('This file cannot be accessed directly!');
 
+use Reservations\Core\Domain\BookableResource;
 use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Port\Clock;
@@ -152,7 +153,7 @@ final class ReservationsWbce
 
     public static function resourceService(): ResourceService
     {
-        return new ResourceService(self::db(), self::resources(), self::types(), self::hours());
+        return new ResourceService(self::db(), self::resources(), self::types(), self::hours(), self::bookings(), self::clock());
     }
 
     public static function statusService(): StatusService
@@ -375,6 +376,20 @@ final class ReservationsWbce
     public static function newsSection(int $sectionId): ?int
     {
         return ReservationsNewsImg::idOf(self::settings()->find($sectionId)?->presentationSource);
+    }
+
+    /**
+     * Arrival and departure time as lines of text, for the form and the mails.
+     *
+     * @param callable(string, string): string $t text of a language key with one value
+     * @return list<string>
+     */
+    public static function checkTimes(BookableResource $resource, callable $t): array
+    {
+        return array_values(array_filter([
+            $resource->checkinTime === null ? '' : $t('CHECKIN_FROM', substr($resource->checkinTime, 0, 5)),
+            $resource->checkoutTime === null ? '' : $t('CHECKOUT_UNTIL', substr($resource->checkoutTime, 0, 5)),
+        ], static fn (string $line): bool => $line !== ''));
     }
 
     /**

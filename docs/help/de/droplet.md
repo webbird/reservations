@@ -14,7 +14,7 @@ Die ID eines Objekts finden Sie in der Adresse beim Bearbeiten, hinter `rsv_edit
 
 ## Wenn nichts erscheint
 
-Passt nichts, bleibt die Ausgabe leer: Das Objekt ist inaktiv, der Beitrag keinem Objekt zugeordnet oder die ID falsch. Angemeldete Administratoren finden den Grund als HTML-Kommentar im Quelltext der Seite.
+Passt nichts, bleibt die Ausgabe leer: Das Objekt ist inaktiv oder gelöscht, der Beitrag keinem Objekt zugeordnet oder die ID falsch. Angemeldete Administratoren finden den Grund als HTML-Kommentar im Quelltext der Seite.
 
 > [!NOTE]
 > Erscheint derselbe Abschnitt zweimal auf einer Seite, etwa als Abschnitt und als Droplet, wirkt das Blättern auf beide.

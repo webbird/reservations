@@ -4,15 +4,25 @@ declare(strict_types=1);
 
 namespace Reservations\Core\Tests\Service;
 
+use DateTimeImmutable;
 use DateTimeZone;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use Reservations\Core\Domain\BookableResource;
+use Reservations\Core\Domain\Booking;
 use Reservations\Core\Domain\OpeningHours;
+use Reservations\Core\Domain\Request;
+use Reservations\Core\Domain\Status;
+use Reservations\Core\Domain\StatusRole;
+use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Domain\Type;
+use Reservations\Core\Domain\Visibility;
+use Reservations\Core\Port\Clock;
 use Reservations\Core\Service\ResourceService;
+use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
 use Reservations\Core\Storage\Pdo\HoursRepository;
+use Reservations\Core\Storage\Pdo\RequestRepository;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
 use Reservations\Core\Storage\Pdo\StatusRepository;
 use Reservations\Core\Storage\Pdo\TypeRepository;
@@ -25,6 +35,9 @@ final class ResourceServiceTest extends TestCase
     private ResourceRepository $resources;
     private TypeRepository $types;
     private HoursRepository $hours;
+    private Connection $db;
+    private StatusRepository $statuses;
+    private BookingRepository $bookings;
     private int $type;
     private int $foreignType;
 
@@ -41,7 +54,99 @@ final class ResourceServiceTest extends TestCase
         $this->foreignType = (int) $this->types->listBySection(2)[0]->id;
         $this->resources = new ResourceRepository($db);
         $this->hours = new HoursRepository($db);
-        $this->service = new ResourceService($db, $this->resources, $this->types, $this->hours);
+        $this->db = $db;
+        $this->statuses = new StatusRepository($db);
+        $this->bookings = new BookingRepository($db);
+        $clock = new class implements Clock {
+            public function now(): DateTimeImmutable
+            {
+                return new DateTimeImmutable('2026-11-05 12:00', new DateTimeZone('Europe/Berlin'));
+            }
+        };
+        $this->service = new ResourceService($db, $this->resources, $this->types, $this->hours, $this->bookings, $clock);
+    }
+
+    private function book(int $resource, string $start, string $end, ?StatusRole $role = null, string $title = ''): int
+    {
+        $statuses = $this->statuses->listBySection(1);
+        $status = $title !== '' ? array_values(array_filter($statuses, static fn (Status $s): bool => $s->title === $title))[0] : $this->statuses->findByRole(1, $role ?? StatusRole::RequestConfirmed);
+        $tz = new DateTimeZone('Europe/Berlin');
+        $now = new DateTimeImmutable('2026-01-01 12:00', $tz);
+        return $this->bookings->insert(new Booking(null, 1, $resource, TimeRange::fromLocal($start, $end, $tz), (int) $status?->id, createdAt: $now, updatedAt: $now));
+    }
+
+    public function testDeleteRemovesPastBookingsRequestsAndHours(): void
+    {
+        $id = $this->service->create(new BookableResource(null, 1, $this->type, 'Raum'))->value;
+        $other = $this->service->create(new BookableResource(null, 1, $this->type, 'Anderer Raum'))->value;
+        self::assertIsInt($id);
+        self::assertIsInt($other);
+        // over, or cancelled and rejected ones in the future: none of them keeps the object
+        $past = $this->book($id, '2026-10-01 00:00', '2026-10-03 00:00');
+        $this->book($id, '2026-12-01 00:00', '2026-12-03 00:00', title: 'Cancelled');
+        $this->book($id, '2026-12-05 00:00', '2026-12-07 00:00', StatusRole::RequestRejected);
+        $kept = $this->book($other, '2026-10-01 00:00', '2026-10-03 00:00');
+        $requests = new RequestRepository($this->db);
+        $when = new DateTimeImmutable('2026-01-01 12:00', new DateTimeZone('Europe/Berlin'));
+        $requests->insert(new Request(null, $past, 'Gast', 'gast@example.com', privacyAcceptedAt: $when, createdAt: $when, purgeAfter: $when));
+        $requests->insert(new Request(null, $kept, 'Gast', 'gast@example.com', privacyAcceptedAt: $when, createdAt: $when, purgeAfter: $when));
+        $this->service->saveHours(1, $id, new OpeningHours([1 => [[540, 1020]]]));
+        $this->db->update('settings', ['resource_id' => $id], ['section_id' => 1]);
+
+        // a foreign section cannot delete it
+        self::assertSame('resource.not_found', $this->service->delete(2, $id)->firstErrorKey());
+        self::assertTrue($this->service->delete(1, $id)->ok);
+
+        self::assertNull($this->resources->find(1, $id));
+        self::assertNull($this->bookings->find(1, $past));
+        self::assertNull($requests->findByBooking(1, $past));
+        self::assertTrue($this->hours->find(1, $id)->isAlwaysOpen());
+        self::assertNull($this->db->fetchValue('SELECT resource_id FROM test_settings WHERE section_id = 1'));
+        // the other object keeps everything
+        self::assertNotNull($this->bookings->find(1, $kept));
+        self::assertNotNull($requests->findByBooking(1, $kept));
+    }
+
+    public function testRunningAndFutureBookingsAndOpenRequestsKeepTheObject(): void
+    {
+        $cases = [
+            'running' => ['2026-11-04 00:00', '2026-11-06 00:00', null],
+            'future' => ['2026-12-01 00:00', '2026-12-03 00:00', null],
+            'open request' => ['2026-12-01 00:00', '2026-12-03 00:00', StatusRole::RequestNew],
+        ];
+        foreach ($cases as $name => [$start, $end, $role]) {
+            $id = $this->service->create(new BookableResource(null, 1, $this->type, $name))->value;
+            self::assertIsInt($id);
+            $booking = $this->book($id, $start, $end, $role);
+            self::assertSame('resource.in_use', $this->service->delete(1, $id)->firstErrorKey(), $name);
+            self::assertNotNull($this->resources->find(1, $id), $name);
+            self::assertNotNull($this->bookings->find(1, $booking), $name);
+        }
+    }
+
+    public function testCheckTimes(): void
+    {
+        $base = new BookableResource(null, 1, $this->type, 'FeWo');
+        foreach (['15:00', '15:00:00', '00:00', '23:59'] as $time) {
+            self::assertTrue($this->service->create($base->withRules(['checkinTime' => $time]))->ok, $time);
+        }
+        foreach (['24:00', '9:00', '15', 'nachmittags', '15:00; DROP'] as $time) {
+            self::assertSame('resource.invalid_time', $this->service->create($base->withRules(['checkinTime' => $time]))->firstErrorKey(), $time);
+            self::assertSame('resource.invalid_time', $this->service->create($base->withRules(['checkoutTime' => $time]))->firstErrorKey(), $time);
+        }
+        // a type presets them for new objects
+        $type = $this->types->listBySection(1)[0];
+        $this->types->update(new Type($type->id, 1, $type->title, ['checkinTime' => '15:00', 'checkoutTime' => '10:00'], 0));
+        $id = $this->service->create($base)->value;
+        self::assertIsInt($id);
+        $stored = $this->resources->find(1, $id);
+        self::assertSame(['15:00', '10:00'], [$stored?->checkinTime, $stored?->checkoutTime]);
+    }
+
+    public function testNewSectionShowsRequests(): void
+    {
+        // a blocked period that looks free would turn requests down without a reason
+        self::assertSame(Visibility::Label, $this->statuses->findByRole(1, StatusRole::RequestNew)?->visibility);
     }
 
     public function testOpeningHours(): void

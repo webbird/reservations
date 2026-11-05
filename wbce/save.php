@@ -59,7 +59,7 @@ $finish = static function (Result $result, array $params, array $old, string $su
 switch ($post('rsv_action')) {
     case 'resource_save':
         $id = (int) $post('resource_id');
-        $old = ['resource_id' => $id, 'title' => $post('title'), 'type_id' => (int) $post('type_id'), 'active' => $post('active') === '1', 'post_id' => (int) $post('post_id')]
+        $old = ['resource_id' => $id, 'title' => $post('title'), 'type_id' => (int) $post('type_id'), 'position' => (int) $post('position'), 'active' => $post('active') === '1', 'post_id' => (int) $post('post_id')]
             + ReservationsRules::input($post);
         // opening hours as typed, one text per weekday (edit form in period mode only)
         if (is_array($_POST['hours'] ?? null)) {
@@ -90,7 +90,7 @@ switch ($post('rsv_action')) {
             title: $old['title'],
             color: $existing?->color,
             active: $old['active'],
-            position: $existing->position ?? 0,
+            position: $old['position'],
             presentationRef: $presentationRef,
             capacity: $existing?->capacity,
             minPersons: $existing?->minPersons,
@@ -133,6 +133,10 @@ switch ($post('rsv_action')) {
             $result = $service->saveHours($sectionId, $id, $hours);
         }
         $finish($result, $result->ok ? [] : ['rsv_edit' => $id], $old, ReservationsWbce::t('MSG_RESOURCE_SAVED'));
+
+    case 'resource_delete':
+        $result = ReservationsWbce::resourceService()->delete($sectionId, (int) $post('resource_id'));
+        $finish($result, [], [], ReservationsWbce::t('MSG_RESOURCE_DELETED'));
 
     case 'booking_save':
         $resourceId = (int) $post('resource_id');

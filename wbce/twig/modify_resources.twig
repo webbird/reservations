@@ -11,6 +11,7 @@
             <tr>
                 <th scope="col">{{ t('TITLE') }}</th>
                 <th scope="col">{{ t('TYPE') }}</th>
+                <th scope="col" class="rsv-num">{{ t('POSITION') }}</th>
                 {% if news %}<th scope="col">{{ t('DESCRIPTION') }}</th>{% endif %}
                 <th scope="col">{{ t('ACTIVE') }}</th>
                 <th scope="col" class="rsv-num">{{ t('BOOKINGS_CURRENT') }}</th>
@@ -23,6 +24,7 @@
             <tr{% if not r.active %} class="rsv-inactive"{% endif %}>
                 <th scope="row">{{ r.title }}</th>
                 <td>{{ r.type }}</td>
+                <td class="rsv-num">{{ r.position }}</td>
                 {% if news %}
                     <td>{{ r.description is same as(false) ? t('DESCRIPTION_ORPHANED') : r.description }}</td>
                 {% endif %}
@@ -32,10 +34,21 @@
                 <td class="rsv-actions">
                     <a href="{{ r.url_bookings }}">{{ t('BOOKINGS') }}<span class="rsv-sr">: {{ r.title }}</span></a>
                     <a href="{{ r.url_edit }}">{{ t('EDIT') }}<span class="rsv-sr">: {{ r.title }}</span></a>
+                    {# running and future bookings or open requests keep an object; the core checks it again #}
+                    {% if r.bookings == 0 and r.requests == 0 %}
+                        <form action="{{ action }}" method="post" class="rsv-inline" onsubmit="return confirm('{{ t('CONFIRM_DELETE_RESOURCE')|e('js') }}')">
+                            <input type="hidden" name="page_id" value="{{ page_id }}">
+                            <input type="hidden" name="section_id" value="{{ section_id }}">
+                            <input type="hidden" name="rsv_action" value="resource_delete">
+                            <input type="hidden" name="resource_id" value="{{ r.id }}">
+                            {{ FTAN|raw }}
+                            <button type="submit" class="rsv-link">{{ t('DELETE') }}<span class="rsv-sr">: {{ r.title }}</span></button>
+                        </form>
+                    {% endif %}
                 </td>
             </tr>
         {% else %}
-            <tr><td colspan="{{ news ? 7 : 6 }}">{{ t('NO_RESOURCES') }}</td></tr>
+            <tr><td colspan="{{ news ? 8 : 7 }}">{{ t('NO_RESOURCES') }}</td></tr>
         {% endfor %}
         </tbody>
     </table>
@@ -60,6 +73,10 @@
                         <option value="{{ type.id }}"{% if type.id == form.type_id %} selected{% endif %}>{{ type.title }}</option>
                     {% endfor %}
                 </select>
+            </p>
+            <p>
+                <label for="rsv-position-{{ section_id }}">{{ t('POSITION') }}</label>
+                <input id="rsv-position-{{ section_id }}" type="number" name="position" value="{{ form.position }}" min="0" step="1" required>
             </p>
             {% if news %}
                 <p>

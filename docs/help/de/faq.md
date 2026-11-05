@@ -18,13 +18,17 @@ Sie passt nicht zur Darstellung oder zum Buchungsmodus. Die Tabelle steht unter 
 
 ### Wie ändere ich die Reihenfolge der Objekte?
 
-Objekte erscheinen in der Reihenfolge, in der sie angelegt wurden. Eine eigene Sortierung gibt es nicht.
+Tragen Sie beim Objekt die [Reihenfolge](objects.md#reihenfolge) ein. Kleinere Zahlen stehen oben.
+
+### Warum kann ich ein Objekt nicht löschen?
+
+Es hat laufende oder künftige Buchungen oder offene Anfragen, siehe [Objekt löschen](objects.md#objekt-loeschen).
 
 ## Anfragen
 
 ### Warum sieht ein Zeitraum frei aus, die Anfrage wird aber abgelehnt?
 
-Vermutlich liegt dort eine offene Anfrage. Der Status „angefragt“ blockiert, ist aber nicht öffentlich. Das lässt sich beim [Status](statuses.md) ändern.
+Vermutlich liegt dort eine offene Anfrage und der Status „angefragt“ ist nicht öffentlich: Er blockiert, zeigt aber nichts. Das ist bei Abschnitten von vor Version 0.9.0 die Vorgabe und lässt sich beim [Status](statuses.md) ändern.
 
 ### Warum erscheint kein Anfrageformular?
 

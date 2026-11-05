@@ -5,6 +5,7 @@ Die wichtigsten Begriffe dieser Hilfe in alphabetischer Reihenfolge.
 | Begriff | Bedeutung |
 |---|---|
 | Abschnitt | ein Reservations-Kalender auf einer WBCE-Seite, mit eigenen Objekten, Status und [Einstellungen](settings.md) |
+| An- und Abreisezeit | Uhrzeiten im Buchungsmodus Tageweise, die Gäste im Anfrageformular und in den Mails sehen |
 | Anfrage | Buchungswunsch über das Formular auf der Website. Sie wird als [Buchung](requests.md) gespeichert. |
 | Blockieren | ein Status belegt den Zeitraum, andere Buchungen dürfen sich nicht damit überschneiden |
 | Buchung | ein Zeitraum für ein Objekt, mit einem Status |

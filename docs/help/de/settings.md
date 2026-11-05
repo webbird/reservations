@@ -2,7 +2,7 @@
 
 Die Einstellungen gelten für einen Abschnitt. Sie erreichen sie über den Link **Einstellungen** oberhalb der Objektliste.
 
-![Einstellungen eines Abschnitts](img/settings.png "Die Einstellungen eines Abschnitts mit Darstellung und Buchungsanfragen.")
+![Einstellungen eines Abschnitts](img/settings.png "Der obere Teil der Einstellungen mit Buchungsmodus, Darstellung und Startansicht.")
 
 ## Buchungsmodus
 

@@ -48,6 +48,7 @@ Erweiterung `intl`. Datenbank: MySQL/MariaDB oder SQLite (beides unterstützt WB
 | Version | Inhalt |
 |---|---|
 | 1.1 | Buchungsmodus **Termin**: Leistungen mit fester Dauer, Berechnung freier Termine, Auswahl im Frontend (Leistung, Tag, Uhrzeit) |
+| später | **Wählbare Views:** Das Modul liefert mehrere Darstellungen mit, und der Admin kann eigene erstellen und mit anderen teilen. Die Mechanik gibt es bereits in einem anderen Modul und wird von dort übernommen. Erste Darstellung nach dem Vorbild von Vereins-Buchungssystemen (Beispiel: ep-3): **Tagesraster** mit den Objekten als Spalten und den Uhrzeiten als Zeilen, je Tag eine Tabelle, am Desktop mehrere Tage nebeneinander, am Handy einer; Text in den Zellen („frei“, „vorbei“, „geschlossen“), dazu „Heute“ und ein Datumsfeld in der Navigation. So lassen sich mehrere Objekte zur selben Uhrzeit vergleichen, was die Woche mit einer Tabelle je Objekt nicht leistet |
 | später | **Reihenfolge der Objekte per Auf- und Ab-Buttons** in der Objektliste, statt nur über das Zahlenfeld |
 | später | **Import aus bookings_v2** (Abschnitt wird Objekt, Gruppenname wird interne Notiz) |
 | später | **LeafletMaps**: Ressourcen als Marker auf einer Karte, nach dem Muster von openimmo (siehe Abschnitt 9) |

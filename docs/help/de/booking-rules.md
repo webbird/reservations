@@ -30,6 +30,9 @@ Der Vorlauf ist der Mindestabstand zwischen Anfrage und Beginn.
 
 Nur im Buchungsmodus Tageweise. **Anreise ab** und **Abreise bis** erscheinen im Anfrageformular und in den Mails, etwa „Anreise ab 15:00“. Sie dienen nur der Information und schränken Buchungen nicht ein.
 
+> [!NOTE]
+> Das Auswahlfenster für die Uhrzeit kommt vom Browser und sieht je nach Browser anders aus. Es hat keinen Button zum Übernehmen: Die Zeit gilt, sobald sie gewählt ist, zum Schließen klicken Sie neben das Fenster. Sie können die Zeit auch direkt ins Feld tippen.
+
 ## Raster
 
 Nur im Modus Zeitraum. Beginn und Ende einer Anfrage liegen auf dem Raster: Bei 30 Minuten auf :00 und :30. Möglich sind 5, 10, 15, 20, 30 und 60 Minuten.

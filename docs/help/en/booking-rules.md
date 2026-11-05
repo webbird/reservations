@@ -30,6 +30,9 @@ The minimum and maximum count in nights by day, and in minutes by period. Withou
 
 By day only. **Arrival from** and **Departure until** appear in the request form and in the mails, for example "Arrival from 15:00". They are for information only and do not limit bookings.
 
+> [!NOTE]
+> The time picker comes from the browser and looks different depending on the browser. It has no button to apply the time: the time counts as soon as you choose it, and you close the picker by clicking next to it. You can also type the time into the field.
+
 ## Grid
 
 By period only. Start and end of a request lie on the grid: with 30 minutes at :00 and :30. Possible values are 5, 10, 15, 20, 30 and 60 minutes.

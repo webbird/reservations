@@ -1,6 +1,6 @@
 # reservations – Konzept
 
-Stand: 03.11.2026 · Modulversion 0.8.0
+Stand: 05.11.2026 · Modulversion 0.9.0
 
 Nachfolger von `bookings_v2`, als eigenständiges Modul mit neuem Namen. Belegungs- und
 Reservierungskalender für beliebige buchbare Dinge: Ferienwohnungen, Besprechungsräume,
@@ -42,6 +42,7 @@ Erweiterung `intl`. Datenbank: MySQL/MariaDB oder SQLite (beides unterstützt WB
   Droplet für den Kalender im news_img-Beitrag
 - Barrierefreiheit nach WCAG 2.2 AA (siehe Abschnitt 7)
 - Sprachen: DE und EN. Die übrigen folgen später.
+- Benutzerhilfe als statische Seiten im Modul, DE und EN (siehe Abschnitt 5)
 
 ### Ausbaustufen (nicht in 1.0)
 | Version | Inhalt |
@@ -419,13 +420,31 @@ reservations/                    Repository
     languages/                                 Texte der WBCE-Oberfläche
   catamaran/                     später: Symfony-Bundle
   docs/
-  build/                         Skript: kopiert core/src und core/lang nach wbce/core/
-                                 und erzeugt das Installations-ZIP
+    help/                        Quellen der Benutzerhilfe (Markdown je Sprache, CSS, Bilder)
+  build/                         build.php: kopiert core/src und core/lang nach wbce/core/
+                                 und erzeugt das Installations-ZIP; help.php: erzeugt wbce/help/
 ```
 
 Das WBCE-Modul enthält im ZIP eine Kopie des Kerns unter `core/` mit einem kleinen
 PSR-4-Autoloader. In WBCE-Modulen gibt es kein Composer. Zur Laufzeit gibt es keine
 Abhängigkeiten außer PHP selbst.
+
+### Benutzerhilfe (0.9.0)
+- Quellen sind Markdown-Dateien unter `docs/help/<sprache>/`; die Schreibregeln stehen in
+  `docs/help/README.md`. `build/help.php` erzeugt daraus statische Seiten in `wbce/help/`,
+  `build/build.php` ruft es vor dem ZIP auf. `wbce/help/` ist nicht im Repository.
+- Die Seiten sind eigenständig: keine CMS-Seiten, keine Skripte, keine Schriften oder Dateien
+  von außen. Sie funktionieren offline, im dunklen Schema, am Handy und im Druck.
+- Dateinamen sind englisch und in allen Sprachen gleich, so führt der Sprachwechsel auf
+  dieselbe Seite. Die Navigation kommt aus `_nav.md` je Sprache.
+- Der Build bricht bei toten Links und Ankern ab und wenn Seite und Navigation nicht
+  zusammenpassen; fehlende Bilder und Seiten in nur einer Sprache ergeben Warnungen.
+- Einzige neue Abhängigkeit ist `league/commonmark`, nur für die Entwicklung. Das Modul
+  bekommt nur das fertige HTML.
+- Das Backend verlinkt je Bereich die passende Seite (`_help_link.twig`) in einem neuen Tab,
+  in der Sprache des Backends, sonst auf Englisch.
+- Die englischen Bildschirmfotos zeigen das echte Layout mit den Texten aus `languages.php`:
+  WBCE erzwingt beim Bearbeiten die Sprache der Seite, und es gibt keine englische Testseite.
 
 ### Ports (Schnittstellen zum CMS)
 | Port | WBCE (1.7) | Catamaran (später) |
@@ -589,16 +608,13 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 ### Nächste Schritte
 Vor Version 1.0:
 
-1. **Hilfe:** englische Fassung, Bildschirmfotos, Abschnitt im Konzept.
+1. **Vorbelegen per Klick:** Ein Klick auf einen freien Block der Woche (oder einen freien Tag
+   in Plan und Kalender) füllt das Anfrageformular vor (Objekt, Beginn, Ende) und klappt es auf.
+2. **Abschlussprüfung:** Barrierefreiheit nach Abschnitt 7, Mailversand mit einem echten
+   Mailserver (Eingang, sofort bestätigt, Bestätigung, Ablehnung, Benachrichtigung),
+   Installation und Update aus dem ZIP.
 
 ### Weitere offene Punkte
-- Wochenansicht: Klick auf einen freien Block füllt das Anfrageformular vor (Objekt, Beginn,
-  Ende) und klappt es auf.
-- Mailversand im Zusammenspiel mit einem echten Mailserver testen (Eingang, sofort bestätigt,
-  Bestätigung, Ablehnung, Benachrichtigung).
-- Upgrade: Neue Spalten legt `upgrade.php` an (`Schema::install()`). Wer nur Dateien austauscht
-  und kein Modul-Upgrade auslöst, bekommt im Frontend einen Fehler, bis das Backend des
-  Abschnitts einmal geöffnet wurde. In die Upgrade-Anleitung aufnehmen.
 - Puffer im Modus `day` („Tage frei zwischen zwei Buchungen“) bräuchte eigene Logik; nur bei
   Bedarf.
 
@@ -615,6 +631,7 @@ Vor Version 1.0:
 - Belegungsplan über 3 Monate: drei Monatstabellen untereinander statt einer breiten Tabelle.
 - Wochenansicht mit Stundenraster (0.8.0): nur im Modus `period`, je Objekt eine Tabelle, Spanne aus den Öffnungszeiten (sonst 08:00–20:00), Zeilen von 30 Minuten (60 bei Raster 60); als Startansicht wählbar. Plan und Monat zeigen solche Objekte weiter als Vormittag/Nachmittag.
 - Anfrageformular aufklappbar (0.8.0), ohne Einstellung dafür.
+- Benutzerhilfe (0.9.0): Markdown mit Build-Skript, DE und EN, siehe Abschnitt 5. Die Warnung vor reinem Dateitausch ohne Modul-Upgrade steht unter „Update“.
 - Objekte löschen (0.9.0): nur ohne laufende oder künftige blockierende Buchungen und ohne offene Anfragen, geprüft in der Sperre des Objekts. Vergangene, stornierte und abgelehnte Buchungen gehen samt Anfragen und Öffnungszeiten mit; `settings.resource_id` wird geleert.
 - Objekte sortieren (0.9.0): Zahlenfeld „Reihenfolge“ wie bei Status und Typen (`resources.position`).
 - An- und Abreisezeit (0.9.0): Teil der Buchungsregeln (`RULE_KEYS`), also auch Vorgabewert am Typ; nur Modus `day`, reine Information im Formular und in den Mails.

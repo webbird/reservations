@@ -25,7 +25,7 @@ Add the variables to the CSS of your template, on `.mod_reservations`:
 | `--rsv-surface` | `#fff` | ground of the status patterns and of labels on them |
 | `--rsv-ink` | `#1f2933` | text on this ground |
 | `--rsv-weekend` | `#f1f3f5` | background of weekends |
-| `--rsv-closed` | `#d6dae0` | hatching of closed times |
+| `--rsv-closed` | `#d6dae0` | hatching of unavailable times |
 | `--rsv-closed-ground` | `#f6f7f9` | ground of this hatching |
 | `--rsv-error` | `#a32d2d` | error messages in the form |
 | `--rsv-success` | `#1e6b34` | confirmations in the form |

@@ -15,7 +15,7 @@ use Reservations\Core\Domain\TimeRange;
  * closed, one booking). Rows count in wall-clock time, so the labels stay the
  * same on a day with a daylight saving change. Pure functions, no storage.
  *
- * @phpstan-type Block array{start: DateTimeImmutable, end: DateTimeImmutable, rows: int, booking: ?Booking, closed: bool}
+ * @phpstan-type Block array{start: DateTimeImmutable, end: DateTimeImmutable, rows: int, booking: ?Booking, closed: bool, outside: bool}
  */
 final class Week
 {
@@ -66,12 +66,13 @@ final class Week
     /**
      * Seven days from $firstDay (local midnight), each a list of blocks covering
      * the minutes [$from, $to). A row belongs to the first booking that touches
-     * it; without one it is closed if the hours do not touch it.
+     * it; without one it is closed if the hours do not touch it, and otherwise
+     * outside if it ends by $notBefore or starts after $notAfter.
      *
      * @param list<Booking> $bookings bookings of one object, ordered by start
      * @return list<list<Block>>
      */
-    public static function days(array $bookings, OpeningHours $hours, DateTimeImmutable $firstDay, int $from, int $to, int $rowMinutes): array
+    public static function days(array $bookings, OpeningHours $hours, DateTimeImmutable $firstDay, int $from, int $to, int $rowMinutes, ?DateTimeImmutable $notBefore = null, ?DateTimeImmutable $notAfter = null): array
     {
         $days = [];
         for ($d = 0; $d < 7; $d++) {
@@ -85,7 +86,7 @@ final class Week
                 // the hour skipped when daylight saving starts has no time of its own: it joins the block before
                 if ($end <= $start) {
                     if ($last === null) {
-                        $blocks[] = ['start' => $start, 'end' => $start, 'rows' => 1, 'booking' => null, 'closed' => false];
+                        $blocks[] = ['start' => $start, 'end' => $start, 'rows' => 1, 'booking' => null, 'closed' => false, 'outside' => false];
                     } else {
                         $blocks[$last]['rows']++;
                     }
@@ -100,11 +101,12 @@ final class Week
                     }
                 }
                 $closed = $booking === null && !$hours->opensDuring($weekday, $minute, $minute + $rowMinutes);
-                if ($last !== null && $blocks[$last]['booking']?->id === $booking?->id && $blocks[$last]['closed'] === $closed) {
+                $outside = $booking === null && !$closed && (($notBefore !== null && $end <= $notBefore) || ($notAfter !== null && $start > $notAfter));
+                if ($last !== null && $blocks[$last]['booking']?->id === $booking?->id && $blocks[$last]['closed'] === $closed && $blocks[$last]['outside'] === $outside) {
                     $blocks[$last]['rows']++;
                     $blocks[$last]['end'] = $end;
                 } else {
-                    $blocks[] = ['start' => $start, 'end' => $end, 'rows' => 1, 'booking' => $booking, 'closed' => $closed];
+                    $blocks[] = ['start' => $start, 'end' => $end, 'rows' => 1, 'booking' => $booking, 'closed' => $closed, 'outside' => $outside];
                 }
             }
             $days[] = $blocks;

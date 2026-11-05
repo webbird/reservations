@@ -9,7 +9,7 @@
         <span class="rsv-half rsv-whole rsv-pattern-{{ cell.am.pattern }}" style="--rsv-color:{{ cell.am.color }}"></span>
     {%- else -%}
         {%- for half in [cell.am, cell.pm] -%}
-            <span class="rsv-half{% if half %} rsv-pattern-{{ half.pattern }}{% endif %}"{% if half %} style="--rsv-color:{{ half.color }}"{% endif %}></span>
+            <span class="rsv-half{% if half %} rsv-pattern-{{ half.pattern }}{% elseif cell.outside %} rsv-closed{% endif %}"{% if half %} style="--rsv-color:{{ half.color }}"{% endif %}></span>
         {%- endfor -%}
     {%- endif -%}
 </{{ tag }}><span class="rsv-sr">{{ cell.text }}</span>

@@ -132,13 +132,17 @@ Konzept mit generischen Objekten und Objekttypen bereits ab.
   frühesten Öffnung bis zur spätesten Schließung der Woche, ohne Öffnungszeiten 08:00–20:00,
   erweitert um Beginn und Ende jeder Buchung der Woche. Was eine Buchung dazwischen abdeckt
   (Ausleihe übers Wochenende), erweitert sie nicht.
-- `Calendar\Week` liefert je Tag Blöcke gleichen Zustands (frei, geschlossen, eine Buchung) mit
+- `Calendar\Week` liefert je Tag Blöcke gleichen Zustands (frei, geschlossen, außerhalb, eine Buchung) mit
   der Zahl ihrer Zeilen; die Ausgabe setzt sie als `rowspan`. Eine Zeile gehört zur ersten
   Buchung, die sie berührt, sonst ist sie geschlossen, wenn die Öffnungszeiten sie nicht
   berühren. Die Zeilen zählen in Ortszeit: Die beim Beginn der Sommerzeit fehlende Stunde
   hängt am Block davor, die Beschriftung bleibt gleich.
 - Eine Buchung zeigt ihre genauen Zeiten (auf Block und Tag gekürzt), sichtbar ab zwei Zeilen
   Höhe; geschlossene Zeiten sind grau schraffiert und stehen in der Legende.
+- Freie Zeiten außerhalb des anfragbaren Fensters (früheste bis späteste Anfrage des Objekts,
+  ohne Anfragen nur die Vergangenheit) tragen dieselbe Schraffur, auch als Tage in Plan und
+  Kalender. Die Legende nennt alles „nicht verfügbar“, der Screenreader-Text den Grund
+  („vorbei“, „nicht anfragbar“). Buchungen bleiben sichtbar, wie sie sind.
 
 ### Status (konfigurierbar)
 Status werden pro Abschnitt angelegt. Der Kern wertet **nie den Namen** eines Status aus,

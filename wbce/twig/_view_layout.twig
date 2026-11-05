@@ -28,7 +28,7 @@
                 {% for item in legend %}
                     <li><span class="rsv-swatch rsv-pattern-{{ item.pattern }}" style="--rsv-color:{{ item.color }}" aria-hidden="true"></span> {{ item.text }}</li>
                 {% endfor %}
-                {% if legend_closed ?? false %}<li><span class="rsv-swatch rsv-closed" aria-hidden="true"></span> {{ t('CLOSED') }}</li>{% endif %}
+                {% if legend_closed ?? false %}<li><span class="rsv-swatch rsv-closed" aria-hidden="true"></span> {{ t('UNAVAILABLE') }}</li>{% endif %}
             </ul>
         {% endif %}
         {% if request %}{% include '_request_form.twig' %}{% endif %}

@@ -15,7 +15,7 @@
             <tr>
                 {% for cell in week %}
                     {% if cell %}
-                        <td class="rsv-cell{{ cell.weekend ? ' rsv-weekend' }}"{% if cell.am or cell.pm %} title="{{ cell.text }}"{% endif %}>
+                        <td class="rsv-cell{{ cell.weekend ? ' rsv-weekend' }}"{% if cell.am or cell.pm or cell.outside %} title="{{ cell.text }}"{% endif %}>
                             <span class="rsv-num" aria-hidden="true">{{ cell.number }}</span>
                             <span class="rsv-sr">{{ cell.long }}: </span>
                             {%- include '_cell.twig' -%}

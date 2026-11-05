@@ -22,7 +22,7 @@
     --rsv-surface: #fff;          /* ground of status patterns and of labels on them */
     --rsv-ink: #1f2933;           /* text on that ground */
     --rsv-weekend: #f1f3f5;
-    --rsv-closed: #d6dae0;        /* hatching of closed times */
+    --rsv-closed: #d6dae0;        /* hatching of unavailable times */
     --rsv-closed-ground: #f6f7f9;
     --rsv-error: #a32d2d;
     --rsv-success: #1e6b34;
@@ -86,7 +86,7 @@
 .mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-striped { background: repeating-linear-gradient(135deg, var(--rsv-color) 0 4px, var(--rsv-surface) 4px 7px); }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-dotted { background: radial-gradient(var(--rsv-color) 1.5px, var(--rsv-surface) 1.6px) 0 0 / 5px 5px; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-outline { background: var(--rsv-surface); box-shadow: inset 0 0 0 2px var(--rsv-color); }
-/* outside the opening hours: fine grey hatching, unlike any status pattern */
+/* closed, over or not to be requested: fine grey hatching, unlike any status pattern */
 .mod_reservations:not(#rsv):not(#rsv) .rsv-closed { background: repeating-linear-gradient(45deg, var(--rsv-closed) 0 1px, var(--rsv-closed-ground) 1px 5px); }
 
 /* week: days as columns, rows of the time grid */

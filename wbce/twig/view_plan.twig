@@ -23,7 +23,7 @@
                     <tr>
                         <th scope="row">{% if row.url %}<a href="{{ row.url }}">{{ row.title }}</a>{% else %}{{ row.title }}{% endif %}</th>
                         {% for cell in row.cells %}
-                            <td class="rsv-cell{{ cell.weekend ? ' rsv-weekend' }}"{% if cell.am or cell.pm %} title="{{ cell.text }}"{% endif %}>
+                            <td class="rsv-cell{{ cell.weekend ? ' rsv-weekend' }}"{% if cell.am or cell.pm or cell.outside %} title="{{ cell.text }}"{% endif %}>
                                 {%- include '_cell.twig' -%}
                             </td>
                         {% endfor %}

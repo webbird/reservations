@@ -27,15 +27,15 @@ final class WeekTest extends TestCase
     }
 
     /**
-     * One day as "HH:MM-HH:MM state rows", state = free, closed or the booking id.
+     * One day as "HH:MM-HH:MM state rows", state = free, closed, outside or the booking id.
      *
-     * @param list<array{start: DateTimeImmutable, end: DateTimeImmutable, rows: int, booking: ?Booking, closed: bool}> $blocks
+     * @param list<array{start: DateTimeImmutable, end: DateTimeImmutable, rows: int, booking: ?Booking, closed: bool, outside: bool}> $blocks
      * @return list<string>
      */
     private function describe(array $blocks): array
     {
         return array_map(static fn (array $b): string => $b['start']->format('H:i') . '-' . $b['end']->format('H:i') . ' '
-            . ($b['booking'] !== null ? '#' . $b['booking']->id : ($b['closed'] ? 'closed' : 'free')) . ' ' . $b['rows'], $blocks);
+            . ($b['booking'] !== null ? '#' . $b['booking']->id : ($b['closed'] ? 'closed' : ($b['outside'] ? 'outside' : 'free'))) . ' ' . $b['rows'], $blocks);
     }
 
     public function testBookingsAsBlocksOfRows(): void
@@ -51,6 +51,28 @@ final class WeekTest extends TestCase
         self::assertSame(['08:00-10:00 free 4', '10:00-12:00 #1 4', '12:00-20:00 free 16'], $this->describe($days[0]));
         self::assertSame(['08:00-10:00 free 4', '10:00-11:00 #2 2', '11:00-20:00 free 18'], $this->describe($days[1]));
         self::assertSame(['08:00-20:00 free 24'], $this->describe($days[6]));
+    }
+
+    public function testRowsOutsideTheRequestableTime(): void
+    {
+        $monday = new DateTimeImmutable('2026-11-02', $this->tz);
+        $bookings = [$this->booking(1, '2026-11-02 09:00', '2026-11-02 10:00')];
+        $hours = new OpeningHours([1 => [[480, 720]], 2 => [[480, 720]], 3 => [[480, 720]]]);
+        $days = Week::days(
+            $bookings,
+            $hours,
+            $monday,
+            480,
+            840,
+            30,
+            new DateTimeImmutable('2026-11-02 11:10', $this->tz),
+            new DateTimeImmutable('2026-11-03 10:00', $this->tz),
+        );
+
+        // bookings and closed times keep their state; the row 11:00 still touches the start at 11:10
+        self::assertSame(['08:00-09:00 outside 2', '09:00-10:00 #1 2', '10:00-11:00 outside 2', '11:00-12:00 free 2', '12:00-14:00 closed 4'], $this->describe($days[0]));
+        self::assertSame(['08:00-10:30 free 5', '10:30-12:00 outside 3', '12:00-14:00 closed 4'], $this->describe($days[1]));
+        self::assertSame(['08:00-12:00 outside 8', '12:00-14:00 closed 4'], $this->describe($days[2]));
     }
 
     public function testOpeningHoursAndLendingOverTheWeekend(): void

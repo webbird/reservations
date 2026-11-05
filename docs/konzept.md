@@ -584,7 +584,18 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 ## 10. Offene Punkte
 
 ### Nächste Schritte
-Noch festzulegen.
+Vor Version 1.0:
+
+1. **Objekte löschen:** Im Backend gibt es nur „deaktivieren“. Löschen mit Rückfrage und
+   klarer Regel für vorhandene Buchungen und Anfragen. Die Hilfe (`objects.md`) anpassen.
+2. **Objekte sortieren:** Sie stehen in der Reihenfolge des Anlegens, `resources.position`
+   hat kein Feld im Backend. Die Hilfe (`objects.md`, `faq.md`) anpassen.
+3. **Status „angefragt“:** Die Vorgabe blockiert, ist aber öffentlich unsichtbar. Für Besucher
+   sieht der Zeitraum frei aus, die Anfrage wird trotzdem abgelehnt. Vorgabe für neue
+   Abschnitte prüfen (etwa „als belegt“), bestehende bleiben unverändert.
+4. **An- und Abreisezeit:** `checkin_time`/`checkout_time` lassen sich noch nicht pflegen und
+   werden nirgends angezeigt. Felder am Objekt (nur Modus `day`), Anzeige im Formular und in
+   den Mails.
 
 ### Weitere offene Punkte
 - Wochenansicht: Klick auf einen freien Block füllt das Anfrageformular vor (Objekt, Beginn,
@@ -596,8 +607,6 @@ Noch festzulegen.
   Abschnitts einmal geöffnet wurde. In die Upgrade-Anleitung aufnehmen.
 - Puffer im Modus `day` („Tage frei zwischen zwei Buchungen“) bräuchte eigene Logik; nur bei
   Bedarf.
-- An- und Abreisezeit (`checkin_time`/`checkout_time`) werden noch nirgends angezeigt;
-  zusammen mit der Anzeige im Formular und in den Mails.
 
 ### Erledigt
 - Objekttypen und Status: **pro Abschnitt**.

@@ -34,6 +34,8 @@ $rsvVars = [
     'errors'     => $rsvFlash['errors'] ?? [],
     'success'    => $rsvFlash['success'] ?? '',
     'url_list'   => ReservationsWbce::modifyUrl($rsvPage, $rsvSection),
+    // the static help exists in some languages only
+    'help_url'   => WB_URL . '/modules/reservations/help/' . (is_dir(__DIR__ . '/help/' . strtolower(LANGUAGE)) ? strtolower(LANGUAGE) : 'en') . '/',
     // grid choices of the booking rules (objects and types)
     'slot_choices' => Reservations\Core\Service\ResourceService::SLOT_MINUTES,
 ];

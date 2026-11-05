@@ -4,11 +4,11 @@ Reservations zeigt auf Ihrer WBCE-Seite, wann Ferienwohnungen, Räume oder Gerä
 
 ## In fünf Schritten zum ersten Kalender
 
-1. **Seite anlegen** Neue Seite mit dem Modul „Reservations“. Jeder Abschnitt ist ein eigener Kalender.
-2. **Einstellungen wählen** Einzelobjekt oder mehrere Objekte, tageweise oder nach Zeitraum buchen.
-3. **Status anpassen** Angefragt, Reserviert, Gebucht, Gesperrt und weitere sind schon da. Farben und Muster nach Wunsch.
-4. **Objekte anlegen** Wohnung, Raum oder Gerät, mit Personenzahl, Vorlauf und [Öffnungszeiten](opening-hours.md).
-5. **Anfragen einschalten** Formular unter dem Kalender, mit Mail an Sie und automatischer Löschfrist.
+1. **Seite anlegen** Neue Seite mit dem Modul „Reservierungen“. Jeder Abschnitt ist ein eigener Kalender. [Abschnitt einrichten](section-setup.md)
+2. **Einstellungen wählen** Einzelobjekt oder mehrere Objekte, tageweise oder nach Zeitraum buchen. [Einstellungen](settings.md)
+3. **Status anpassen** angefragt, reserviert, gebucht, gesperrt und weitere sind schon da. Farben und Muster nach Wunsch. [Status](statuses.md)
+4. **Objekte anlegen** Wohnung, Raum oder Gerät, mit Personenzahl, Vorlauf und Öffnungszeiten. [Objekte](objects.md)
+5. **Anfragen einschalten** Formular unter dem Kalender, mit Mail an Sie und automatischer Löschfrist. [Anfragen](requests.md)
 
 ## Alle Themen
 

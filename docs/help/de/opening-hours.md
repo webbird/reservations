@@ -41,11 +41,11 @@ Beginn und Ende einer Anfrage müssen in den Öffnungszeiten liegen. Was dazwisc
 
 ### Wie sperre ich einen Feiertag oder Betriebsurlaub?
 
-Legen Sie eine Buchung mit dem Status „Gesperrt“ an. Sie blockiert den Zeitraum, ohne dass Sie die Öffnungszeiten ändern müssen.
+Legen Sie eine Buchung mit dem Status „gesperrt“ an, siehe [Sperrzeiten](blocked-times.md). Sie blockiert den Zeitraum, ohne dass Sie die Öffnungszeiten ändern müssen.
 
 ### Warum kann ein Besucher 08:00 nicht wählen?
 
-Vermutlich öffnet das Objekt erst später, oder 08:00 liegt nicht auf dem Raster. Das Raster stellen Sie bei den Buchungsregeln des Objekts ein.
+Vermutlich öffnet das Objekt erst später, oder 08:00 liegt nicht auf dem [Raster](booking-rules.md#raster).
 
 ### Kann ich Öffnungszeiten für alle Objekte eines Typs vorgeben?
 

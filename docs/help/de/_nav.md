@@ -1,2 +1,23 @@
+- Einrichten
+  - [Abschnitt einrichten](section-setup.md)
+  - [Einstellungen](settings.md)
+  - [Status](statuses.md)
+  - [Objekttypen](types.md)
 - Objekte
+  - [Objekte anlegen und bearbeiten](objects.md)
+  - [Buchungsregeln](booking-rules.md)
   - [Öffnungszeiten](opening-hours.md)
+  - [Beschreibung aus news_img](news-img.md)
+- Buchungen und Anfragen
+  - [Buchungen pflegen](bookings.md)
+  - [Sperrzeiten](blocked-times.md)
+  - [Anfragen bearbeiten](requests.md)
+  - [Datenschutz und Löschfristen](privacy.md)
+- Darstellung
+  - [Ansichten](views.md)
+  - [Kalender im Beitrag (Droplet)](droplet.md)
+  - [Aussehen anpassen](styling.md)
+- Nachschlagen
+  - [Begriffe](glossary.md)
+  - [Häufige Fragen](faq.md)
+  - [Update](upgrade.md)

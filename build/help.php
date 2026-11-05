@@ -57,6 +57,13 @@ $slug = static function (string $html): string {
     return trim((string) preg_replace('/[^a-z0-9]+/', '-', strtr($text, ['ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss'])), '-');
 };
 
+// in a function of its own: the variables of the template must not reach the loops below
+$render = static function (array $p) use ($e): string {
+    ob_start();
+    include __DIR__ . '/help-template.php';
+    return (string) ob_get_clean();
+};
+
 $environment = new Environment(['html_input' => 'allow', 'allow_unsafe_links' => false]);
 $environment->addExtension(new CommonMarkCoreExtension());
 $environment->addExtension(new TableExtension());
@@ -238,10 +245,8 @@ foreach ($languages as $lang => $language) {
             'languages' => $others,
         ];
         if ($errors === []) {
-            ob_start();
-            include __DIR__ . '/help-template.php';
             @mkdir($target . '/' . $lang, 0777, true);
-            file_put_contents($target . '/' . $lang . '/' . $name . '.html', (string) ob_get_clean());
+            file_put_contents($target . '/' . $lang . '/' . $name . '.html', $render($p));
         }
     }
     if ($errors === [] && is_dir($dir . '/img')) {

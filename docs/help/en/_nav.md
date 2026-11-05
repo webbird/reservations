@@ -1,0 +1,23 @@
+- Setting up
+  - [Set up a section](section-setup.md)
+  - [Settings](settings.md)
+  - [Statuses](statuses.md)
+  - [Object types](types.md)
+- Objects
+  - [Add and edit objects](objects.md)
+  - [Booking rules](booking-rules.md)
+  - [Opening hours](opening-hours.md)
+  - [Description from news_img](news-img.md)
+- Bookings and requests
+  - [Manage bookings](bookings.md)
+  - [Blocked periods](blocked-times.md)
+  - [Handle requests](requests.md)
+  - [Privacy and retention](privacy.md)
+- Display
+  - [Views](views.md)
+  - [Calendar in a post (droplet)](droplet.md)
+  - [Adapt the look](styling.md)
+- Reference
+  - [Terms](glossary.md)
+  - [Frequently asked questions](faq.md)
+  - [Update](upgrade.md)

@@ -25,7 +25,7 @@ Tragen Sie die Variablen in das CSS Ihres Templates ein, auf `.mod_reservations`
 | `--rsv-surface` | `#fff` | Grund der Status-Muster und von Beschriftungen darauf |
 | `--rsv-ink` | `#1f2933` | Text auf diesem Grund |
 | `--rsv-weekend` | `#f1f3f5` | Hintergrund von Wochenenden |
-| `--rsv-closed` | `#d6dae0` | Schraffur nicht verfügbarer Zeiten |
+| `--rsv-closed` | `#838c99` | Schraffur nicht verfügbarer Zeiten |
 | `--rsv-closed-ground` | `#f6f7f9` | Grund dieser Schraffur |
 | `--rsv-error` | `#a32d2d` | Fehlermeldungen im Formular |
 | `--rsv-success` | `#1e6b34` | Bestätigungen im Formular |

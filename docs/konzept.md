@@ -617,9 +617,15 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 ### Nächste Schritte
 Vor Version 1.0:
 
-1. **Abschlussprüfung:** Barrierefreiheit nach Abschnitt 7, Mailversand mit einem echten
-   Mailserver (Eingang, sofort bestätigt, Bestätigung, Ablehnung, Benachrichtigung),
-   Installation und Update aus dem ZIP.
+1. **Abschlussprüfung, noch offen:**
+   - Barrierefreiheit von Hand: nur Tastatur, NVDA mit Firefox, Kontrastmodus. Geprüft sind
+     Struktur, Beschriftungen, Kontraste, Klickflächen, Reflow bei 320 px, Textabstände und
+     die Fehlerausgabe mit erhaltenen Eingaben.
+   - Mailversand mit einem echten Mailserver (Eingang, sofort bestätigt, Bestätigung,
+     Ablehnung, Benachrichtigung).
+   - Installation und Update aus dem ZIP in einer eigenen WBCE-Instanz, nicht über die
+     Verzeichnisverknüpfung der Entwicklung. Geprüft sind Inhalt des ZIP und das Schema-Update
+     von 0.8.0 auf 0.9.0.
 
 ### Weitere offene Punkte
 - Puffer im Modus `day` („Tage frei zwischen zwei Buchungen“) bräuchte eigene Logik; nur bei

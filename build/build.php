@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Builds the installable WBCE module: wbce/ plus core/src as core/src inside it.
+ * Builds the installable WBCE module: wbce/ (with the generated help) plus core/src as core/src inside it.
  * Usage: php build/build.php  →  build/dist/reservations-<version>.zip
  */
 
@@ -15,6 +15,13 @@ if (preg_match('/\$module_version\s*=\s*\'([^\']+)\'/', $info, $m) !== 1) {
 }
 $target = __DIR__ . '/dist/reservations-' . $m[1] . '.zip';
 @mkdir(dirname($target), 0777, true);
+
+// the user help is generated into wbce/help/ and goes into the zip with the rest of wbce/
+passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/help.php'), $helpResult);
+if ($helpResult !== 0) {
+    exit(1);
+}
+
 if (is_file($target)) {
     unlink($target);
 }

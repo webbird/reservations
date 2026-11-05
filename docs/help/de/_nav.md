@@ -1,0 +1,2 @@
+- Objekte
+  - [Öffnungszeiten](opening-hours.md)

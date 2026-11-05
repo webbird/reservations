@@ -16,6 +16,7 @@
         "ext-mbstring": "*"
     },
     "require-dev": {
+        "league/commonmark": "^2.7",
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-deprecation-rules": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",

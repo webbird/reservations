@@ -35,7 +35,11 @@ Tragen Sie die Variablen in das CSS Ihres Templates ein, auf `.mod_reservations`
 | `--rsv-month-row` | `2.8em` | Zeilenhöhe im Kalender |
 | `--rsv-week-row` | `1.3em` | Zeilenhöhe in der Woche |
 
-Bei dunklen Templates setzen Sie mindestens `--rsv-surface`, `--rsv-ink`, `--rsv-weekend` und die beiden Variablen für geschlossene Zeiten.
+## Dunkle Templates
+
+Die Farben richten sich von selbst nach der Schriftfarbe Ihres Templates. Dunkle Templates und ein Umschalter für den Dark Mode funktionieren also ohne eigene Einstellungen. Das gilt für alle Farbvariablen bis auf die Status. Die Werte in der Tabelle sehen Sie nur in Browsern von vor 2024. Setzen Sie eine Variable selbst, gilt Ihr Wert in beiden Modi.
+
+Wählen Sie die [Farben der Status](statuses.md) so, dass sie auch auf dunklem Grund erkennbar sind. Sehr dunkle Farben sind dort nur noch am feinen Rahmen zu erkennen.
 
 ## Farben der Status
 

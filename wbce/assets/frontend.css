@@ -22,7 +22,7 @@
     --rsv-surface: #fff;          /* ground of status patterns and of labels on them */
     --rsv-ink: #1f2933;           /* text on that ground */
     --rsv-weekend: #f1f3f5;
-    --rsv-closed: #838c99;        /* hatching of unavailable times */
+    --rsv-closed: #838c99;        /* hatching of unavailable times, edges of solid areas */
     --rsv-closed-ground: #f6f7f9;
     --rsv-error: #a32d2d;
     --rsv-success: #1e6b34;
@@ -31,6 +31,25 @@
     --rsv-plan-row: 1.8em;
     --rsv-month-row: 2.8em;
     --rsv-week-row: 1.3em;
+}
+
+/*
+ * A template may have a dark mode, and how it switches is its own business: a
+ * media query here would turn dark on a light-only template. So the colours follow
+ * the template's text colour. The surface is white under dark text and black under
+ * light text. Older browsers keep the fixed colours above.
+ */
+@supports (color: rgb(from currentColor r g b)) {
+    :where(.mod_reservations) {
+        --rsv-line: color-mix(in srgb, currentColor 22%, transparent);
+        --rsv-surface: rgb(from currentColor clamp(0, (128 - r) * 99, 255) clamp(0, (128 - r) * 99, 255) clamp(0, (128 - r) * 99, 255));
+        --rsv-ink: currentColor;
+        --rsv-weekend: color-mix(in srgb, currentColor 5%, transparent);
+        --rsv-closed: color-mix(in srgb, currentColor 50%, transparent);
+        --rsv-closed-ground: transparent;
+        --rsv-error: color-mix(in srgb, #a32d2d 60%, currentColor);
+        --rsv-success: color-mix(in srgb, #1e6b34 60%, currentColor);
+    }
 }
 
 .mod_reservations:not(#rsv):not(#rsv),
@@ -57,14 +76,16 @@
 .mod_reservations:not(#rsv):not(#rsv) .rsv-scroll:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
 /* occupancy plan */
-.mod_reservations:not(#rsv):not(#rsv) .rsv-scroll { display: block; overflow-x: auto; position: relative; margin: 0 0 var(--rsv-space); }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-scroll { display: block; overflow-x: auto; position: relative; margin: 0 0 var(--rsv-space); scrollbar-color: var(--rsv-closed) transparent; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-plan { border-collapse: collapse; font-size: .85em; line-height: 1.3; margin: 0; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-plan caption { text-align: left; font-weight: bold; padding: 0 0 .3em; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-plan th,
 .mod_reservations:not(#rsv):not(#rsv) .rsv-plan td { border: 1px solid var(--rsv-line); padding: 0; text-align: center; vertical-align: middle; }
+/* a linked object name makes its row taller, the day fills it all the same */
+.mod_reservations:not(#rsv):not(#rsv) .rsv-plan td { height: var(--rsv-plan-row); position: relative; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-plan thead th { padding: .2em; min-width: 1.8em; font-weight: normal; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-plan tbody th { padding: .2em .6em; text-align: left; white-space: nowrap; font-weight: bold; }
-.mod_reservations:not(#rsv):not(#rsv) .rsv-plan .rsv-day { height: var(--rsv-plan-row); }
+.mod_reservations:not(#rsv):not(#rsv) .rsv-plan .rsv-day { position: absolute; inset: 0; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-plan tbody th a { display: inline-block; min-height: 24px; }
 
 /* month calendar */
@@ -83,7 +104,8 @@
 .mod_reservations:not(#rsv):not(#rsv) .rsv-weekend { background-color: var(--rsv-weekend); }
 
 /* status colours: the pattern carries the meaning together with the screen-reader text */
-.mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-solid { background: var(--rsv-color); }
+/* the edge keeps a colour apart from the page when it comes close to the ground, as dark ones do in dark mode */
+.mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-solid { background: var(--rsv-color); box-shadow: inset 0 0 0 1px var(--rsv-closed); }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-striped { background: repeating-linear-gradient(135deg, var(--rsv-color) 0 4px, var(--rsv-surface) 4px 7px); }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-dotted { background: radial-gradient(var(--rsv-color) 1.5px, var(--rsv-surface) 1.6px) 0 0 / 5px 5px; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-pattern-outline { background: var(--rsv-surface); box-shadow: inset 0 0 0 2px var(--rsv-color); }
@@ -100,6 +122,8 @@
 .mod_reservations:not(#rsv):not(#rsv) .rsv-slot-label { display: inline-block; padding: 0 3px; border-radius: 2px; background: var(--rsv-surface); color: var(--rsv-ink); font-size: .9em; font-variant-numeric: tabular-nums; }
 
 /* free days and blocks that lead to the request form; the outline sits inside, .rsv-scroll would clip it */
+/* no link colour here: the colours of the halves come from the text colour */
+.mod_reservations:not(#rsv):not(#rsv) :is(a.rsv-day, .rsv-pick) { color: inherit; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-pick { position: absolute; inset: 0; }
 .mod_reservations:not(#rsv):not(#rsv) :is(a.rsv-day, .rsv-pick):is(:hover, :focus-visible) { outline: 2px solid currentColor; outline-offset: -2px; }
 .mod_reservations:not(#rsv):not(#rsv) .rsv-month-table .rsv-num { pointer-events: none; }
@@ -147,6 +171,15 @@
 
 /* high contrast mode would drop the backgrounds; keep the authored patterns */
 @media (forced-colors: active) {
+    /* forced-color-adjust: none below sees the template's text colour, not the forced one */
+    :where(.mod_reservations) {
+        --rsv-line: CanvasText;
+        --rsv-surface: Canvas;
+        --rsv-ink: CanvasText;
+        --rsv-weekend: transparent;
+        --rsv-closed: CanvasText;
+        --rsv-closed-ground: Canvas;
+    }
     .mod_reservations:not(#rsv):not(#rsv) .rsv-half,
     .mod_reservations:not(#rsv):not(#rsv) .rsv-week td,
     .mod_reservations:not(#rsv):not(#rsv) .rsv-swatch { forced-color-adjust: none; }

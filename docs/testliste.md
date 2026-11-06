@@ -79,4 +79,5 @@ Mit einem echten Mailserver:
 - [ ] Nur Tastatur: alle Ansichten, Formular aufklappen und absenden, sichtbarer Fokus
 - [ ] NVDA mit Firefox: Zellen, Formular, Fehlermeldung
 - [ ] Kontrastmodus: Muster, Schraffur und Fokus bleiben sichtbar
+- [ ] Template mit Dark Mode: alle Ansichten und das Formular hell und dunkel lesbar
 - [ ] Zoom 200 % und 400 %: keine seitliche Überbreite außer in Tabellen

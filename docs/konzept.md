@@ -78,7 +78,10 @@ Konzept mit generischen Objekten und Objekttypen bereits ab.
   `--rsv-weekend`, `--rsv-closed`, `--rsv-closed-ground`, `--rsv-error`, `--rsv-success`,
   `--rsv-radius`, `--rsv-space`, `--rsv-plan-row`, `--rsv-month-row`, `--rsv-week-row`). Die
   Standardwerte stehen in `:where(.mod_reservations)` mit Spezifität 0, ein einfacher Selektor
-  gewinnt also. Auf `:root` oder `body` wirken sie nicht.
+  gewinnt also. Auf `:root` oder `body` wirken sie nicht. Die Farben leiten sich aus der
+  Schriftfarbe des Templates ab (`color-mix` mit `currentColor`), damit Dark Modes ohne
+  Einstellungen funktionieren. Eine Media Query scheidet aus: Sie würde auch in rein hellen
+  Templates dunkel schalten, und jedes Template hat seinen eigenen Umschalter.
 - Darstellungsvarianten als Ordner (`views/<view>/`, Spalte `settings.view`): nie gebaut, mit
   den CSS-Variablen unnötig; die Spalte entfällt.
 
@@ -630,12 +633,9 @@ Vor Version 1.0:
    - Barrierefreiheit von Hand: nur Tastatur, NVDA mit Firefox, Kontrastmodus. Geprüft sind
      Struktur, Beschriftungen, Kontraste, Klickflächen, Reflow bei 320 px, Textabstände und
      die Fehlerausgabe mit erhaltenen Eingaben.
-   - Mailversand mit einem echten Mailserver (Eingang, sofort bestätigt, Bestätigung,
-     Ablehnung, Benachrichtigung).
-   - Update aus dem ZIP in einer eigenen WBCE-Instanz, nicht über die Verzeichnisverknüpfung
-     der Entwicklung. Die Installation aus dem ZIP läuft; geprüft sind außerdem Inhalt des ZIP
-     und das Schema-Update von 0.8.0 auf 0.9.0.
    - Feldfehler im Frontend bei aktivem Captcha.
+   - Erledigt: Installation und Update aus dem ZIP in einer eigenen WBCE-Instanz, Mailversand
+     mit einem echten Mailserver.
 
 ### Weitere offene Punkte
 - Puffer im Modus `day` („Tage frei zwischen zwei Buchungen“) bräuchte eigene Logik; nur bei

@@ -35,7 +35,11 @@ Add the variables to the CSS of your template, on `.mod_reservations`:
 | `--rsv-month-row` | `2.8em` | row height in the calendar |
 | `--rsv-week-row` | `1.3em` | row height in the week |
 
-For dark templates, set at least `--rsv-surface`, `--rsv-ink`, `--rsv-weekend` and the two variables for closed times.
+## Dark templates
+
+The colours follow the text colour of your template by themselves. Dark templates and a dark mode switch therefore work without any settings of your own. This applies to all colour variables except the statuses. You only see the values in the table in browsers from before 2024. If you set a variable yourself, your value applies in both modes.
+
+Choose the [colours of the statuses](statuses.md) so that they can also be seen on a dark ground. There, very dark colours only stand out by their fine edge.
 
 ## Colours of the statuses
 

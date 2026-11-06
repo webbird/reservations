@@ -299,9 +299,9 @@ final class RequestServiceTest extends TestCase
         $type = (int) $types->listBySection(3)[0]->id;
         // Monday 09–12 and 13–17; 2 Nov 2026 is a Monday, now is Thursday 29 Oct
         $hours = new OpeningHours([1 => [[540, 720], [780, 1020]]]);
-        $object = function (string $title, ?int $min = null, ?int $max = null, int $buffer = 0) use ($type, $hours): BookableResource {
+        $object = function (string $title, ?int $min = null, ?int $max = null, int $buffer = 0, ?OpeningHours $open = null) use ($type, $hours): BookableResource {
             $id = $this->resources->insert(new BookableResource(null, 3, $type, $title, minDuration: $min, maxDuration: $max, bufferBefore: $buffer));
-            $this->hours->replace(3, $id, $hours);
+            $this->hours->replace(3, $id, $open ?? $hours);
             $resource = $this->resources->find(3, $id);
             self::assertNotNull($resource);
             return $resource;
@@ -329,6 +329,11 @@ final class RequestServiceTest extends TestCase
         // only start and end count, as in submit()
         self::assertSame('02. 11:30–02. 13:30', $suggest($object('Mittag', 120), '2026-11-02 11:30'));
         self::assertNull($suggest($object('Zu kurz', 120), '2026-11-02 09:00', '2026-11-02 10:00', '2026-11-02 11:00'), 'the minimum does not fit');
+        // a minimum longer than the day ends at a later opening, here the next Monday
+        self::assertSame('02. 09:00–09. 09:30', $suggest($object('Lang', 1440), '2026-11-02 09:00'));
+        self::assertNull($suggest($object('Lang begrenzt', 1440, 2880), '2026-11-02 09:00'), 'no end within the maximum');
+        // no end fits the grid of 30, not even a week later
+        self::assertNull($suggest($object('Ohne Ende', 60, null, 0, new OpeningHours([1 => [[540, 550]]])), '2026-11-02 09:00'));
         // 15 minutes of buffer on both sides of the booking 10:00–11:00, on the grid of 30
         $buffered = $object('Puffer', null, null, 15);
         self::assertSame('02. 09:00–02. 09:30', $suggest($buffered, '2026-11-02 09:00', '2026-11-02 10:00', '2026-11-02 11:00'));

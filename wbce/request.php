@@ -29,6 +29,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || $module !== 'reservations' || $sett
     header('Location: ' . $location);
     exit;
 }
+// the second click of a double click: the session lock let it wait for the first, which went through
+if (isset($_SESSION['mod_reservations_request'][$sectionId]['success'])) {
+    header('Location: ' . $sent);
+    exit;
+}
 
 $old = [
     'resource_id' => (int) $post('resource_id'),

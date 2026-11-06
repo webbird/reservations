@@ -311,7 +311,6 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
     $rsvVars['request'] = [
         'action'     => WB_URL . '/modules/reservations/request.php',
         'return'     => (string) preg_replace('/^([^?]*)&/', '$1?', $rsvReturn),
-        'ftan'       => $GLOBALS['wb']->getFTAN(),
         'resources'  => $rsvItems,
         'whole_days' => $rsvWholeDays,
         // without JavaScript the date picker offers the widest range of all objects (ISO strings sort like dates)

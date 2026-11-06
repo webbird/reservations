@@ -32,10 +32,12 @@ Immer in einer eigenen WBCE-Instanz, nie über die Verzeichnisverknüpfung der E
 ## Anfrage im Frontend
 
 - [ ] Formular absenden: Bestätigung erscheint, Buchung steht im Backend, Zeit ist belegt
+- [ ] Doppelklick auf Senden: Bestätigung erscheint, nur eine Buchung und eine Mail
 - [ ] „Weitere Anfrage senden“ zeigt ein leeres Formular
 - [ ] Falsches Datum, zu kurze Dauer, belegter Zeitraum: Fehler am Feld, Eingaben bleiben
 - [ ] Klick auf freien Tag oder Block füllt das Formular vor, das Formular klappt auf
-- [ ] Objekt mit Puffer oder Mindestdauer: Vorschläge werden beim Absenden angenommen
+- [ ] Objekt mit Puffer oder Mindestdauer: Vorschläge werden beim Absenden angenommen, auch bei
+  einer Mindestdauer über Nacht
 - [ ] Vergangene und nicht anfragbare Zeiten sind schraffiert und nicht klickbar
 - [ ] Ohne JavaScript: Formular offen, Links funktionieren
 

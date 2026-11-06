@@ -275,15 +275,16 @@ final class RequestService
         $wanted = $resource->minDuration ?? min(self::SUGGESTED_MINUTES, $resource->maxDuration ?? self::SUGGESTED_MINUTES);
         $slot = new DateInterval('PT' . $resource->slotMinutes . 'M');
         $end = null;
-        // the last end on the grid that the hours allow, up to the wanted length
-        for ($next = $start->add($slot); $limit === null || $next <= $limit; $next = $next->add($slot)) {
+        // the last end on the grid that the hours allow, up to the wanted length; a long minimum may
+        // only end at a later opening, and as the hours repeat weekly a week more settles that
+        for ($next = $start->add($slot); ($limit === null || $next <= $limit) && $length($next) <= $wanted + 7 * 1440; $next = $next->add($slot)) {
             if ($resource->maxDuration !== null && $length($next) > $resource->maxDuration) {
                 break;
             }
             if ($hours->allowsEnd($next)) {
                 $end = $next;
             }
-            if ($length($next) >= $wanted) {
+            if ($resource->minDuration === null ? $length($next) >= $wanted : $end !== null && $length($end) >= $resource->minDuration) {
                 break;
             }
         }

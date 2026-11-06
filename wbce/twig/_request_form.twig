@@ -27,7 +27,7 @@
     <form action="{{ r.action }}" method="post">
         <input type="hidden" name="section_id" value="{{ section_id }}">
         <input type="hidden" name="return" value="{{ r.return }}">
-        {{ r.ftan|raw }}
+        {{ FTAN|raw }}
         <p class="rsv-hint">{{ t('REQUIRED_HINT') }}</p>
 
         {% if r.resources|length == 1 %}

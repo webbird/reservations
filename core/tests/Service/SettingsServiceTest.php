@@ -15,6 +15,7 @@ use Reservations\Core\Domain\CalendarView;
 use Reservations\Core\Domain\DisplayMode;
 use Reservations\Core\Domain\Settings;
 use Reservations\Core\Domain\TimeRange;
+use Reservations\Core\Domain\Type;
 use Reservations\Core\Service\SettingsService;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
@@ -30,10 +31,31 @@ final class SettingsServiceTest extends TestCase
     private SettingsService $service;
     private SettingsRepository $settings;
     private BookingRepository $bookings;
+    private ResourceRepository $resources;
+    private TypeRepository $types;
     private StatusRepository $statuses;
     private DateTimeZone $tz;
     private int $flat;
     private int $foreignFlat;
+
+    public function testAChangeOfModeEmptiesDurationsOnly(): void
+    {
+        $type = $this->types->listBySection(1)[0];
+        $this->types->update(new Type($type->id, 1, $type->title, ['minDuration' => 2, 'maxDuration' => 14, 'capacity' => 4], $type->position));
+        $flat = $this->resources->find(1, $this->flat);
+        self::assertNotNull($flat);
+        $this->resources->update($flat->withRules(['minDuration' => 2, 'maxDuration' => 14, 'capacity' => 4]));
+
+        self::assertTrue($this->service->save(new Settings(1, bookingMode: BookingMode::Day, planRange: 3))->ok, 'same mode');
+        self::assertSame(14, $this->resources->find(1, $this->flat)?->maxDuration);
+
+        self::assertTrue($this->service->save(new Settings(1, bookingMode: BookingMode::Period))->ok);
+        $changed = $this->resources->find(1, $this->flat);
+        self::assertNull($changed?->minDuration);
+        self::assertNull($changed?->maxDuration);
+        self::assertSame(4, $changed?->capacity);
+        self::assertSame(['capacity' => 4], $this->types->listBySection(1)[0]->defaults);
+    }
 
     protected function setUp(): void
     {
@@ -51,7 +73,9 @@ final class SettingsServiceTest extends TestCase
         $this->foreignFlat = $resources->insert(new BookableResource(null, 2, (int) $types->listBySection(2)[0]->id, 'Fremd'));
         $this->settings = new SettingsRepository($db);
         $this->bookings = new BookingRepository($db);
-        $this->service = new SettingsService($this->settings, $resources, $this->bookings);
+        $this->resources = $resources;
+        $this->types = $types;
+        $this->service = new SettingsService($this->settings, $resources, $this->bookings, $types);
     }
 
     public function testDefaultsAfterSetup(): void

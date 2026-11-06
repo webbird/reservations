@@ -18,7 +18,7 @@ The status of a booking decides whether it occupies the period and what visitors
 | Property | Meaning |
 |---|---|
 | Name | shown in the backend and, depending on the setting, in the legend on the website |
-| Colour | Reservations picks a matching text colour |
+| Colour | Reservations picks a matching text colour; if the colour has less than 3:1 contrast on white, a note appears when you save |
 | Pattern | solid, striped, dotted or outline only, so the status can be told apart without its colour |
 | Blocks the period | other bookings cannot overlap it |
 | On the website | with its name, as "occupied" or not at all |

@@ -12,7 +12,7 @@ Die Einstellungen gelten für einen Abschnitt. Sie erreichen sie über den Link 
 | Zeitraum | Gebucht wird mit Datum und Uhrzeit. Dazu kommen [Raster](booking-rules.md#raster) und [Öffnungszeiten](opening-hours.md). |
 
 > [!WARNING]
-> Der Buchungsmodus lässt sich nur ändern, solange der Abschnitt keine Buchungen hat.
+> Der Buchungsmodus lässt sich nur ändern, solange der Abschnitt keine Buchungen hat. Ein Wechsel leert die Mindest- und Höchstdauer von Objekten und Objekttypen, denn sie zählen Nächte oder Minuten.
 
 ## Darstellung und Startansicht
 

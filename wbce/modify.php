@@ -100,7 +100,7 @@ if ($rsvParam('rsv_statuses') === 1) {
         'form'         => $rsvOld ?? [
             'status_id'  => $rsvEdit->id ?? 0,
             'title'      => $rsvEdit->title ?? '',
-            'color'      => $rsvEdit->color ?? '#85b7eb',
+            'color'      => $rsvEdit->color ?? '#4a8fd4',
             'pattern'    => $rsvEdit?->pattern->value ?? 'solid',
             'blocks'     => $rsvEdit->blocks ?? true,
             'visibility' => $rsvEdit?->visibility->value ?? 'label',
@@ -157,8 +157,10 @@ if ($rsvResource !== null) {
     $rsvRequests = ReservationsWbce::requests();
     $rsvRequestIds = array_flip($rsvRequests->bookingIds($rsvSection));
     $rsvRows = [];
-    // no upper limit: a booking typed with a wrong year must stay visible and deletable
-    $rsvWindow = new Reservations\Core\Domain\TimeRange($rsvToday->modify('-12 months'), $rsvToday->modify('+100 years'));
+    // no upper limit: a booking typed with a wrong year must stay visible and deletable;
+    // back at least as far as the website shows, or a wrong booking there could not be found here
+    $rsvBack = max(12, ReservationsWbce::settings()->find($rsvSection)->pastMonths ?? 12);
+    $rsvWindow = new Reservations\Core\Domain\TimeRange($rsvToday->modify('-' . $rsvBack . ' months'), $rsvToday->modify('+100 years'));
     foreach (ReservationsWbce::bookings()->listInRange($rsvSection, $rsvWindow, (int) $rsvResource->id) as $rsvBooking) {
         $rsvStatus = $rsvStatuses[$rsvBooking->statusId] ?? null;
         $rsvRows[] = [

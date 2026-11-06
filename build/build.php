@@ -58,6 +58,9 @@ foreach ($tree as $item) {
 foreach ($dirs as $dir) {
     $zip->addFromString($dir . '/index.php', "<?php\nheader('Location: " . str_repeat('../', substr_count($dir, '/') + 1) . "');\nexit;\n");
 }
-$zip->close();
+if (!$zip->close()) {
+    fwrite(STDERR, "Cannot write $target\n");
+    exit(1);
+}
 
 echo "$count files → $target\n";

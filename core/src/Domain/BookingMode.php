@@ -8,5 +8,4 @@ enum BookingMode: string
 {
     case Day = 'day';
     case Period = 'period';
-    case Appointment = 'appointment';
 }

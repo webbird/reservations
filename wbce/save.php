@@ -25,6 +25,7 @@ use Reservations\Core\Domain\StatusRole;
 use Reservations\Core\Domain\Type;
 use Reservations\Core\Domain\Visibility;
 use Reservations\Core\Result\Result;
+use Reservations\Core\Support\Color;
 
 $sectionId = (int) $section_id;
 $pageId = (int) $page_id;
@@ -191,9 +192,8 @@ switch ($post('rsv_action')) {
         $mode = DisplayMode::tryFrom($old['display_mode']);
         $view = CalendarView::tryFrom($old['default_view']);
         $bookingMode = BookingMode::tryFrom($old['booking_mode']);
-        // appointments follow in 1.1
         $newsSectionValid = $old['news_section'] === 0 || isset(ReservationsNewsImg::sections()[$old['news_section']]);
-        if ($mode === null || $view === null || $bookingMode === null || $bookingMode === BookingMode::Appointment || !$newsSectionValid) {
+        if ($mode === null || $view === null || $bookingMode === null || !$newsSectionValid) {
             $finish(Result::fail('settings.invalid_value'), ['rsv_settings' => 1], $old, '');
         }
         $retentionBefore = ReservationsWbce::settings()->find($sectionId)?->retentionDays;
@@ -241,7 +241,9 @@ switch ($post('rsv_action')) {
         $status = new Status($id > 0 ? $id : null, $sectionId, $old['title'], $old['blocks'], $visibility, $old['color'], $pattern, $role, $old['active'], $old['position']);
         $service = ReservationsWbce::statusService();
         $result = $id > 0 ? $service->update($status) : $service->create($status);
-        $finish($result, $result->ok ? ['rsv_statuses' => 1] : $params, $old, ReservationsWbce::t('MSG_STATUS_SAVED'));
+        // patterns must stand out from the white calendar: 3:1 for graphics (WCAG 1.4.11)
+        $faint = $result->ok && Color::contrastRatio($old['color'], '#ffffff') < 3;
+        $finish($result, $result->ok ? ['rsv_statuses' => 1] : $params, $old, ReservationsWbce::t('MSG_STATUS_SAVED') . ($faint ? ' ' . ReservationsWbce::t('MSG_STATUS_FAINT') : ''));
 
     case 'status_delete':
         $result = ReservationsWbce::statusService()->delete($sectionId, (int) $post('status_id'));

@@ -31,8 +31,8 @@ Immer verfügbar. Die belegten Zeiträume als Text, je Objekt gruppiert. Diese A
 
 Sind [Buchungsanfragen](requests.md) eingeschaltet, führt ein Klick in den Kalender zum Formular. Es klappt auf und enthält schon Objekt, Beginn und Ende. Der Besucher kann alles ändern, bevor er die Anfrage abschickt.
 
-- **Plan und Kalender, Buchungsmodus tageweise:** Ein Klick auf einen freien Tag setzt die Anreise, die Abreise ergibt sich aus der [Mindestdauer](booking-rules.md#dauer), sonst nach einer Nacht. An Wechseltagen mit freiem Nachmittag geht das auch.
-- **Woche:** Ein Klick auf eine freie Zeit setzt den Beginn auf diese Zeile. Das Ende ergibt sich aus der Mindestdauer, sonst nach einer Stunde, und liegt nie nach der nächsten Buchung. Per Tastatur beginnt der Vorschlag am Anfang des freien Blocks.
+- **Plan und Kalender, Buchungsmodus tageweise:** Ein Klick auf einen freien Tag setzt die Anreise, die Abreise ergibt sich aus der [Mindestdauer](booking-rules.md#dauer), sonst nach einer Nacht. An Wechseltagen mit freiem Nachmittag geht das auch. Reicht die Mindestdauer nicht bis zur nächsten Buchung, ist der Tag nicht klickbar.
+- **Woche:** Ein Klick auf eine freie Zeit setzt den Beginn auf diese Zeile. Das Ende ergibt sich aus der Mindestdauer, sonst nach einer Stunde, und liegt nie nach der nächsten Buchung. [Pufferzeiten](booking-rules.md#pufferzeiten) bleiben frei. Per Tastatur beginnt der Vorschlag am Anfang des freien Blocks.
 - **Plan im Buchungsmodus Zeitraum:** kein Klick, denn ein Tag sagt nichts über die Uhrzeit. Dafür ist die Woche da.
 
 Tage und Zeiten außerhalb des [Vorlaufs](booking-rules.md#vorlauf) sind schraffiert und nicht klickbar. In Plan und Kalender ist der Klick eine Abkürzung für Maus und Touch. Mit Tastatur und Screenreader geht es dort über das Formular, durch die vielen Tage müsste man sonst einzeln durchspringen.

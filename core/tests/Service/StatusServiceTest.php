@@ -158,6 +158,13 @@ final class StatusServiceTest extends TestCase
         self::assertSame('status.invalid_color', $this->service->create($this->with($status, ['title' => 'X', 'color' => 'red']))->firstErrorKey());
     }
 
+    public function testDefaultStatusColorsStandOutOnWhite(): void
+    {
+        foreach ($this->statuses->listBySection(1) as $status) {
+            self::assertGreaterThanOrEqual(3, Color::contrastRatio($status->color, '#ffffff'), $status->title . ' ' . $status->color);
+        }
+    }
+
     public function testDefaultStatusColorsGetReadableText(): void
     {
         foreach ($this->statuses->listBySection(1) as $status) {

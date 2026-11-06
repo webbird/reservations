@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Reservations\Core\Service;
 
 use Reservations\Core\Domain\Settings;
+use Reservations\Core\Domain\Type;
 use Reservations\Core\Result\Result;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
 use Reservations\Core\Storage\Pdo\SettingsRepository;
+use Reservations\Core\Storage\Pdo\TypeRepository;
 
 final class SettingsService
 {
@@ -23,6 +25,7 @@ final class SettingsService
         private readonly SettingsRepository $settings,
         private readonly ResourceRepository $resources,
         private readonly BookingRepository $bookings,
+        private readonly TypeRepository $types,
     ) {
     }
 
@@ -59,6 +62,14 @@ final class SettingsService
         }
         if ($s->resourceId !== null && $this->resources->find($s->sectionId, $s->resourceId) === null) {
             return Result::fail('resource.not_found', ['id' => $s->resourceId], 'resource_id');
+        }
+        // durations count nights by day and minutes by period: 14 nights must not become 14 minutes
+        if ($s->bookingMode !== $existing->bookingMode) {
+            $this->resources->clearDurations($s->sectionId);
+            foreach ($this->types->listBySection($s->sectionId) as $type) {
+                $defaults = array_diff_key($type->defaults, ['minDuration' => 0, 'maxDuration' => 0]);
+                $this->types->update(new Type($type->id, $type->sectionId, $type->title, $defaults, $type->position));
+            }
         }
         $this->settings->save($s);
         return Result::ok();

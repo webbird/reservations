@@ -56,8 +56,8 @@ final class SectionSetup
 
         $defaults = [
             // visible: a blocked period that looks free would turn requests down without a reason
-            ['requested', true, Visibility::Label, '#f5c26b', Pattern::Dotted, StatusRole::RequestNew],
-            ['reserved', true, Visibility::Label, '#85b7eb', Pattern::Striped, null],
+            ['requested', true, Visibility::Label, '#b9770e', Pattern::Dotted, StatusRole::RequestNew],
+            ['reserved', true, Visibility::Label, '#4a8fd4', Pattern::Striped, null],
             ['booked', true, Visibility::Label, '#185fa5', Pattern::Solid, StatusRole::RequestConfirmed],
             ['blocked', true, Visibility::Busy, '#5f5e5a', Pattern::Striped, null],
             ['rejected', false, Visibility::Hidden, '#a32d2d', Pattern::Outline, StatusRole::RequestRejected],

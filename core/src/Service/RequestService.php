@@ -7,6 +7,7 @@ namespace Reservations\Core\Service;
 use DateInterval;
 use DateTimeImmutable;
 use Reservations\Core\Domain\BookableResource;
+use Reservations\Core\Domain\Booking;
 use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\OpeningHours;
 use Reservations\Core\Domain\Request;
@@ -232,25 +233,41 @@ final class RequestService
      * What a click on the calendar suggests for the request form. Whole days: the
      * day as arrival, for the minimum stay. Periods: the first possible start from
      * $from, for the minimum duration or else an hour; shorter if the opening hours
-     * or the next booking ($limit) end it sooner. Only a suggestion: whether the
-     * whole period is free, submit() finds out.
+     * or the next booking end it sooner. Keeps clear of $taken and its buffers.
+     * Only a suggestion: bookings the caller does not know, submit() finds out.
      *
+     * @param list<Booking> $taken blocking bookings of the object, ordered by start
      * @return ?TimeRange null if no request can begin there
      */
-    public function suggest(BookableResource $resource, Settings $settings, DateTimeImmutable $from, ?DateTimeImmutable $limit = null): ?TimeRange
+    public function suggest(BookableResource $resource, Settings $settings, DateTimeImmutable $from, array $taken = []): ?TimeRange
     {
         $wholeDays = $settings->bookingMode === BookingMode::Day;
         $earliest = $this->earliestStart($resource, $wholeDays);
         $latest = $this->latestStart($resource, $settings);
+        // as the booking service sees them: each with the gap the object needs around it
+        $gap = $resource->requiredGapMinutes($settings->bookingMode);
+        $busy = array_map(static fn (Booking $b): TimeRange => $b->range->withBuffer($gap, $gap), $taken);
         if ($wholeDays) {
             $start = $from->setTime(0, 0);
-            return $start < $earliest || $start > $latest
-                ? null
-                : new TimeRange($start, $start->add(new DateInterval('P' . max(1, $resource->minDuration ?? 1) . 'D')));
+            $stay = new TimeRange($start, $start->add(new DateInterval('P' . max(1, $resource->minDuration ?? 1) . 'D')));
+            foreach ($busy as $range) {
+                if ($range->overlaps($stay)) {
+                    return null;
+                }
+            }
+            return $start < $earliest || $start > $latest ? null : $stay;
         }
         // shortcut: two queries per free block of a week; hand the hours in if pages with many objects get slow
         $hours = $this->hours->find($resource->sectionId, (int) $resource->id);
         $start = self::nextOpening($hours, max($earliest, self::ceilToGrid($from, $resource->slotMinutes)), $resource->slotMinutes);
+        $limit = null;
+        foreach ($busy as $range) {
+            if ($start >= $range->start && $start < $range->end) {
+                $start = self::nextOpening($hours, self::ceilToGrid($range->end, $resource->slotMinutes), $resource->slotMinutes);
+            } elseif ($range->start > $start) {
+                $limit ??= $range->start;
+            }
+        }
         if ($start > $latest || !$hours->allowsStart($start)) {
             return null;
         }

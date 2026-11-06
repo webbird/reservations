@@ -148,7 +148,7 @@ final class ReservationsWbce
 
     public static function settingsService(): SettingsService
     {
-        return new SettingsService(self::settings(), self::resources(), self::bookings());
+        return new SettingsService(self::settings(), self::resources(), self::bookings(), self::types());
     }
 
     public static function resourceService(): ResourceService

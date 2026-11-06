@@ -121,12 +121,12 @@ final class Schema
                     'status_id' => 'int',
                     'label' => "str:255=''",
                     'note' => 'text',
-                    'service_id' => 'int?',
                     'created_at' => 'datetime',
                     'updated_at' => 'datetime',
                     'created_by' => 'int?',
                     'updated_by' => 'int?',
                 ],
+                'dropped' => ['service_id'],
                 'indexes' => [
                     'range' => ['resource_id', 'start_at', 'end_at'],
                     'status' => ['section_id', 'status_id'],

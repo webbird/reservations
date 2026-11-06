@@ -225,7 +225,7 @@ Tabellennamen: Präfix des CMS + `mod_reservations_` in WBCE. Der Kern bekommt d
 | past_months / future_months | SMALLINT | Navigationsgrenzen |
 | resource_id | INT NULL | Objekt für die Einzelobjekt-Darstellung; leer = erstes aktives |
 | presentation_source | VARCHAR(100) NULL | Quelle der Objektbeschreibungen, z. B. `news_img:3` (News-Abschnitt; siehe Abschnitt 8) |
-| booking_mode | VARCHAR(20) | `day`, `period`, `appointment`; `appointment` erst ab 1.1 auswählbar |
+| booking_mode | VARCHAR(20) | `day`, `period`; `appointment` kommt mit 1.1 |
 
 Ob angefragte Zeiträume öffentlich zu sehen sind, regelt die Sichtbarkeit des Status mit der
 Rolle „neue Anfrage“; die frühere Spalte `show_requests` ist mit 0.5.0 entfallen.
@@ -320,7 +320,6 @@ auch als 24:00 des Vortags. Im Backend wird je Wochentag ein Textfeld gepflegt
 | status_id | INT | Index (section_id, status_id); Verhalten über `statuses` |
 | label | VARCHAR(255) | öffentliche Beschriftung, optional |
 | note | TEXT | interne Notiz, nie im Frontend |
-| service_id | INT NULL | ab 1.1 |
 | created_at / updated_at | DATETIME | |
 | created_by / updated_by | INT NULL | WBCE-User, NULL bei Anfrage aus dem Frontend |
 
@@ -385,12 +384,13 @@ auch als 24:00 des Vortags. Im Backend wird je Wochentag ein Textfeld gepflegt
 - Bestätigen und Ablehnen nur für Buchungen mit Anfrage; beim Bestätigen erneute Prüfung auf
   Überschneidung.
 - `purge_after` = Ende des Zeitraums + `retention_days`, nach einer Ablehnung ab der
-  Ablehnung. Geleert wird bei jedem Aufruf des Backends und des Anfrage-Endpunkts (WBCE hat
+  Ablehnung. Geleert wird bei jedem Aufruf des Backends und der Kalenderseite (WBCE hat
   keinen Cron); die Buchung bleibt. Eine geänderte `retention_days` gilt auch für die
   gespeicherten Anfragen.
 - Beim Löschen einer Buchung wird ihre Anfrage mitgelöscht.
 
 ### Ab 1.1: services, service_resources
+`bookings` bekommt dann die Spalte `service_id`.
 `services` (service_id, section_id, title, duration_minutes, buffer_after, active, position)
 sowie die Zuordnung `service_resources` (service_id, resource_id).
 
@@ -492,7 +492,7 @@ Anlegen einer Buchung samt Prüfung auf Überschneidung atomar (siehe Abschnitt 
 - Die Repositories laufen in den Tests gegen **SQLite im Speicher**. Optional derselbe
   Testlauf gegen MySQL/MariaDB über eine Umgebungsvariable.
 - Die Uhr ist ein Port, deshalb sind Tests zeitunabhängig.
-- Die WBCE-Wrapper werden von Hand getestet (Checkliste in `docs/`).
+- Die WBCE-Wrapper werden von Hand getestet (Checkliste in `docs/testliste.md`).
 
 ---
 
@@ -542,7 +542,8 @@ Es gelten die Konventionen aus news_img:
   das Formular vor. Das sind echte Links, die `view.php` serverseitig auswertet, also ohne
   JavaScript nutzbar. Plan und Kalender haben dafür keine Tab-Stopps (`tabindex="-1"`,
   `aria-hidden`), sonst wären es bis zu 31 je Objekt und Monat; dort bleibt das Formular der
-  Weg für Tastatur und Screenreader. Die wenigen Blöcke der Woche sind erreichbar.
+  Weg für Tastatur und Screenreader. Die wenigen Blöcke der Woche sind erreichbar. Der
+  Vorschlag hält Puffer und Mindestdauer gegenüber den sichtbaren Buchungen ein.
 - Termin-Auswahl (1.1) als Radio-Buttons in `<fieldset>`.
 - Ergebnis der Verfügbarkeitsprüfung über eine `aria-live`-Region. Fehler mit
   `aria-describedby` und `aria-invalid`, nach dem Absenden eine Fehlerzusammenfassung.

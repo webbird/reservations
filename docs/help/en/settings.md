@@ -12,7 +12,7 @@ The settings apply to one section. You reach them through the link **Settings** 
 | By period | Booked with date and time. This adds the [grid](booking-rules.md#grid) and [opening hours](opening-hours.md). |
 
 > [!WARNING]
-> The booking mode can only be changed as long as the section has no bookings.
+> The booking mode can only be changed as long as the section has no bookings. A change empties the minimum and maximum duration of objects and object types, because they count nights or minutes.
 
 ## Display and default view
 

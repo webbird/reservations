@@ -18,7 +18,7 @@ Der Status einer Buchung bestimmt, ob sie den Zeitraum belegt und was Besucher d
 | Eigenschaft | Bedeutung |
 |---|---|
 | Name | erscheint im Backend und, je nach Einstellung, in der Legende auf der Website |
-| Farbe | die Schriftfarbe wählt Reservations passend dazu |
+| Farbe | die Schriftfarbe wählt Reservations passend dazu; hat die Farbe auf Weiß weniger als 3:1 Kontrast, erscheint beim Speichern ein Hinweis |
 | Muster | voll, schraffiert, gepunktet oder nur Rahmen; so ist der Status nicht allein an der Farbe zu erkennen |
 | Blockiert den Zeitraum | andere Buchungen dürfen sich nicht damit überschneiden |
 | Auf der Website | mit Bezeichnung, als „belegt“ oder gar nicht |

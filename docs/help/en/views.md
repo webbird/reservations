@@ -31,8 +31,8 @@ Always available. The occupied periods as text, grouped by object. This view is 
 
 With [booking requests](requests.md) switched on, a click in the calendar leads to the form. It opens with the object, start and end already filled in. Visitors can change everything before they send the request.
 
-- **Plan and calendar, booking by day:** A click on a free day sets the arrival. The departure follows from the [minimum duration](booking-rules.md#duration), otherwise after one night. This also works on changeover days with a free afternoon.
-- **Week:** A click on a free time sets the start to that row. The end follows from the minimum duration, otherwise after one hour, and never lies after the next booking. By keyboard the suggestion begins at the start of the free block.
+- **Plan and calendar, booking by day:** A click on a free day sets the arrival. The departure follows from the [minimum duration](booking-rules.md#duration), otherwise after one night. This also works on changeover days with a free afternoon. If the minimum duration does not fit before the next booking, the day cannot be clicked.
+- **Week:** A click on a free time sets the start to that row. The end follows from the minimum duration, otherwise after one hour, and never lies after the next booking. [Buffer times](booking-rules.md#buffer-times) stay free. By keyboard the suggestion begins at the start of the free block.
 - **Plan when booking by period:** no click, because a day says nothing about the time. The week is there for that.
 
 Days and times outside the [lead time](booking-rules.md#lead-time) are hatched and cannot be clicked. In the plan and the calendar the click is a shortcut for mouse and touch. With a keyboard or screen reader the way there is the form, as the many days would otherwise be a long way to tab through.

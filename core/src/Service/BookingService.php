@@ -91,7 +91,6 @@ final class BookingService
             statusId: $statusId,
             label: trim($label),
             note: trim($note),
-            serviceId: $existing->serviceId,
             createdAt: $existing->createdAt,
             updatedAt: $this->clock->now(),
             createdBy: $existing->createdBy,

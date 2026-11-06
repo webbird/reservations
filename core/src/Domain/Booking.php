@@ -16,7 +16,6 @@ final readonly class Booking
         public int $statusId,
         public string $label = '',
         public string $note = '',
-        public ?int $serviceId = null,
         public ?DateTimeImmutable $createdAt = null,
         public ?DateTimeImmutable $updatedAt = null,
         public ?int $createdBy = null,

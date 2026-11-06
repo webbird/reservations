@@ -42,6 +42,11 @@ final class ResourceRepository
         $this->db->delete(self::TABLE, $where);
     }
 
+    public function clearDurations(int $sectionId): void
+    {
+        $this->db->update(self::TABLE, ['min_duration' => null, 'max_duration' => null], ['section_id' => $sectionId]);
+    }
+
     public function find(int $sectionId, int $resourceId): ?BookableResource
     {
         $row = $this->db->fetchOne(

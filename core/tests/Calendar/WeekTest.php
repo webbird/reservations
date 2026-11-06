@@ -75,6 +75,16 @@ final class WeekTest extends TestCase
         self::assertSame(['08:00-12:00 outside 8', '12:00-14:00 closed 4'], $this->describe($days[2]));
     }
 
+    public function testRowsWhollyInsideABufferAreOutside(): void
+    {
+        $monday = new DateTimeImmutable('2026-11-02', $this->tz);
+        $bookings = [$this->booking(1, '2026-11-02 10:00', '2026-11-02 11:00')];
+        $days = Week::days($bookings, new OpeningHours(), $monday, 540, 720, 30, busy: [$bookings[0]->range->withBuffer(45, 45)]);
+
+        // 09:15–11:45: the rows 09:00 and 11:30 are only touched and stay free
+        self::assertSame(['09:00-09:30 free 1', '09:30-10:00 outside 1', '10:00-11:00 #1 2', '11:00-11:30 outside 1', '11:30-12:00 free 1'], $this->describe($days[0]));
+    }
+
     public function testOpeningHoursAndLendingOverTheWeekend(): void
     {
         $monday = new DateTimeImmutable('2026-11-02', $this->tz);

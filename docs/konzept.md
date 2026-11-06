@@ -142,7 +142,9 @@ Konzept mit generischen Objekten und Objekttypen bereits ab.
 - Freie Zeiten außerhalb des anfragbaren Fensters (früheste bis späteste Anfrage des Objekts,
   ohne Anfragen nur die Vergangenheit) tragen dieselbe Schraffur, auch als Tage in Plan und
   Kalender. Die Legende nennt alles „nicht verfügbar“, der Screenreader-Text den Grund
-  („vorbei“, „nicht anfragbar“). Buchungen bleiben sichtbar, wie sie sind.
+  („vorbei“, „nicht anfragbar“). Buchungen bleiben sichtbar, wie sie sind. Das gilt auch für
+  Zeilen ganz im Puffer einer sichtbaren Buchung und für freie Tage und Blöcke, in die keine
+  Anfrage passt. Innerhalb eines langen Blocks wird nicht zeilenweise geprüft.
 
 ### Status (konfigurierbar)
 Status werden pro Abschnitt angelegt. Der Kern wertet **nie den Namen** eines Status aus,

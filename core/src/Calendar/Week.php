@@ -67,12 +67,14 @@ final class Week
      * Seven days from $firstDay (local midnight), each a list of blocks covering
      * the minutes [$from, $to). A row belongs to the first booking that touches
      * it; without one it is closed if the hours do not touch it, and otherwise
-     * outside if it ends by $notBefore or starts after $notAfter.
+     * outside if it ends by $notBefore, starts after $notAfter or lies wholly in
+     * one of $busy (the buffers around bookings).
      *
      * @param list<Booking> $bookings bookings of one object, ordered by start
+     * @param list<TimeRange> $busy
      * @return list<list<Block>>
      */
-    public static function days(array $bookings, OpeningHours $hours, DateTimeImmutable $firstDay, int $from, int $to, int $rowMinutes, ?DateTimeImmutable $notBefore = null, ?DateTimeImmutable $notAfter = null): array
+    public static function days(array $bookings, OpeningHours $hours, DateTimeImmutable $firstDay, int $from, int $to, int $rowMinutes, ?DateTimeImmutable $notBefore = null, ?DateTimeImmutable $notAfter = null, array $busy = []): array
     {
         $days = [];
         for ($d = 0; $d < 7; $d++) {
@@ -101,7 +103,8 @@ final class Week
                     }
                 }
                 $closed = $booking === null && !$hours->opensDuring($weekday, $minute, $minute + $rowMinutes);
-                $outside = $booking === null && !$closed && (($notBefore !== null && $end <= $notBefore) || ($notAfter !== null && $start > $notAfter));
+                $inBuffer = array_filter($busy, static fn (TimeRange $range): bool => $range->start <= $start && $end <= $range->end) !== [];
+                $outside = $booking === null && !$closed && (($notBefore !== null && $end <= $notBefore) || ($notAfter !== null && $start > $notAfter) || $inBuffer);
                 if ($last !== null && $blocks[$last]['booking']?->id === $booking?->id && $blocks[$last]['closed'] === $closed && $blocks[$last]['outside'] === $outside) {
                     $blocks[$last]['rows']++;
                     $blocks[$last]['end'] = $end;

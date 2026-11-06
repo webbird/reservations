@@ -198,6 +198,7 @@ $rsvVars = [
 $rsvPick = static fn (): ?string => null;
 // from when to when each object can be requested; without the form only the past is over
 $rsvWindows = [];
+$rsvTaken = [];
 
 // booking request form below the calendar; request.php handles the post and redirects back
 if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
@@ -329,16 +330,16 @@ if ($rsvSettings->requestsEnabled && $rsvResources !== []) {
 }
 
 // a day of the plan or calendar; links by day only: in period mode a day says nothing about the time, the week view does
-$rsvDayCell = static function ($resource, Day $day) use ($rsvCell, $rsvPick, $rsvWindows, $rsvNow, $rsvUnavailable, $rsvWholeDays): array {
+$rsvAsking = $rsvVars['request'] !== null;
+$rsvDayCell = static function ($resource, Day $day) use ($rsvCell, $rsvPick, $rsvWindows, $rsvNow, $rsvUnavailable, $rsvWholeDays, $rsvAsking): array {
     $end = $day->date->modify('+1 day');
     [$notBefore, $notAfter] = $rsvWindows[$resource->id] ?? [$rsvNow, null];
     $outside = $end <= $notBefore || ($notAfter !== null && $day->date > $notAfter);
-    return $rsvCell(
-        $day,
-        $rsvWholeDays,
-        !$outside && $rsvWholeDays && $day->pm === null ? $rsvPick($resource, $day->date, $end) : null,
-        $outside ? $rsvUnavailable($end) : null,
-    );
+    $arrival = !$outside && $rsvWholeDays && $day->pm === null;
+    $pick = $arrival ? $rsvPick($resource, $day->date, $end) : null;
+    // a free afternoon the minimum stay does not fit into is as good as taken
+    $outside = $outside || ($arrival && $rsvAsking && $pick === null);
+    return $rsvCell($day, $rsvWholeDays, $pick, $outside ? $rsvUnavailable($end) : null);
 };
 
 // debug aid for admins: ?rsv_debug=1 prints the computed half days as an HTML comment
@@ -392,7 +393,9 @@ if ($rsvView === CalendarView::Week) {
         }
         // each block becomes a cell spanning its rows, placed in the row it starts in
         [$rsvNotBefore, $rsvNotAfter] = $rsvWindows[$rsvResource->id] ?? [$rsvNow, null];
-        foreach (Week::days($rsvOwn, $rsvOpen, $rsvWeek, $rsvFrom, $rsvTo, $rsvRowMinutes, $rsvNotBefore, $rsvNotAfter) as $i => $rsvBlocks) {
+        $rsvGap = $rsvResource->requiredGapMinutes($rsvSettings->bookingMode);
+        $rsvBusy = array_map(static fn (Booking $b): TimeRange => $b->range->withBuffer($rsvGap, $rsvGap), $rsvTaken[$rsvResource->id] ?? []);
+        foreach (Week::days($rsvOwn, $rsvOpen, $rsvWeek, $rsvFrom, $rsvTo, $rsvRowMinutes, $rsvNotBefore, $rsvNotAfter, $rsvBusy) as $i => $rsvBlocks) {
             $rsvRow = 0;
             foreach ($rsvBlocks as $rsvBlock) {
                 $rsvBooking = $rsvBlock['booking'];
@@ -401,13 +404,17 @@ if ($rsvView === CalendarView::Week) {
                     ? [$rsvBlock['start'], $rsvBlock['end']]
                     : [max($rsvBlock['start'], $rsvBooking->range->start, $rsvDates[$i]), min($rsvBlock['end'], $rsvBooking->range->end, $rsvDates[$i]->modify('+1 day'))];
                 $rsvTimes = $rsvTime($rsvShown[0], $rsvDates[$i]) . '–' . $rsvTime($rsvShown[1], $rsvDates[$i]);
+                $rsvFree = $rsvBooking === null && !$rsvBlock['closed'] && !$rsvBlock['outside'];
+                $rsvCellPick = $rsvFree ? $rsvPick($rsvResource, $rsvBlock['start'], $rsvBlock['end']) : null;
+                // free, but too short for the minimum duration
+                $rsvUnfit = $rsvFree && $rsvCellPick === null && $rsvVars['request'] !== null;
                 $rsvState = match (true) {
                     $rsvBooking !== null => $rsvStatusText($rsvBooking),
                     $rsvBlock['closed'] => ReservationsWbce::t('CLOSED'),
-                    $rsvBlock['outside'] => $rsvUnavailable($rsvBlock['end']),
+                    $rsvBlock['outside'] || $rsvUnfit => $rsvUnavailable($rsvBlock['end']),
                     default => ReservationsWbce::t('FREE'),
                 };
-                $rsvHatched = $rsvBlock['closed'] || $rsvBlock['outside'];
+                $rsvHatched = $rsvBlock['closed'] || $rsvBlock['outside'] || $rsvUnfit;
                 $rsvAnyClosed = $rsvAnyClosed || $rsvHatched;
                 $rsvGrid[$rsvRow]['cells'][] = [
                     'rows'    => $rsvBlock['rows'],
@@ -417,7 +424,7 @@ if ($rsvView === CalendarView::Week) {
                     // visible only where the cell is high enough
                     'label'   => $rsvBooking !== null && $rsvBlock['rows'] >= 2 ? $rsvTimes : null,
                     'text'    => $rsvDayHeads[$i]['long'] . ', ' . $rsvTimes . ': ' . $rsvState,
-                    'pick'    => $rsvBooking === null && !$rsvHatched ? $rsvPick($rsvResource, $rsvBlock['start'], $rsvBlock['end']) : null,
+                    'pick'    => $rsvCellPick,
                 ];
                 $rsvRow += $rsvBlock['rows'];
             }

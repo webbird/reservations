@@ -158,7 +158,7 @@ final class ReservationsWbce
 
     public static function statusService(): StatusService
     {
-        return new StatusService(self::db(), self::statuses(), self::bookings(), self::resources());
+        return new StatusService(self::db(), self::statuses(), self::bookings(), self::resources(), self::settings());
     }
 
     public static function typeService(): TypeService
@@ -320,6 +320,18 @@ final class ReservationsWbce
             }
         }
         return (self::resources()->find($sectionId, $resourceId)->title ?? '?') . ': ' . implode(' / ', $parts);
+    }
+
+    /**
+     * A period from a form: dates by day, datetime-local values (2026-11-02T14:00) by period.
+     *
+     * @throws InvalidArgumentException if a value is no valid moment or the end is not after the start
+     */
+    public static function formRange(string $start, string $end, bool $wholeDays): TimeRange
+    {
+        return $wholeDays
+            ? TimeRange::fromLocal($start . ' 00:00', $end . ' 00:00', self::timezone())
+            : TimeRange::fromLocal(strtr($start, 'T', ' '), strtr($end, 'T', ' '), self::timezone());
     }
 
     /**

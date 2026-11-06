@@ -19,7 +19,6 @@ final readonly class BookableResource
         public int $sectionId,
         public int $typeId,
         public string $title,
-        public ?string $color = null,
         public bool $active = true,
         public int $position = 0,
         public ?string $presentationRef = null,
@@ -41,10 +40,11 @@ final readonly class BookableResource
     /**
      * Minimum gap between two bookings of this resource: the clean-up time
      * after the earlier one plus the preparation time before the later one.
+     * By day there are no buffers, a stored value only stays from period mode.
      */
-    public function requiredGapMinutes(): int
+    public function requiredGapMinutes(BookingMode $mode): int
     {
-        return $this->bufferBefore + $this->bufferAfter;
+        return $mode === BookingMode::Day ? 0 : $this->bufferBefore + $this->bufferAfter;
     }
 
     /**

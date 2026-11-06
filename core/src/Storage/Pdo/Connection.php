@@ -23,7 +23,6 @@ use Throwable;
 final class Connection
 {
     public const DATETIME_FORMAT = 'Y-m-d H:i:s';
-    public const TIME_FORMAT = 'H:i:s';
 
     private readonly string $platform;
     private readonly DateTimeZone $timezone;

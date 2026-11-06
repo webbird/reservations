@@ -181,6 +181,8 @@ genau einem Status zugeordnet:
 **Regeln:**
 - Ein Status, der verwendet wird, lässt sich nicht löschen, nur deaktivieren. Ein Status mit
   Rolle lässt sich erst deaktivieren, wenn die Rolle einem anderen zugeordnet ist.
+- Ein deaktivierter Status lässt sich nicht neu vergeben, bleibt aber an seinen Buchungen
+  stehen. Blockiert er, zeigt der Kalender diese Buchungen weiter, sonst sähe die Zeit frei aus.
 - Wird ein Status von „nicht blockierend“ auf „blockierend“ umgestellt, prüft der Kern vorher,
   ob dadurch bestehende Buchungen kollidieren, und lehnt die Änderung mit einer Liste der
   Konflikte ab.
@@ -273,7 +275,6 @@ Typ (`types.booking_mode`); die Installation entfernt diese Spalte.
 | section_id | INT, Index | |
 | type_id | INT, Index | Objekttyp (Vorgabewerte, Gruppierung) |
 | title | VARCHAR(255) | |
-| color | VARCHAR(7) | nur als Kennfarbe, nie als einzige Information |
 | active | TINYINT(1) | inaktiv: nicht im Frontend und nicht anfragbar |
 | position | INT | Reihenfolge |
 | presentation_ref | VARCHAR(100) NULL | neutraler Verweis auf die Präsentation, z. B. `news_img:12` (siehe Abschnitt 8) |

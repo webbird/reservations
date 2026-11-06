@@ -10,4 +10,6 @@ parameters:
     paths:
         - src
         - tests
+    scanFiles:
+        - ../wbce/rules.php
     tmpDir: .phpstan.cache

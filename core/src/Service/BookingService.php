@@ -97,13 +97,14 @@ final class BookingService
             createdBy: $existing->createdBy,
             updatedBy: $userId,
         );
-        return $this->save($booking);
+        return $this->save($booking, keepStatus: $existing->statusId);
     }
 
     /**
      * @param (callable(int): void)|null $then
+     * @param ?int $keepStatus the status the booking has: it may stay even if it was deactivated
      */
-    private function save(Booking $booking, ?callable $then = null): Result
+    private function save(Booking $booking, ?callable $then = null, ?int $keepStatus = null): Result
     {
         // the database may run without strict mode and would truncate silently
         if (mb_strlen($booking->label) > self::LABEL_MAX) {
@@ -117,7 +118,7 @@ final class BookingService
             return Result::fail('resource.not_found', ['id' => $booking->resourceId], 'resource');
         }
         $status = $this->statuses->find($booking->sectionId, $booking->statusId);
-        if ($status === null || !$status->active) {
+        if ($status === null || (!$status->active && $status->id !== $keepStatus)) {
             return Result::fail('status.not_found', ['id' => $booking->statusId], 'status');
         }
         $mode = $this->settings->find($booking->sectionId)->bookingMode ?? BookingMode::Day;
@@ -137,7 +138,7 @@ final class BookingService
             return $booking->id;
         };
 
-        $gap = $resource->requiredGapMinutes();
+        $gap = $resource->requiredGapMinutes($mode);
         $checkRange = $gap > 0 ? $booking->range->withBuffer($gap, $gap) : $booking->range;
 
         // non-blocking statuses skip the overlap check but still need the transaction for $then

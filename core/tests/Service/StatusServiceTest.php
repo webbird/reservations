@@ -19,6 +19,7 @@ use Reservations\Core\Service\StatusService;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
+use Reservations\Core\Storage\Pdo\SettingsRepository;
 use Reservations\Core\Storage\Pdo\StatusRepository;
 use Reservations\Core\Storage\Pdo\TypeRepository;
 use Reservations\Core\Storage\Schema;
@@ -45,7 +46,7 @@ final class StatusServiceTest extends TestCase
         $resources = new ResourceRepository($db);
         $this->flat = $resources->insert(new BookableResource(null, 1, (int) $types->listBySection(1)[0]->id, 'FeWo Seeblick'));
         $this->bookings = new BookingRepository($db);
-        $this->service = new StatusService($db, $this->statuses, $this->bookings, $resources);
+        $this->service = new StatusService($db, $this->statuses, $this->bookings, $resources, new SettingsRepository($db));
     }
 
     private function byTitle(string $title): Status

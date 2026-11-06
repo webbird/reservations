@@ -22,7 +22,6 @@ use Reservations\Core\Domain\Pattern;
 use Reservations\Core\Domain\Settings;
 use Reservations\Core\Domain\Status;
 use Reservations\Core\Domain\StatusRole;
-use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Domain\Type;
 use Reservations\Core\Domain\Visibility;
 use Reservations\Core\Result\Result;
@@ -88,7 +87,6 @@ switch ($post('rsv_action')) {
             sectionId: $sectionId,
             typeId: $old['type_id'],
             title: $old['title'],
-            color: $existing?->color,
             active: $old['active'],
             position: $old['position'],
             presentationRef: $presentationRef,
@@ -156,9 +154,7 @@ switch ($post('rsv_action')) {
         }
         $wholeDays = ReservationsWbce::wholeDays($sectionId);
         try {
-            $range = $wholeDays
-                ? TimeRange::fromLocal($old['start'] . ' 00:00', $old['end'] . ' 00:00', ReservationsWbce::timezone())
-                : TimeRange::fromLocal(strtr($old['start'], 'T', ' '), strtr($old['end'], 'T', ' '), ReservationsWbce::timezone());
+            $range = ReservationsWbce::formRange($old['start'], $old['end'], $wholeDays);
         } catch (InvalidArgumentException) {
             $finish(Result::fail('booking.invalid_range'), $params, $old, '');
         }

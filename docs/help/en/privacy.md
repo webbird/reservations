@@ -26,7 +26,7 @@ You set the period in the [settings](settings.md#booking-requests), the default 
 
 The date is shown in the booking under **Contact data will be deleted**.
 
-WBCE has no scheduled tasks. Reservations therefore deletes when someone opens the backend of the section or sends a request. With little activity this can be somewhat later than the date shown.
+WBCE has no scheduled tasks. Reservations therefore deletes when someone opens the page with the calendar or the backend of the section. Without visitors this can be somewhat later than the date shown.
 
 ## Delete a request early
 

@@ -317,7 +317,7 @@ final class RequestService
     /**
      * Empties the contact data of all requests whose retention has ended, and the
      * visitor hashes after a day. WBCE has no cron; the wrapper calls this on
-     * backend and request calls.
+     * backend calls and page views.
      *
      * @return int number of requests whose contact data was emptied
      */

@@ -189,7 +189,6 @@ final class ResourceServiceTest extends TestCase
     {
         self::assertSame('resource.title_required', $this->service->create(new BookableResource(null, 1, $this->type, '  '))->firstErrorKey());
         self::assertSame('resource.title_too_long', $this->service->create(new BookableResource(null, 1, $this->type, str_repeat('ü', 256)))->firstErrorKey());
-        self::assertSame('resource.invalid_color', $this->service->create(new BookableResource(null, 1, $this->type, 'X', 'blue'))->firstErrorKey());
         self::assertSame('type.not_found', $this->service->create(new BookableResource(null, 1, $this->foreignType, 'X'))->firstErrorKey());
         self::assertSame(
             'resource.presentation_ref_too_long',

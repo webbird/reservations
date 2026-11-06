@@ -26,7 +26,7 @@ Die Frist stellen Sie in den [Einstellungen](settings.md#buchungsanfragen) ein, 
 
 Das Datum steht in der Buchung unter **Kontaktdaten werden gelöscht am**.
 
-WBCE hat keinen zeitgesteuerten Dienst. Reservations löscht deshalb, sobald jemand das Backend des Abschnitts öffnet oder eine Anfrage sendet. Bei wenig Betrieb kann das etwas später sein als das angezeigte Datum.
+WBCE hat keinen zeitgesteuerten Dienst. Reservations löscht deshalb, sobald jemand die Seite mit dem Kalender oder das Backend des Abschnitts aufruft. Ohne Besucher kann das etwas später sein als das angezeigte Datum.
 
 ## Anfrage vorzeitig löschen
 

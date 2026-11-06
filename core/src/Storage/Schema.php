@@ -80,7 +80,6 @@ final class Schema
                     'section_id' => 'int',
                     'type_id' => 'int',
                     'title' => 'str:255',
-                    'color' => 'str?:7',
                     'active' => 'bool=1',
                     'position' => 'int=0',
                     'presentation_ref' => 'str?:100',
@@ -97,6 +96,7 @@ final class Schema
                     'checkin_time' => 'time?',
                     'checkout_time' => 'time?',
                 ],
+                'dropped' => ['color'],
                 'indexes' => ['section' => ['section_id'], 'type' => ['type_id']],
             ],
             'hours' => [

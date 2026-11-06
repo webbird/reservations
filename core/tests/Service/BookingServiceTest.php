@@ -33,6 +33,7 @@ final class BookingServiceTest extends TestCase
     private BookingRepository $bookings;
     private StatusRepository $statuses;
     private int $flat;
+    private int $buffered;
     private int $room;
     private int $booked;
     private int $roomBooked;
@@ -57,6 +58,7 @@ final class BookingServiceTest extends TestCase
 
         $resources = new ResourceRepository($db);
         $this->flat = $resources->insert(new BookableResource(null, 1, (int) $types->listBySection(1)[0]->id, 'FeWo Seeblick'));
+        $this->buffered = $resources->insert(new BookableResource(null, 1, (int) $types->listBySection(1)[0]->id, 'FeWo aus dem Zeitmodus', bufferBefore: 5, bufferAfter: 10));
         $this->room = $resources->insert(new BookableResource(null, 3, (int) $types->listBySection(3)[0]->id, 'Besprechungsraum', bufferBefore: 5, bufferAfter: 10));
 
         $this->booked = (int) $this->statuses->findByRole(1, StatusRole::RequestConfirmed)?->id;
@@ -194,6 +196,26 @@ final class BookingServiceTest extends TestCase
         self::assertSame('resource.not_found', $this->service->create(2, $this->flat, $range, $this->foreignStatus)->firstErrorKey());
         self::assertSame('status.not_found', $this->service->create(1, $this->flat, $range, $this->foreignStatus)->firstErrorKey());
         self::assertSame('booking.not_found', $this->service->update(1, 999, $this->flat, $range, $this->booked)->firstErrorKey());
+    }
+
+    public function testBuffersDoNotCountInDayMode(): void
+    {
+        $this->id($this->service->create(1, $this->buffered, $this->range('2026-11-02 00:00', '2026-11-06 00:00'), $this->booked));
+        $this->id($this->service->create(1, $this->buffered, $this->range('2026-11-06 00:00', '2026-11-08 00:00'), $this->booked));
+    }
+
+    public function testInactiveStatusStaysButIsNotGiven(): void
+    {
+        $range = $this->range('2026-11-02 00:00', '2026-11-06 00:00');
+        $later = $this->range('2026-11-10 00:00', '2026-11-12 00:00');
+        $old = $this->id($this->service->create(1, $this->flat, $range, $this->cancelled));
+        $other = $this->id($this->service->create(1, $this->flat, $later, $this->booked));
+        $status = $this->statuses->find(1, $this->cancelled);
+        self::assertNotNull($status);
+        $this->statuses->update(new Status($status->id, 1, $status->title, false, $status->visibility, $status->color, $status->pattern, null, false));
+
+        $this->id($this->service->update(1, $old, $this->flat, $range, $this->cancelled, 'neue Notiz'));
+        self::assertSame('status.not_found', $this->service->update(1, $other, $this->flat, $later, $this->cancelled)->firstErrorKey());
     }
 
     public function testInactiveStatusIsRejected(): void

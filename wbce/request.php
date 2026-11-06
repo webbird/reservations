@@ -11,7 +11,6 @@
 require dirname($_SERVER['SCRIPT_FILENAME'], 3) . '/config.php';
 require_once __DIR__ . '/bootstrap.php';
 
-use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Result\Result;
 use Reservations\Core\Support\ReturnUrl;
 
@@ -82,18 +81,13 @@ if ($settings->captcha && ReservationsWbce::captchaAvailable() && !Captcha::veri
     $finish(Result::fail('request.captcha', [], 'captcha'));
 }
 
-$tz = ReservationsWbce::timezone();
 try {
-    // day mode sends dates, period mode datetime-local values (2026-11-02T14:00)
-    $range = ReservationsWbce::wholeDays($sectionId)
-        ? TimeRange::fromLocal($old['start'] . ' 00:00', $old['end'] . ' 00:00', $tz)
-        : TimeRange::fromLocal(strtr($old['start'], 'T', ' '), strtr($old['end'], 'T', ' '), $tz);
+    $range = ReservationsWbce::formRange($old['start'], $old['end'], ReservationsWbce::wholeDays($sectionId));
 } catch (InvalidArgumentException) {
     $finish(Result::fail('booking.invalid_range', [], 'range'));
 }
 
 $service = ReservationsWbce::requestService();
-$service->purgeExpired();
 $result = $service->submit(
     $sectionId,
     $old['resource_id'],

@@ -23,7 +23,7 @@ The status of a booking decides whether it occupies the period and what visitors
 | Blocks the period | other bookings cannot overlap it |
 | On the website | with its name, as "occupied" or not at all |
 | Role | see below |
-| Active, Order | only active statuses can be chosen for bookings |
+| Active, Order | only active statuses can be newly chosen; a booking keeps its deactivated status, and if that status blocks, the calendar still shows the booking |
 
 > [!NOTE]
 > "Not at all" only hides the display. A status with "Blocks the period" still occupies the period. If you set "Requested" to "not at all", an open request looks free on the website, but a second request for the same period is turned down.

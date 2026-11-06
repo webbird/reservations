@@ -13,7 +13,6 @@ use Reservations\Core\Storage\Pdo\Connection;
 use Reservations\Core\Storage\Pdo\HoursRepository;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
 use Reservations\Core\Storage\Pdo\TypeRepository;
-use Reservations\Core\Support\Color;
 
 /**
  * Creates and changes resources. Validates lengths itself because the database
@@ -116,9 +115,6 @@ final class ResourceService
         }
         if ($resource->presentationRef !== null && mb_strlen($resource->presentationRef) > self::PRESENTATION_REF_MAX) {
             return Result::fail('resource.presentation_ref_too_long', ['max' => self::PRESENTATION_REF_MAX], 'presentation_ref');
-        }
-        if ($resource->color !== null && !Color::isValidHex($resource->color)) {
-            return Result::fail('resource.invalid_color', ['color' => $resource->color], 'color');
         }
         if ($this->types->find($resource->sectionId, $resource->typeId) === null) {
             return Result::fail('type.not_found', ['id' => $resource->typeId], 'type');

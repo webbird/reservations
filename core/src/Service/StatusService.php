@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Reservations\Core\Service;
 
 use Reservations\Core\Domain\Booking;
+use Reservations\Core\Domain\BookingMode;
 use Reservations\Core\Domain\Status;
 use Reservations\Core\Result\Result;
 use Reservations\Core\Storage\Pdo\BookingRepository;
 use Reservations\Core\Storage\Pdo\Connection;
 use Reservations\Core\Storage\Pdo\ResourceRepository;
+use Reservations\Core\Storage\Pdo\SettingsRepository;
 use Reservations\Core\Storage\Pdo\StatusRepository;
 use Reservations\Core\Support\Color;
 
@@ -28,6 +30,7 @@ final class StatusService
         private readonly StatusRepository $statuses,
         private readonly BookingRepository $bookings,
         private readonly ResourceRepository $resources,
+        private readonly SettingsRepository $settings,
     ) {
     }
 
@@ -110,9 +113,10 @@ final class StatusService
         $resourceIds = array_values(array_unique(array_map(static fn (Booking $b): int => $b->resourceId, $own)));
         $candidates = [...$this->bookings->listBlocking($sectionId, $resourceIds), ...$own];
 
+        $mode = $this->settings->find($sectionId)->bookingMode ?? BookingMode::Day;
         $gaps = [];
         foreach ($resourceIds as $id) {
-            $gaps[$id] = $this->resources->find($sectionId, $id)?->requiredGapMinutes() ?? 0;
+            $gaps[$id] = $this->resources->find($sectionId, $id)?->requiredGapMinutes($mode) ?? 0;
         }
 
         $pairs = [];

@@ -15,7 +15,7 @@ require_once __DIR__ . '/bootstrap.php';
 $rsvSection = (int) $section_id;
 $rsvPage = (int) $page_id;
 ReservationsWbce::ensureSection($rsvSection, $rsvPage);
-// WBCE has no cron; expired contact data of requests is emptied on backend and request calls
+// WBCE has no cron; expired contact data of requests is emptied on backend calls and page views
 ReservationsWbce::requestService()->purgeExpired();
 // URL parameters only count for the section they were meant for
 $rsvParam = static fn (string $name): int => (int) ($_GET['rsv_section'] ?? 0) === $rsvSection ? (int) ($_GET[$name] ?? 0) : 0;
@@ -216,7 +216,7 @@ if ($rsvResource !== null) {
         'resource'   => ['id' => $rsvResource->id, 'title' => $rsvResource->title],
         'whole_days' => $rsvWholeDays,
         'bookings'   => $rsvRows,
-        'statuses'   => array_map(static fn ($s) => ['id' => $s->id, 'title' => $s->title], array_values(array_filter($rsvStatuses, static fn ($s) => $s->active))),
+        'statuses'   => array_map(static fn ($s) => ['id' => $s->id, 'title' => $s->title], array_values(array_filter($rsvStatuses, static fn ($s) => $s->active || $s->id === (int) $rsvForm['status_id']))),
         'form'       => $rsvForm,
         'contact'    => $rsvContact,
         'url_new'    => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_bookings' => (int) $rsvResource->id]),

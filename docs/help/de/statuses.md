@@ -23,7 +23,7 @@ Der Status einer Buchung bestimmt, ob sie den Zeitraum belegt und was Besucher d
 | Blockiert den Zeitraum | andere Buchungen dürfen sich nicht damit überschneiden |
 | Auf der Website | mit Bezeichnung, als „belegt“ oder gar nicht |
 | Rolle | siehe unten |
-| Aktiv, Reihenfolge | nur aktive Status stehen in der Auswahl bei Buchungen |
+| Aktiv, Reihenfolge | neu wählen lassen sich nur aktive Status; eine Buchung behält ihren deaktivierten Status, und ist er blockierend, zeigt der Kalender sie weiter |
 
 > [!NOTE]
 > „Gar nicht“ versteckt nur die Anzeige. Ein Status mit „Blockiert den Zeitraum“ belegt den Zeitraum trotzdem. Stellen Sie „angefragt“ auf „gar nicht“, sieht eine offene Anfrage auf der Website frei aus, eine zweite Anfrage für denselben Zeitraum wird aber abgelehnt.

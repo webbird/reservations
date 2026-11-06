@@ -24,6 +24,8 @@ use Reservations\Core\Domain\TimeRange;
 use Reservations\Core\Domain\Visibility;
 
 $rsvSection = (int) $section_id;
+// WBCE has no cron and a quiet site sees no requests and no backend; the form promises the deletion
+ReservationsWbce::requestService()->purgeExpired();
 $rsvTz = ReservationsWbce::timezone();
 $rsvSettings = ReservationsWbce::settings()->find($rsvSection) ?? new Settings($rsvSection);
 // set by ReservationsWbce::droplet(): one object as month calendar
@@ -84,9 +86,12 @@ foreach (ReservationsWbce::statuses()->listBySection($rsvSection) as $rsvStatus)
 $rsvBookings = [];
 $rsvAll = ReservationsWbce::bookings()->listInRange($rsvSection, $rsvView === CalendarView::Week
     ? new TimeRange($rsvWeek, $rsvWeek->modify('+7 days'))
-    : new TimeRange($rsvMonth, $rsvEnd));
+    // by day a stay ending on the first shown day has its departure there, but it ends at midnight, before that day begins
+    : new TimeRange($rsvWholeDays ? $rsvMonth->modify('-1 day') : $rsvMonth, $rsvEnd));
+$rsvSeenStatus = [];
 foreach (Occupancy::publicBookings($rsvAll, $rsvStatuses) as $rsvBooking) {
     $rsvBookings[$rsvBooking->resourceId][] = $rsvBooking;
+    $rsvSeenStatus[$rsvBooking->statusId] = true;
 }
 
 $rsvLocale = strtolower(LANGUAGE);
@@ -143,7 +148,8 @@ $rsvUnavailable = static fn (DateTimeImmutable $end): string => ReservationsWbce
 
 $rsvLegend = [];
 foreach ($rsvStatuses as $rsvStatus) {
-    if ($rsvStatus->active && $rsvStatus->visibility !== Visibility::Hidden) {
+    // an inactive status only while the calendar still shows a booking of it
+    if (($rsvStatus->active || isset($rsvSeenStatus[(int) $rsvStatus->id])) && $rsvStatus->visibility !== Visibility::Hidden) {
         $rsvLegend[] = [
             'text'    => $rsvStatus->visibility === Visibility::Label ? $rsvStatus->title : ReservationsWbce::t('OCCUPIED'),
             'color'   => $rsvStatus->color,

@@ -91,17 +91,19 @@ final class OccupancyTest extends TestCase
         self::assertSame('1/-', $this->notation($days));
     }
 
-    public function testPublicBookingsHideHiddenInactiveAndUnknownStatuses(): void
+    public function testPublicBookingsHideHiddenUnknownAndInactiveFreeStatuses(): void
     {
         $statuses = [
             1 => new Status(1, 1, 'gebucht', true, Visibility::Label, '#185fa5', Pattern::Solid),
             2 => new Status(2, 1, 'angefragt', true, Visibility::Hidden, '#f5c26b', Pattern::Dotted),
+            // deactivated, but it still blocks: the time must not look free
             3 => new Status(3, 1, 'alt', true, Visibility::Busy, '#5f5e5a', Pattern::Striped, active: false),
+            5 => new Status(5, 1, 'storniert', false, Visibility::Busy, '#888780', Pattern::Outline, active: false),
         ];
         $bookings = [];
-        foreach ([1, 2, 3, 4] as $i => $status) {
+        foreach ([1, 2, 3, 4, 5] as $i => $status) {
             $bookings[] = $this->booking($i + 1, '2026-11-0' . ($i + 1) . ' 00:00', '2026-11-0' . ($i + 2) . ' 00:00', $status);
         }
-        self::assertSame([1], array_map(static fn (Booking $b): ?int => $b->id, Occupancy::publicBookings($bookings, $statuses)));
+        self::assertSame([1, 3], array_map(static fn (Booking $b): ?int => $b->id, Occupancy::publicBookings($bookings, $statuses)));
     }
 }

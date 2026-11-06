@@ -16,7 +16,8 @@ use Reservations\Core\Domain\Visibility;
 final class Occupancy
 {
     /**
-     * Bookings the public may see: status known, active and not hidden.
+     * Bookings the public may see: status known and not hidden, and active unless
+     * it blocks, as such a booking still occupies its time.
      *
      * @param list<Booking> $bookings
      * @param array<int, Status> $statuses keyed by status id
@@ -26,7 +27,7 @@ final class Occupancy
     {
         return array_values(array_filter($bookings, static function (Booking $b) use ($statuses): bool {
             $status = $statuses[$b->statusId] ?? null;
-            return $status !== null && $status->active && $status->visibility !== Visibility::Hidden;
+            return $status !== null && ($status->active || $status->blocks) && $status->visibility !== Visibility::Hidden;
         }));
     }
 

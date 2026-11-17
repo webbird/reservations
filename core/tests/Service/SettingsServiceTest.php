@@ -139,7 +139,7 @@ final class SettingsServiceTest extends TestCase
     {
         $plan = new Settings(1, planRange: 3, showLabels: false, bookingMode: BookingMode::Period, presentationSource: 'news_img:5', requestsEnabled: true, captcha: true);
         self::assertEquals(
-            new Settings(1, DisplayMode::Single, CalendarView::Month, 3, false, 12, 24, 7, BookingMode::Period, 'news_img:5', true, '', 90, true),
+            new Settings(1, DisplayMode::Single, CalendarView::Month, 3, false, 1, 24, 7, BookingMode::Period, 'news_img:5', true, '', 90, true),
             $plan->forResource(7),
         );
     }

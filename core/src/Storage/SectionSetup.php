@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Reservations\Core\Storage;
 
 use Reservations\Core\Domain\Pattern;
+use Reservations\Core\Domain\Settings;
 use Reservations\Core\Domain\Status;
 use Reservations\Core\Domain\StatusRole;
 use Reservations\Core\Domain\Type;
@@ -52,7 +53,8 @@ final class SectionSetup
         }
         $t = array_merge(self::DEFAULT_TITLES, $titles);
 
-        $this->db->insert('settings', ['section_id' => $sectionId, 'page_id' => $pageId]);
+        // written explicitly: updates do not change the column default of older installations
+        $this->db->insert('settings', ['section_id' => $sectionId, 'page_id' => $pageId, 'past_months' => (new Settings($sectionId))->pastMonths]);
 
         $defaults = [
             // visible: a blocked period that looks free would turn requests down without a reason

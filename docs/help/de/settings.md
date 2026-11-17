@@ -35,7 +35,7 @@ Passt die Startansicht nicht, lehnt das Speichern sie mit einer Meldung ab. Wie 
 |---|---|
 | Der Belegungsplan zeigt | 1 oder 3 Monate, bei 3 Monaten als drei Tabellen untereinander |
 | Öffentliche Beschriftungen auf der Website zeigen | schaltet die Beschriftung von Buchungen für den ganzen Abschnitt ein oder aus |
-| So viele Monate können Besucher zurückblättern | 0 bis 60, Vorgabe 12 |
+| So viele Monate können Besucher zurückblättern | 0 bis 60, Vorgabe 1 |
 | So viele Monate können Besucher vorblättern | 1 bis 60, Vorgabe 24 |
 
 > [!NOTE]

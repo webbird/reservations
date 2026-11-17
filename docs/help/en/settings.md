@@ -35,7 +35,7 @@ If the default view does not fit, saving refuses it with a message. What the vie
 |---|---|
 | Occupancy plan shows | 1 or 3 months, with 3 months as three tables below each other |
 | Show public labels on the website | switches the labels of bookings on or off for the whole section |
-| Months visitors can go back | 0 to 60, default 12 |
+| Months visitors can go back | 0 to 60, default 1 |
 | Months visitors can go ahead | 1 to 60, default 24 |
 
 > [!NOTE]

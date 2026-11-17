@@ -32,7 +32,7 @@ final class Schema
                     'requests_enabled' => 'bool=0',
                     'notify_email' => "str:255=''",
                     'retention_days' => 'small=90',
-                    'past_months' => 'small=12',
+                    'past_months' => 'small=1',
                     'future_months' => 'small=24',
                     'resource_id' => 'int?',
                     'booking_mode' => "str:20='day'",

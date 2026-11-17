@@ -1,6 +1,6 @@
 # reservations – Konzept
 
-Stand: 06.11.2026 · Modulversion 0.9.0
+Stand: 17.11.2026 · Modulversion 1.0.0
 
 Nachfolger von `bookings_v2`, als eigenständiges Modul mit neuem Namen. Belegungs- und
 Reservierungskalender für beliebige buchbare Dinge: Ferienwohnungen, Besprechungsräume,
@@ -635,24 +635,29 @@ Vorbild ist das Modul openimmo (`WBPortable/root/wbdemo/modules/openimmo`, `inc/
 ## 10. Offene Punkte
 
 ### Nächste Schritte
-Vor Version 1.0:
+Version 1.0.0 ist am 17.11.2026 an Tester gegangen. Funde kommen in 1.0.1 oder 1.1.
 
-1. **Abschlussprüfung, noch offen** (Schritte in `docs/testliste.md`):
-   - Barrierefreiheit von Hand: nur Tastatur, NVDA mit Firefox, Kontrastmodus. Geprüft sind
+1. **Noch offen von Hand** (Schritte in `docs/testliste.md`):
+   - Barrierefreiheit: nur Tastatur, NVDA mit Firefox, Kontrastmodus. Geprüft sind
      Struktur, Beschriftungen, Kontraste, Klickflächen, Reflow bei 320 px, Textabstände und
      die Fehlerausgabe mit erhaltenen Eingaben.
    - Feldfehler im Frontend bei aktivem Captcha.
+   - Dark Mode in Firefox, Safari und im Kontrastmodus.
+   - Objektbeschreibungen: `[[reservations]]` in einem echten news_img-Beitrag und Artikel.
    - Erledigt: Installation und Update aus dem ZIP in einer eigenen WBCE-Instanz, Mailversand
-     mit einem echten Mailserver.
+     mit einem echten Mailserver, MySQL-Tests mit 1.0.0.
 
 ### Weitere offene Punkte
 - Puffer im Modus `day` („Tage frei zwischen zwei Buchungen“) bräuchte eigene Logik; nur bei
   Bedarf.
+- news_img verlinkt auch auf Beiträge, deren Seite Besucher nicht öffnen können (Papierkorb,
+  privat, Zeitraum des Abschnitts). articles prüft das über `publicSql()`. In einem Fork von
+  news_img gibt es dafür vielleicht schon einen Fix, klärt Bianka.
 
 ### Erledigt
 - Vorbelegen per Klick: `RequestService::suggest()` berechnet den Vorschlag, im Modus `period` gibt es Links nur in der Woche; der Klick lädt die Seite neu, Eingaben im Formular gehen dabei verloren.
 - Objekttypen und Status: **pro Abschnitt**.
-- Repository: `D:\00_Development\Development\reservations\`.
+- Repository: `D:\01_Repositories\reservations\`.
 - Testumgebung mit WBCE 1.7.0: besorgt Bianka.
 - Mindest-WBCE-Version: **1.7.0** (Datenbankklasse auf PDO-Basis, auch SQLite).
 - Datenbankzugriff: PDO mit Prepared Statements, gemeinsam für alle CMS.

@@ -6,7 +6,7 @@
  * an object points to one of its articles (presentation_ref = "articles:<article_id>").
  * Reads the articles tables only, never writes them. Which article is visible
  * is articles' own rule (Articles\Articles::visibleSql), not a copy of it.
- * @module reservations  @version 0.9.0  @author Bianka Martinovic
+ * @module reservations  @version 1.0.0  @author Bianka Martinovic
  * @license GNU General Public License   @platform WBCE 1.7.0+
  */
 

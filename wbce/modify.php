@@ -52,7 +52,7 @@ if ($rsvParam('rsv_settings') === 1) {
         'past_months'   => $rsvSettings->pastMonths,
         'future_months' => $rsvSettings->futureMonths,
         'booking_mode'  => $rsvSettings->bookingMode->value,
-        'news_section'  => ReservationsNewsImg::idOf($rsvSettings->presentationSource) ?? 0,
+        'description_source' => $rsvSettings->presentationSource ?? '',
         'requests_enabled' => $rsvSettings->requestsEnabled,
         'notify_email'  => $rsvSettings->notifyEmail,
         'retention_days' => $rsvSettings->retentionDays,
@@ -64,7 +64,7 @@ if ($rsvParam('rsv_settings') === 1) {
         'first'     => $rsvActive[0]->title ?? null,
         'months_max' => Reservations\Core\Service\SettingsService::MONTHS_MAX,
         'retention_max' => Reservations\Core\Service\SettingsService::RETENTION_MAX,
-        'news_sections' => ReservationsNewsImg::sections(),
+        'description_sources' => ReservationsWbce::descriptionSources(),
         'captcha_available' => ReservationsWbce::captchaAvailable(),
     ]);
     return;
@@ -229,8 +229,8 @@ if ($rsvResource !== null) {
 $rsvRows = [];
 $rsvCounts = ReservationsWbce::bookings()->countCurrentByResource($rsvSection, ReservationsWbce::clock()->now());
 $rsvItems = ReservationsWbce::resources()->listBySection($rsvSection);
-$rsvNews = ReservationsWbce::newsSection($rsvSection);
-$rsvPosts = $rsvNews === null ? [] : ReservationsNewsImg::resolveMany($rsvNews, array_values(array_filter(array_map(static fn ($r) => $r->presentationRef, $rsvItems))));
+[$rsvAdapter, $rsvSource] = ReservationsWbce::descriptionSource(ReservationsWbce::settings()->find($rsvSection)?->presentationSource) ?? [null, 0];
+$rsvPosts = $rsvAdapter === null ? [] : $rsvAdapter::resolveMany($rsvSource, array_values(array_filter(array_map(static fn ($r) => $r->presentationRef, $rsvItems))));
 foreach ($rsvItems as $rsvItem) {
     $rsvRows[] = [
         'id'           => $rsvItem->id,
@@ -240,7 +240,7 @@ foreach ($rsvItems as $rsvItem) {
         'active'       => $rsvItem->active,
         'bookings'     => $rsvCounts[(int) $rsvItem->id]['bookings'] ?? 0,
         'requests'     => $rsvCounts[(int) $rsvItem->id]['requests'] ?? 0,
-        // null: no description; false: the post is gone, inactive or in another news section
+        // null: no description; false: it is gone, not visible or in another section
         'description'  => $rsvItem->presentationRef === null ? null : ($rsvPosts[$rsvItem->presentationRef]['title'] ?? false),
         'url_edit'     => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_edit' => (int) $rsvItem->id]),
         'url_bookings' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_bookings' => (int) $rsvItem->id]),
@@ -255,7 +255,7 @@ $rsvForm = $rsvOld ?? [
     'type_id'     => $rsvEdit->typeId ?? array_key_first($rsvTypes),
     'position'    => $rsvEdit->position ?? count($rsvItems),
     'active'      => $rsvEdit->active ?? true,
-    'post_id'     => ReservationsNewsImg::idOf($rsvEdit?->presentationRef) ?? 0,
+    'description_ref' => $rsvEdit->presentationRef ?? '',
 ] + ($rsvEdit === null ? [] : ReservationsRules::toForm($rsvEdit, ReservationsWbce::wholeDays($rsvSection)) + [
     'hours' => array_map(
         static fn (int $day): string => Reservations\Core\Domain\OpeningHours::formatDay($rsvHours[$day] ?? []),
@@ -271,8 +271,8 @@ foreach (range(1, 7) as $rsvDay) {
 
 ReservationsWbce::twig()->display('modify_resources.twig', $rsvVars + [
     'resources'    => $rsvRows,
-    'news'         => $rsvNews !== null,
-    'posts'        => $rsvNews === null ? [] : ReservationsNewsImg::choices($rsvNews),
+    'described'    => $rsvAdapter !== null,
+    'descriptions' => $rsvAdapter === null ? [] : $rsvAdapter::choices($rsvSource),
     'types'        => array_map(static fn ($t) => ['id' => $t->id, 'title' => $t->title], array_values($rsvTypes)),
     'form'         => $rsvForm,
     'whole_days'   => ReservationsWbce::wholeDays($rsvSection),

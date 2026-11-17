@@ -1,12 +1,12 @@
 # Calendar in a post (droplet)
 
-With the droplet `[[reservations]]` you show a calendar anywhere, for example in the news_img post of an object. The droplet is installed with the module.
+With the droplet `[[reservations]]` you show a calendar anywhere, for example in the news_img post or article of an object. The droplet is installed with the module.
 
 ## Notations
 
 | Droplet | Shows |
 |---|---|
-| `[[reservations]]` | in a news_img post: the calendar of the object the post is [linked](news-img.md) to |
+| `[[reservations]]` | in a news_img post or article: the calendar of the object it is [linked](descriptions.md) to |
 | `[[reservations?resource=ID]]` | one object as a month calendar, on any page |
 | `[[reservations?section=ID]]` | a whole section, as set up there |
 

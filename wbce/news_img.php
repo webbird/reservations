@@ -13,44 +13,15 @@ defined('WB_PATH') or die('This file cannot be accessed directly!');
 
 final class ReservationsNewsImg
 {
-    public const PREFIX = 'news_img:';
-
-    /**
-     * The id after the prefix, or null for other sources and empty values.
-     */
-    public static function idOf(?string $ref): ?int
-    {
-        if ($ref === null || !str_starts_with($ref, self::PREFIX)) {
-            return null;
-        }
-        $id = (int) substr($ref, strlen(self::PREFIX));
-        return $id > 0 ? $id : null;
-    }
-
-    /**
-     * All news_img sections, for the choice in the settings.
-     *
-     * @return array<int, string> section id => label
-     */
-    public static function sections(): array
-    {
-        $rows = $GLOBALS['database']->fetchAll(
-            "SELECT s.`section_id`, p.`menu_title`, p.`language` FROM `{TP}sections` s
-               JOIN `{TP}pages` p ON p.`page_id` = s.`page_id`
-              WHERE s.`module` = 'news_img'
-              ORDER BY p.`language`, p.`menu_title`, s.`section_id`",
-        );
-        $sections = [];
-        foreach ($rows as $row) {
-            $sections[(int) $row['section_id']] = sprintf('%s (%s, #%d)', $row['menu_title'], $row['language'], $row['section_id']);
-        }
-        return $sections;
-    }
+    public const MODULE = 'news_img';
+    public const PREFIX = self::MODULE . ':';
+    /** Defined by the page of a single post. */
+    public const DETAIL = 'POST_ID';
 
     /**
      * Active posts of a news_img section, for the choice at the object.
      *
-     * @return array<int, string> post id => title
+     * @return array<string, string> ref => title
      */
     public static function choices(int $sectionId): array
     {
@@ -62,7 +33,7 @@ final class ReservationsNewsImg
         );
         $choices = [];
         foreach ($rows as $row) {
-            $choices[(int) $row['post_id']] = (string) $row['title'];
+            $choices[self::PREFIX . (int) $row['post_id']] = (string) $row['title'];
         }
         return $choices;
     }
@@ -76,7 +47,7 @@ final class ReservationsNewsImg
      */
     public static function resolveMany(int $sectionId, array $refs): array
     {
-        $ids = array_values(array_unique(array_filter(array_map(self::idOf(...), $refs))));
+        $ids = array_values(array_unique(array_filter(array_map(static fn (string $ref): ?int => ReservationsWbce::idAfter(self::PREFIX, $ref), $refs))));
         if ($ids === []) {
             return [];
         }

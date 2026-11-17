@@ -22,7 +22,7 @@ final readonly class Settings
         public CalendarView $defaultView = CalendarView::Plan,
         public int $planRange = 1,
         public bool $showLabels = true,
-        public int $pastMonths = 12,
+        public int $pastMonths = 1,
         public int $futureMonths = 24,
         public ?int $resourceId = null,
         public BookingMode $bookingMode = BookingMode::Day,

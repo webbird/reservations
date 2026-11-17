@@ -41,9 +41,9 @@ Passt die Startansicht nicht, lehnt das Speichern sie mit einer Meldung ab. Wie 
 > [!NOTE]
 > Das Vorblättern begrenzt auch Anfragen. Hat ein Objekt keinen eigenen Höchstvorlauf, darf eine Anfrage spätestens im letzten Monat beginnen, den Besucher erreichen können.
 
-## Objektbeschreibungen aus news_img
+## Objektbeschreibungen
 
-Diese Auswahl erscheint, wenn es auf der Website news_img-Abschnitte gibt. Mehr dazu unter [Beschreibung aus news_img](news-img.md).
+Diese Auswahl erscheint, wenn es auf der Website Abschnitte von news_img oder articles gibt. Mehr dazu unter [Objektbeschreibungen](descriptions.md).
 
 ## Buchungsanfragen
 

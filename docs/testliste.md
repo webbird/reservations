@@ -57,6 +57,8 @@ Immer in einer eigenen WBCE-Instanz, nie über die Verzeichnisverknüpfung der E
 - [ ] Status mit heller Farbe speichern: Hinweis auf den Kontrast erscheint
 - [ ] Anfrage bestätigen und ablehnen, zweiter Klick in einem zweiten Tab wird abgewiesen
 - [ ] Buchungsmodus wechseln: geht nur ohne Buchungen, Dauern sind danach leer
+- [ ] Objektbeschreibung je einmal mit news_img und articles: Abschnitt wählen, Objekt zuordnen,
+  Objektname verlinkt, `[[reservations]]` im Beitrag und im Artikel zeigt das Objekt ohne Link
 
 ## Mail
 

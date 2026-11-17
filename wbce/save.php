@@ -59,7 +59,7 @@ $finish = static function (Result $result, array $params, array $old, string $su
 switch ($post('rsv_action')) {
     case 'resource_save':
         $id = (int) $post('resource_id');
-        $old = ['resource_id' => $id, 'title' => $post('title'), 'type_id' => (int) $post('type_id'), 'position' => (int) $post('position'), 'active' => $post('active') === '1', 'post_id' => (int) $post('post_id')]
+        $old = ['resource_id' => $id, 'title' => $post('title'), 'type_id' => (int) $post('type_id'), 'position' => (int) $post('position'), 'active' => $post('active') === '1', 'description_ref' => $post('description_ref')]
             + ReservationsRules::input($post);
         // opening hours as typed, one text per weekday (edit form in period mode only)
         if (is_array($_POST['hours'] ?? null)) {
@@ -71,14 +71,14 @@ switch ($post('rsv_action')) {
         if ($id > 0 && $existing === null) {
             $finish(Result::fail('resource.not_found'), [], $old, '');
         }
-        // without a news section the field is not on the form and the stored ref stays
+        // without a description source the field is not on the form and the stored ref stays
         $presentationRef = $existing?->presentationRef;
-        $news = ReservationsWbce::newsSection($sectionId);
-        if ($news !== null) {
-            $presentationRef = $old['post_id'] > 0 ? ReservationsNewsImg::PREFIX . $old['post_id'] : null;
-            // an orphaned post may stay as it is, a new one must belong to the news section
+        [$adapter, $source] = ReservationsWbce::descriptionSource(ReservationsWbce::settings()->find($sectionId)?->presentationSource) ?? [null, 0];
+        if ($adapter !== null) {
+            $presentationRef = $old['description_ref'] !== '' ? $old['description_ref'] : null;
+            // an orphaned description may stay as it is, a new one must belong to the source
             $unchanged = $presentationRef === $existing?->presentationRef;
-            if ($presentationRef !== null && !$unchanged && !isset(ReservationsNewsImg::choices($news)[$old['post_id']])) {
+            if ($presentationRef !== null && !$unchanged && !isset($adapter::choices($source)[$presentationRef])) {
                 $finish(Result::fail('settings.invalid_value'), ['rsv_edit' => $id], $old, '');
             }
         }
@@ -179,7 +179,7 @@ switch ($post('rsv_action')) {
             'past_months'   => (int) $post('past_months'),
             'future_months' => (int) $post('future_months'),
             'booking_mode'  => $post('booking_mode'),
-            'news_section'  => (int) $post('news_section'),
+            'description_source' => $post('description_source'),
             'requests_enabled' => $post('requests_enabled') === '1',
             'notify_email'  => trim($post('notify_email')),
             'retention_days' => (int) $post('retention_days'),
@@ -192,8 +192,9 @@ switch ($post('rsv_action')) {
         $mode = DisplayMode::tryFrom($old['display_mode']);
         $view = CalendarView::tryFrom($old['default_view']);
         $bookingMode = BookingMode::tryFrom($old['booking_mode']);
-        $newsSectionValid = $old['news_section'] === 0 || isset(ReservationsNewsImg::sections()[$old['news_section']]);
-        if ($mode === null || $view === null || $bookingMode === null || !$newsSectionValid) {
+        $sourceValid = $old['description_source'] === ''
+            || array_filter(ReservationsWbce::descriptionSources(), static fn (array $s): bool => isset($s[$old['description_source']])) !== [];
+        if ($mode === null || $view === null || $bookingMode === null || !$sourceValid) {
             $finish(Result::fail('settings.invalid_value'), ['rsv_settings' => 1], $old, '');
         }
         $retentionBefore = ReservationsWbce::settings()->find($sectionId)?->retentionDays;
@@ -207,7 +208,7 @@ switch ($post('rsv_action')) {
             futureMonths: $old['future_months'],
             resourceId: $old['resource_id'] > 0 ? $old['resource_id'] : null,
             bookingMode: $bookingMode,
-            presentationSource: $old['news_section'] > 0 ? ReservationsNewsImg::PREFIX . $old['news_section'] : null,
+            presentationSource: $old['description_source'] !== '' ? $old['description_source'] : null,
             requestsEnabled: $old['requests_enabled'],
             notifyEmail: $old['notify_email'],
             retentionDays: $old['retention_days'],

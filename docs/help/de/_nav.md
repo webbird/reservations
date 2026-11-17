@@ -7,7 +7,7 @@
   - [Objekte anlegen und bearbeiten](objects.md)
   - [Buchungsregeln](booking-rules.md)
   - [Öffnungszeiten](opening-hours.md)
-  - [Beschreibung aus news_img](news-img.md)
+  - [Objektbeschreibungen](descriptions.md)
 - Buchungen und Anfragen
   - [Buchungen pflegen](bookings.md)
   - [Sperrzeiten](blocked-times.md)

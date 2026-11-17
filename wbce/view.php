@@ -75,8 +75,8 @@ if ($rsvSingle) {
 $rsvWholeDays = ReservationsWbce::wholeDays($rsvSection);
 
 // object names link to their description, resolved in one query; not inside that description itself
-$rsvNews = ReservationsNewsImg::idOf($rsvSettings->presentationSource);
-$rsvPosts = $rsvNews === null || !empty($rsvNoLinks) ? [] : ReservationsNewsImg::resolveMany($rsvNews, array_values(array_filter(array_map(static fn ($r) => $r->presentationRef, $rsvResources))));
+[$rsvAdapter, $rsvSource] = ReservationsWbce::descriptionSource($rsvSettings->presentationSource) ?? [null, 0];
+$rsvPosts = $rsvAdapter === null || !empty($rsvNoLinks) ? [] : $rsvAdapter::resolveMany($rsvSource,array_values(array_filter(array_map(static fn ($r) => $r->presentationRef, $rsvResources))));
 $rsvLink = static fn ($r): ?string => $rsvPosts[$r->presentationRef ?? '']['url'] ?? null;
 
 $rsvStatuses = [];

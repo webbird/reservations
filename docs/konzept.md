@@ -8,7 +8,7 @@ Personen (z. B. Masseur), Geräte (z. B. Beamer).
 
 Die Objekte selbst legt der Kern an, in einfacher Form: Name, Typ, Buchungseinstellungen.
 Die **Präsentation** der Objekte (Texte, Bilder, Kategorien) übernimmt ein anderes Modul
-des CMS: in WBCE **news_img**, in Catamaran ein Content-Model. Der Kern speichert nur einen
+des CMS: in WBCE **news_img** oder **articles**, in Catamaran ein Content-Model. Der Kern speichert nur einen
 neutralen Verweis darauf und hängt von keinem dieser Module ab (siehe Abschnitt 8).
 
 **Aufbau:** ein CMS-unabhängiger **Kern** und schlanke **Wrapper** pro CMS. Zuerst kommt
@@ -38,8 +38,8 @@ Erweiterung `intl`. Datenbank: MySQL/MariaDB oder SQLite (beides unterstützt WB
 - Öffnungs- bzw. Verfügbarkeitszeiten pro Wochentag, Sperrzeiten, Vorlaufzeit, Pufferzeit
 - Optionale öffentliche Beschriftung pro Buchung, interne Notiz, Beschriftungen pro
   Abschnitt abschaltbar
-- Verweis auf die Präsentation des Objekts (neutral im Kern, in WBCE umgesetzt für news_img),
-  Droplet für den Kalender im news_img-Beitrag
+- Verweis auf die Präsentation des Objekts (neutral im Kern, in WBCE umgesetzt für news_img
+  und articles), Droplet für den Kalender im Beitrag oder Artikel
 - Barrierefreiheit nach WCAG 2.2 AA (siehe Abschnitt 7)
 - Sprachen: DE und EN. Die übrigen folgen später.
 - Benutzerhilfe als statische Seiten im Modul, DE und EN (siehe Abschnitt 5)
@@ -467,7 +467,7 @@ Abhängigkeiten außer PHP selbst.
 | `Translator` | Kern-Texte + WBCE-Sprachdatei | Symfony Translation |
 | `PermissionChecker` | Backend-Recht `pages_modify` bzw. Rechte des Abschnitts | Symfony Security |
 | `UrlGenerator` | Seitenlink + Parameter | Router |
-| `PresentationProvider` | news_img-Beiträge (vorerst ohne Port, siehe Abschnitt 8) | Content-Einträge eines Content-Models |
+| `PresentationProvider` | Beiträge aus news_img, Artikel aus articles (vorerst ohne Port, siehe Abschnitt 8) | Content-Einträge eines Content-Models |
 
 Der Kern nutzt das PDO-Objekt direkt, nicht die Methoden der WBCE-Klasse `Database`.
 Dadurch funktionieren dieselben Repositories auch unter Catamaran. Die WBCE-Verbindung
@@ -571,32 +571,40 @@ Bilder, Galerie, Kategorien) liegt in einem Modul des CMS, das dafür ohnehin ge
 **Im Kern:**
 - `settings.presentation_source` nennt die Quelle der Beschreibungen für einen Abschnitt,
   `resources.presentation_ref` den Eintrag für ein Objekt, beide neutral in der Form
-  `<anbieter>:<id>`, z. B. `news_img:3` bzw. `news_img:12` oder `catamaran:content:42`. Der
+  `<anbieter>:<id>`, z. B. `news_img:3` bzw. `articles:12` oder `catamaran:content:42`. Der
   Kern prüft nur die Länge und deutet den Inhalt nicht.
 - `ResourceRepository::findByPresentationRef()` findet das Objekt zu einem Verweis (für den
   Kalender im Beitrag).
 - Ein Port `PresentationProvider` (URL, Titel, Vorschaubild für eine Liste von Verweisen auf
-  einmal; Auswahlliste fürs Backend) kommt erst mit Catamaran. Solange es nur news_img gibt,
-  wäre er eine Schnittstelle mit einer einzigen Umsetzung; der Adapter liegt im WBCE-Wrapper.
+  einmal; Auswahlliste fürs Backend) kommt erst mit Catamaran. In WBCE genügen zwei Adapter im
+  Wrapper und eine Weiche nach dem Präfix in `ReservationsWbce`, ohne Plugin-System.
 - Ohne Quelle oder bei einem verwaisten Verweis funktioniert alles weiter, nur ohne Link.
 
-**WBCE: news_img**
+**WBCE: news_img und articles**
 - **1:1-Zuordnung:** In den Einstellungen eines Reservations-Abschnitts wird genau ein
-  news_img-Abschnitt gewählt, dessen Beiträge die Objektbeschreibungen sind. Die Auswahl je
-  Objekt zeigt nur dessen aktive Beiträge; es werden nicht alle News durchsucht.
-- Der Adapter (`wbce/news_img.php`) liest die Tabellen von news_img nur lesend und baut den
-  Link wie news_img selbst. Ist news_img nicht installiert, entfallen Auswahl und Links.
-- Frontend: der Objektname in Plan, Liste und Monatsansicht verlinkt auf den Beitrag. Inaktive
-  Beiträge oder Beiträge aus einem anderen News-Abschnitt werden nicht verlinkt; das Backend
-  zeigt sie als „verwaist“.
+  Abschnitt von news_img oder articles gewählt, dessen Beiträge oder Artikel die
+  Objektbeschreibungen sind. Die Auswahl je Objekt zeigt nur dessen Einträge; es werden nicht
+  alle News durchsucht.
+- Die Adapter (`wbce/news_img.php`, `wbce/articles.php`) lesen die Tabellen der Module nur
+  lesend und bauen den Link wie die Module selbst. Ist ein Modul nicht installiert, entfallen
+  seine Abschnitte in der Auswahl und die Links.
+- articles: Welcher Artikel sichtbar ist (aktiv, Zeitraum, aktive Gruppe), entscheidet
+  `Articles\Articles::visibleSql()` von articles selbst; der Adapter lädt nur diese
+  Klassendatei, statt die Regel zu kopieren. Die Auswahl am Objekt enthält auch geplante
+  Artikel, verlinkt werden sie erst ab ihrem Erscheinen. Links gibt es nur, wenn Besucher die
+  Seite des Abschnitts öffnen können (`Articles::publicSql()`).
+- Frontend: der Objektname in Plan, Liste und Monatsansicht verlinkt auf den Beitrag oder
+  Artikel. Nicht sichtbare Einträge oder Einträge aus einem anderen Abschnitt werden nicht
+  verlinkt; das Backend zeigt sie als „verwaist“.
 - Vorschaubild: vorerst nicht, nur der Link.
 - **Droplet** `reservations`, installiert mit dem Modul über die Funktionen des Moduls droplets:
-  - `[[reservations]]` im Beitragstext: Kalender des Objekts, dem der Beitrag zugeordnet ist
-    (über `POST_ID`), als Monatsansicht und ohne Link auf sich selbst.
+  - `[[reservations]]` im Beitrags- oder Artikeltext: Kalender des Objekts, dem der Eintrag
+    zugeordnet ist (über `POST_ID` bzw. `ARTICLE_ID`), als Monatsansicht und ohne Link auf
+    sich selbst.
   - `[[reservations?resource=ID]]`: ein Objekt als Monatsansicht, auf beliebiger Seite.
   - `[[reservations?section=ID]]`: ein ganzer Abschnitt wie dort eingestellt.
   - Passt nichts, bleibt die Ausgabe leer; Administratoren sehen den Grund als HTML-Kommentar.
-  - news_img braucht dafür keine Änderung.
+  - news_img und articles brauchen dafür keine Änderung.
 - Bekannte Grenze: erscheint derselbe Abschnitt zweimal auf einer Seite (Abschnitt und
   Droplet, oder zwei Droplets), teilen sich beide Anker und URL-Parameter (`rsv_month_<id>`,
   `rsv_week_<id>`, `rsv_view_<id>`); Blättern wirkt dann auf beide.
@@ -673,4 +681,4 @@ Vor Version 1.0:
 - Grenzen bei einer Auswahl mehrerer Objekte im Anfrageformular sichtbar (0.7.1): eine Zeile
   je Objekt, mit JavaScript nur die des gewählten und die Grenzen an den Feldern.
 - Objektliste im Backend: Spalten „Aktuelle Buchungen“ (laufende und künftige mit blockierendem Status, ohne offene Anfragen) und „Offene Anfragen“ (Rolle „neue Anfrage“); vergangene, stornierte und abgelehnte zählen nicht.
-- Objektbeschreibungen in WBCE: **1:1** ein news_img-Abschnitt je Reservations-Abschnitt (`settings.presentation_source`), Zuordnung je Objekt über `resources.presentation_ref`; Port `PresentationProvider` erst mit Catamaran, Vorschaubild vorerst nicht.
+- Objektbeschreibungen in WBCE: **1:1** ein Abschnitt von news_img oder articles je Reservations-Abschnitt (`settings.presentation_source`), Zuordnung je Objekt über `resources.presentation_ref`; Port `PresentationProvider` erst mit Catamaran, Vorschaubild vorerst nicht.

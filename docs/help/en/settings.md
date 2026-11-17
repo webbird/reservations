@@ -41,9 +41,9 @@ If the default view does not fit, saving refuses it with a message. What the vie
 > [!NOTE]
 > Going ahead also limits requests. If an object has no maximum advance of its own, a request must start in the last month visitors can reach at the latest.
 
-## Object descriptions from news_img
+## Object descriptions
 
-This choice appears if the website has news_img sections. See [Description from news_img](news-img.md).
+This choice appears if the website has news_img or articles sections. See [Object descriptions](descriptions.md).
 
 ## Booking requests
 

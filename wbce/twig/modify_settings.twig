@@ -82,20 +82,24 @@
                 <input id="rsv-future-{{ section_id }}" type="number" name="future_months" value="{{ form.future_months }}" min="1" max="{{ months_max }}" required>
             </p>
 
-            {# only offered when news_img sections exist #}
-            {% if news_sections or form.news_section %}
+            {# only offered when news_img or articles sections exist #}
+            {% if description_sources or form.description_source %}
                 <p>
-                    <label for="rsv-news-{{ section_id }}">{{ t('NEWS_SECTION') }}</label>
-                    <select id="rsv-news-{{ section_id }}" name="news_section" aria-describedby="rsv-news-hint-{{ section_id }}">
-                        <option value="0">{{ t('NONE') }}</option>
-                        {% for id, label in news_sections %}
-                            <option value="{{ id }}"{% if id == form.news_section %} selected{% endif %}>{{ label }}</option>
+                    <label for="rsv-source-{{ section_id }}">{{ t('DESCRIPTION_SOURCE') }}</label>
+                    <select id="rsv-source-{{ section_id }}" name="description_source" aria-describedby="rsv-source-hint-{{ section_id }}">
+                        <option value="">{{ t('NONE') }}</option>
+                        {% for module, sources in description_sources %}
+                            <optgroup label="{{ module }}">
+                                {% for source, label in sources %}
+                                    <option value="{{ source }}"{% if source == form.description_source %} selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </optgroup>
                         {% endfor %}
-                        {% if form.news_section and news_sections[form.news_section] is not defined %}
-                            <option value="{{ form.news_section }}" selected>{{ t('NEWS_SECTION_MISSING', form.news_section) }}</option>
+                        {% if form.description_source and description_sources|filter(s => s[form.description_source] is defined) is empty %}
+                            <option value="{{ form.description_source }}" selected>{{ t('DESCRIPTION_SOURCE_MISSING', form.description_source) }}</option>
                         {% endif %}
                     </select>
-                    <small id="rsv-news-hint-{{ section_id }}">{{ t('NEWS_SECTION_HINT') }}</small>
+                    <small id="rsv-source-hint-{{ section_id }}">{{ t('DESCRIPTION_SOURCE_HINT') }}</small>
                 </p>
             {% endif %}
 

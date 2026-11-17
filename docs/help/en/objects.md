@@ -22,7 +22,7 @@ With the single object display and no choice of your own, the section shows the 
 | Active | only active objects appear on the website and in the request form |
 | Current bookings | running and future bookings with a blocking status, without open requests |
 | Open requests | bookings with the status of the role "new request" |
-| Description | with [news_img](news-img.md) only: the linked post |
+| Description | with [news_img or articles](descriptions.md) only: the linked post or article |
 
 **Bookings** takes you to the [bookings](bookings.md) of the object.
 

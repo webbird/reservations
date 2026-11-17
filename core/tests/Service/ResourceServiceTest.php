@@ -236,11 +236,14 @@ final class ResourceServiceTest extends TestCase
     {
         $inactive = $this->resources->insert(new BookableResource(null, 1, $this->type, 'Alt', active: false, presentationRef: 'news_img:12'));
         $flat = $this->resources->insert(new BookableResource(null, 2, $this->foreignType, 'FeWo', presentationRef: 'news_img:12'));
+        $hall = $this->resources->insert(new BookableResource(null, 1, $this->type, 'Saal', presentationRef: 'articles:12'));
 
         self::assertSame('Alt', $this->resources->findById($inactive)?->title);
         self::assertNull($this->resources->findById(999));
         // inactive objects are skipped, the section does not matter
         self::assertSame($flat, $this->resources->findByPresentationRef('news_img:12')?->id);
+        // the same id in another module is another description
+        self::assertSame($hall, $this->resources->findByPresentationRef('articles:12')?->id);
         self::assertNull($this->resources->findByPresentationRef('news_img:13'));
     }
 

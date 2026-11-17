@@ -47,6 +47,7 @@ spl_autoload_register(static function (string $class): void {
 
 Lang::loadLanguage(__DIR__);
 require_once __DIR__ . '/news_img.php';
+require_once __DIR__ . '/articles.php';
 require_once __DIR__ . '/mail.php';
 require_once __DIR__ . '/rules.php';
 
@@ -57,6 +58,8 @@ require_once __DIR__ . '/rules.php';
 final class ReservationsWbce
 {
     public const NS = 'MOD_RESERVATIONS';
+    /** Where object descriptions can come from, chosen by the prefix of source and ref. */
+    private const DESCRIPTIONS = [ReservationsNewsImg::class, ReservationsArticles::class];
 
     /** @var array<string, object> */
     private static array $services = [];
@@ -232,21 +235,25 @@ final class ReservationsWbce
     }
 
     /**
-     * [[reservations]]: the object whose description is the current news_img post;
-     * ?resource=ID: one object as month calendar; ?section=ID: a whole section.
+     * [[reservations]]: the object whose description is the current news_img post
+     * or article; ?resource=ID: one object as month calendar; ?section=ID: a whole section.
      * Returns '' when nothing fits; admins get the reason as an HTML comment.
      */
     public static function droplet(?int $section, ?int $resource): string
     {
+        $current = null;
+        foreach (self::DESCRIPTIONS as $adapter) {
+            $current ??= defined($adapter::DETAIL) ? $adapter::PREFIX . (int) constant($adapter::DETAIL) : null;
+        }
         $item = null;
         if ($resource !== null) {
             $item = self::resources()->findById($resource);
-        } elseif ($section === null && defined('POST_ID')) {
-            $item = self::resources()->findByPresentationRef(ReservationsNewsImg::PREFIX . (int) POST_ID);
+        } elseif ($section === null && $current !== null) {
+            $item = self::resources()->findByPresentationRef($current);
         }
         $sectionId = $item->sectionId ?? $section;
         $reason = match (true) {
-            $resource === null && $section === null && !defined('POST_ID') => 'no resource, section or news_img post',
+            $resource === null && $section === null && $current === null => 'no resource, section, news_img post or article',
             $sectionId === null || ($item !== null && !$item->active) => 'no active object found',
             self::settings()->find($sectionId) === null => 'section ' . $sectionId . ' is not a reservations section',
             default => null,
@@ -262,7 +269,7 @@ final class ReservationsWbce
         $section_id = $sectionId;
         $rsvOnlyResource = $item?->id;
         // inside its own description a link to that description would lead nowhere new
-        $rsvNoLinks = $item !== null && defined('POST_ID') && $item->presentationRef === ReservationsNewsImg::PREFIX . (int) POST_ID;
+        $rsvNoLinks = $current !== null && $item?->presentationRef === $current;
         ob_start();
         try {
             require __DIR__ . '/view.php';
@@ -382,12 +389,56 @@ final class ReservationsWbce
         return is_file(WB_PATH . '/modules/captcha_control/Captcha.php');
     }
 
+    // object descriptions (news_img posts or articles)
+
     /**
-     * The news_img section that holds the object descriptions, or null.
+     * The number after the prefix ("articles:8" → 8), or null for other prefixes and empty values.
      */
-    public static function newsSection(int $sectionId): ?int
+    public static function idAfter(string $prefix, ?string $ref): ?int
     {
-        return ReservationsNewsImg::idOf(self::settings()->find($sectionId)?->presentationSource);
+        if ($ref === null || !str_starts_with($ref, $prefix)) {
+            return null;
+        }
+        $id = (int) substr($ref, strlen($prefix));
+        return $id > 0 ? $id : null;
+    }
+
+    /**
+     * Adapter and section id of a description source ("articles:8"), or null.
+     *
+     * @return array{0: class-string<ReservationsNewsImg>|class-string<ReservationsArticles>, 1: int}|null
+     */
+    public static function descriptionSource(?string $source): ?array
+    {
+        foreach (self::DESCRIPTIONS as $adapter) {
+            $id = self::idAfter($adapter::PREFIX, $source);
+            if ($id !== null) {
+                return [$adapter, $id];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * All sections that can hold descriptions, for the choice in the settings.
+     *
+     * @return array<string, array<string, string>> module => [source => label]
+     */
+    public static function descriptionSources(): array
+    {
+        $modules = array_map(static fn (string $adapter): string => $adapter::MODULE, self::DESCRIPTIONS);
+        $rows = $GLOBALS['database']->fetchAll(
+            'SELECT s.`section_id`, s.`module`, p.`menu_title`, p.`language` FROM `{TP}sections` s
+               JOIN `{TP}pages` p ON p.`page_id` = s.`page_id`
+              WHERE s.`module` IN (' . implode(',', array_fill(0, count($modules), '?')) . ')
+              ORDER BY s.`module`, p.`language`, p.`menu_title`, s.`section_id`',
+            $modules,
+        );
+        $sources = [];
+        foreach ($rows as $row) {
+            $sources[$row['module']][$row['module'] . ':' . (int) $row['section_id']] = sprintf('%s (%s, #%d)', $row['menu_title'], $row['language'], $row['section_id']);
+        }
+        return $sources;
     }
 
     /**

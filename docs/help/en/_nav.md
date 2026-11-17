@@ -7,7 +7,7 @@
   - [Add and edit objects](objects.md)
   - [Booking rules](booking-rules.md)
   - [Opening hours](opening-hours.md)
-  - [Description from news_img](news-img.md)
+  - [Object descriptions](descriptions.md)
 - Bookings and requests
   - [Manage bookings](bookings.md)
   - [Blocked periods](blocked-times.md)

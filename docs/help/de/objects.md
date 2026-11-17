@@ -22,7 +22,7 @@ Bei der Darstellung als Einzelobjekt ohne eigene Auswahl zeigt der Abschnitt das
 | Aktiv | nur aktive Objekte erscheinen auf der Website und im Anfrageformular |
 | Aktuelle Buchungen | laufende und künftige Buchungen mit blockierendem Status, ohne offene Anfragen |
 | Offene Anfragen | Buchungen mit dem Status der Rolle „neue Anfrage“ |
-| Beschreibung | nur mit [news_img](news-img.md): der zugeordnete Beitrag |
+| Beschreibung | nur mit [news_img oder articles](descriptions.md): der zugeordnete Beitrag oder Artikel |
 
 Über **Buchungen** kommen Sie zu den [Buchungen](bookings.md) des Objekts.
 

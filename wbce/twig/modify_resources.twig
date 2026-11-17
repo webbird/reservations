@@ -12,7 +12,7 @@
                 <th scope="col">{{ t('TITLE') }}</th>
                 <th scope="col">{{ t('TYPE') }}</th>
                 <th scope="col" class="rsv-num">{{ t('POSITION') }}</th>
-                {% if news %}<th scope="col">{{ t('DESCRIPTION') }}</th>{% endif %}
+                {% if described %}<th scope="col">{{ t('DESCRIPTION') }}</th>{% endif %}
                 <th scope="col">{{ t('ACTIVE') }}</th>
                 <th scope="col" class="rsv-num">{{ t('BOOKINGS_CURRENT') }}</th>
                 <th scope="col" class="rsv-num">{{ t('REQUESTS_OPEN') }}</th>
@@ -25,7 +25,7 @@
                 <th scope="row">{{ r.title }}</th>
                 <td>{{ r.type }}</td>
                 <td class="rsv-num">{{ r.position }}</td>
-                {% if news %}
+                {% if described %}
                     <td>{{ r.description is same as(false) ? t('DESCRIPTION_ORPHANED') : r.description }}</td>
                 {% endif %}
                 <td>{{ r.active ? t('YES') : t('NO') }}</td>
@@ -48,7 +48,7 @@
                 </td>
             </tr>
         {% else %}
-            <tr><td colspan="{{ news ? 8 : 7 }}">{{ t('NO_RESOURCES') }}</td></tr>
+            <tr><td colspan="{{ described ? 8 : 7 }}">{{ t('NO_RESOURCES') }}</td></tr>
         {% endfor %}
         </tbody>
     </table>
@@ -78,16 +78,16 @@
                 <label for="rsv-position-{{ section_id }}">{{ t('POSITION') }}</label>
                 <input id="rsv-position-{{ section_id }}" type="number" name="position" value="{{ form.position }}" min="0" step="1" required>
             </p>
-            {% if news %}
+            {% if described %}
                 <p>
-                    <label for="rsv-post-{{ section_id }}">{{ t('DESCRIPTION') }}</label>
-                    <select id="rsv-post-{{ section_id }}" name="post_id">
-                        <option value="0">{{ t('NONE') }}</option>
-                        {% for id, title in posts %}
-                            <option value="{{ id }}"{% if id == form.post_id %} selected{% endif %}>{{ title }}</option>
+                    <label for="rsv-description-{{ section_id }}">{{ t('DESCRIPTION') }}</label>
+                    <select id="rsv-description-{{ section_id }}" name="description_ref">
+                        <option value="">{{ t('NONE') }}</option>
+                        {% for ref, title in descriptions %}
+                            <option value="{{ ref }}"{% if ref == form.description_ref %} selected{% endif %}>{{ title }}</option>
                         {% endfor %}
-                        {% if form.post_id and posts[form.post_id] is not defined %}
-                            <option value="{{ form.post_id }}" selected>{{ t('DESCRIPTION_MISSING', form.post_id) }}</option>
+                        {% if form.description_ref and descriptions[form.description_ref] is not defined %}
+                            <option value="{{ form.description_ref }}" selected>{{ t('DESCRIPTION_MISSING', form.description_ref) }}</option>
                         {% endif %}
                     </select>
                 </p>

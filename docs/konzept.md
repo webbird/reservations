@@ -653,6 +653,16 @@ Version 1.0.0 ist am 17.11.2026 an Tester gegangen. Funde kommen in 1.0.1 oder 1
 - news_img verlinkt auch auf Beiträge, deren Seite Besucher nicht öffnen können (Papierkorb,
   privat, Zeitraum des Abschnitts). articles prüft das über `publicSql()`. In einem Fork von
   news_img gibt es dafür vielleicht schon einen Fix, klärt Bianka.
+- Einstellungen, Status, Typen, Buchungen und das Bearbeiten einer Buchung laufen innerhalb von
+  `admin/pages/modify.php` (`rsv_settings`, `rsv_statuses` …). Darunter stehen deshalb alle
+  anderen Abschnitte der Seite. articles hat das am 2026-11-19 mit eigenen Einstiegsseiten
+  gelöst (`settings.php`, `article.php`: Rechte über `modules/admin.php`, Abschnitt gehört
+  zur Seite, Rahmen `pageModuleWrapper`, `Backend::url()` leitet um). Für 1.1 vormerken.
+- Einheitliche Backend-Optik: zurückgestellt am 2026-11-23, die Regeln dafür sind ein Entwurf
+  (`D:\01_Repositories\WBCE_BACKEND_UI.md`). Stand des Abgleichs: Verhalten, Sicherheit und
+  Barrierefreiheit passen weitgehend; abweichend sind die eigenen Bausteine (`rsv-*`, nur
+  Speichern als `.button.ico-save`) und etwa 10 Hex-Farben in `backend.css`. Einzelheiten und
+  Vorschlag in `articles/docs/Konzept.md`, Abschnitt „Backend-Oberfläche“.
 
 ### Erledigt
 - Vorbelegen per Klick: `RequestService::suggest()` berechnet den Vorschlag, im Modus `period` gibt es Links nur in der Woche; der Klick lädt die Seite neu, Eingaben im Formular gehen dabei verloren.

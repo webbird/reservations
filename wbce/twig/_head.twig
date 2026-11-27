@@ -1,0 +1,22 @@
+{#
+    reservations/twig/_head.twig – tabs and the actions of the view, as in articles and listings
+    Expects: tab (objects | statuses | types | settings), help_page (page of the static help),
+    primary (optional: {label, url} of the main action)
+#}
+{% set tabs = {objects: ['RESOURCES', url_list], statuses: ['STATUSES', url_statuses], types: ['TYPES', url_types], settings: ['SETTINGS', url_settings]} %}
+<div class="rsv-head">
+    <nav class="rsv-tabs" aria-label="{{ t('TABS') }}">
+        {% for name, def in tabs %}
+            <a href="{{ def[1] }}"{% if tab == name %} aria-current="page"{% endif %}>
+                {{- t(def[0]) -}}
+                {% if name == 'objects' and open_requests > 0 %}
+                    <span class="rsv-count" aria-hidden="true">{{ open_requests }}</span><span class="rsv-sr"> ({{ t('OPEN_REQUESTS_COUNT', open_requests) }})</span>
+                {%- endif -%}
+            </a>
+        {% endfor %}
+    </nav>
+    <div class="rsv-head-actions">
+        {% include '_help_link.twig' with {page: help_page, class: 'rsv-button'} %}
+        {% if primary is defined %}<a class="rsv-button rsv-button--primary" href="{{ primary.url }}">{{ primary.label }}</a>{% endif %}
+    </div>
+</div>

@@ -1,5 +1,5 @@
 {#
     reservations/twig/_help_link.twig – link to a page of the static help
-    Expects: page (file name without extension)
+    Expects: page (file name without extension); class (optional, e.g. rsv-button)
 #}
-<a href="{{ help_url }}{{ page }}.html" target="_blank" rel="noopener">{{ t('HELP') }}<span class="rsv-sr"> {{ t('NEW_TAB') }}</span></a>
+<a href="{{ help_url }}{{ page }}.html"{% if class is defined %} class="{{ class }}"{% endif %} target="_blank" rel="noopener">{{ t('HELP') }}<span class="rsv-sr"> {{ t('NEW_TAB') }}</span></a>

@@ -2,7 +2,7 @@
     reservations/twig/modify_types.twig – object types of a section
 #}
 <div class="mod_reservations">
-    <p><a href="{{ url_list }}">« {{ t('BACK_TO_RESOURCES') }}</a> | {% include '_help_link.twig' with {page: 'types'} %}</p>
+    {% include '_head.twig' with {help_page: 'types'} %}
     {% include '_messages.twig' %}
 
     <table class="rsv-table">
@@ -25,7 +25,7 @@
                     <a href="{{ type.url_edit }}">{{ t('EDIT') }}<span class="rsv-sr">: {{ type.title }}</span></a>
                     {# used and last types cannot be deleted; the core checks it again #}
                     {% if type.resources == 0 and types|length > 1 %}
-                        <form action="{{ action }}" method="post" class="rsv-inline" onsubmit="return confirm('{{ t('CONFIRM_DELETE_TYPE')|e('js') }}')">
+                        <form action="{{ action }}" method="post" class="rsv-inline" data-rsv-confirm="{{ t('CONFIRM_DELETE_TYPE') }}">
                             <input type="hidden" name="page_id" value="{{ page_id }}">
                             <input type="hidden" name="section_id" value="{{ section_id }}">
                             <input type="hidden" name="rsv_action" value="type_delete">

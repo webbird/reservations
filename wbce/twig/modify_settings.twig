@@ -2,7 +2,7 @@
     reservations/twig/modify_settings.twig – display settings of a section
 #}
 <div class="mod_reservations">
-    <p><a href="{{ url_list }}">« {{ t('BACK_TO_RESOURCES') }}</a> | {% include '_help_link.twig' with {page: 'settings'} %}</p>
+    {% include '_head.twig' with {help_page: 'settings'} %}
     {% include '_messages.twig' %}
 
     <form class="rsv-form" action="{{ action }}" method="post">

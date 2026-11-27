@@ -2,7 +2,8 @@
     reservations/twig/modify_resources.twig – objects of a section
 #}
 <div class="mod_reservations">
-    <p class="rsv-toolbar"><a href="{{ url_settings }}">{{ t('SETTINGS') }}</a> | <a href="{{ url_statuses }}">{{ t('STATUSES') }}</a> | <a href="{{ url_types }}">{{ t('TYPES') }}</a> | {% include '_help_link.twig' with {page: 'objects'} %}</p>
+    {# while an object is edited, "New object" starts over with the empty form #}
+    {% include '_head.twig' with {help_page: 'objects', primary: {label: t('NEW_RESOURCE'), url: form.resource_id ? url_list : '#rsv-resource-form-' ~ section_id}} %}
     {% include '_messages.twig' %}
 
     <table class="rsv-table">
@@ -36,7 +37,7 @@
                     <a href="{{ r.url_edit }}">{{ t('EDIT') }}<span class="rsv-sr">: {{ r.title }}</span></a>
                     {# running and future bookings or open requests keep an object; the core checks it again #}
                     {% if r.bookings == 0 and r.requests == 0 %}
-                        <form action="{{ action }}" method="post" class="rsv-inline" onsubmit="return confirm('{{ t('CONFIRM_DELETE_RESOURCE')|e('js') }}')">
+                        <form action="{{ action }}" method="post" class="rsv-inline" data-rsv-confirm="{{ t('CONFIRM_DELETE_RESOURCE') }}">
                             <input type="hidden" name="page_id" value="{{ page_id }}">
                             <input type="hidden" name="section_id" value="{{ section_id }}">
                             <input type="hidden" name="rsv_action" value="resource_delete">
@@ -53,7 +54,7 @@
         </tbody>
     </table>
 
-    <form class="rsv-form" action="{{ action }}" method="post">
+    <form class="rsv-form" id="rsv-resource-form-{{ section_id }}" action="{{ action }}" method="post">
         <input type="hidden" name="page_id" value="{{ page_id }}">
         <input type="hidden" name="section_id" value="{{ section_id }}">
         <input type="hidden" name="rsv_action" value="resource_save">

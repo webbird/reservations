@@ -9,6 +9,16 @@
 // SCRIPT_FILENAME keeps the junction path during development; relative paths and __DIR__ resolve it
 require dirname($_SERVER['SCRIPT_FILENAME'], 3) . '/config.php';
 
+// PHP drops a POST above post_max_size completely, FTAN and IDs included: back to the
+// section with the reason instead of a security error (as in articles and listings). Nothing is written.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST === [] && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+    require_once __DIR__ . '/bootstrap.php';
+    $to = ReservationsWbce::modifyUrl((int) ($_GET['page_id'] ?? 0), (int) ($_GET['section_id'] ?? 0), ['rsv_error' => 'post_too_large']);
+    // with display_errors on, PHP has printed its warning already and a Location header fails
+    headers_sent() ? print('<meta http-equiv="refresh" content="0;url=' . htmlspecialchars($to) . '">') : header('Location: ' . $to);
+    exit;
+}
+
 $admin_header = false;
 require WB_PATH . '/modules/admin.php';
 require_once __DIR__ . '/bootstrap.php';

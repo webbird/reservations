@@ -27,11 +27,24 @@ foreach (ReservationsWbce::types()->listBySection($rsvSection) as $rsvType) {
     $rsvTypes[(int) $rsvType->id] = $rsvType;
 }
 
+// open requests of all objects, for the number at the tab "Objects"
+$rsvOpen = array_sum(array_column(ReservationsWbce::bookings()->countCurrentByResource($rsvSection, ReservationsWbce::clock()->now()), 'requests'));
+
 $rsvVars = [
     'page_id'    => $rsvPage,
     'section_id' => $rsvSection,
-    'action'     => WB_URL . '/modules/reservations/save.php',
-    'errors'     => $rsvFlash['errors'] ?? [],
+    // the IDs in the URL as well: a POST above post_max_size arrives without its fields (save.php)
+    'action'     => WB_URL . '/modules/reservations/save.php?' . http_build_query(['page_id' => $rsvPage, 'section_id' => $rsvSection], '', '&'),
+    'errors'     => array_merge(
+        $rsvFlash['errors'] ?? [],
+        ($_GET['rsv_error'] ?? '') === 'post_too_large' && (int) ($_GET['rsv_section'] ?? 0) === $rsvSection
+            ? [ReservationsWbce::t('ERR_POST_TOO_LARGE', (string) ini_get('post_max_size'))] : []
+    ),
+    'open_requests' => (int) $rsvOpen,
+    // the tabs (twig/_head.twig)
+    'url_settings' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_settings' => 1]),
+    'url_types'    => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_types' => 1]),
+    'url_statuses' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_statuses' => 1]),
     'success'    => $rsvFlash['success'] ?? '',
     'url_list'   => ReservationsWbce::modifyUrl($rsvPage, $rsvSection),
     // the static help exists in some languages only
@@ -59,6 +72,7 @@ if ($rsvParam('rsv_settings') === 1) {
         'captcha'       => $rsvSettings->captcha,
     ];
     ReservationsWbce::twig()->display('modify_settings.twig', $rsvVars + [
+        'tab'       => 'settings',
         'form'      => $rsvForm,
         'resources' => array_map(static fn ($r) => ['id' => $r->id, 'title' => $r->title], ReservationsWbce::resources()->listBySection($rsvSection)),
         'first'     => $rsvActive[0]->title ?? null,
@@ -93,6 +107,7 @@ if ($rsvParam('rsv_statuses') === 1) {
         }
     }
     ReservationsWbce::twig()->display('modify_statuses.twig', $rsvVars + [
+        'tab'          => 'statuses',
         'statuses'     => $rsvRows,
         'patterns'     => array_column(Reservations\Core\Domain\Pattern::cases(), 'value'),
         'visibilities' => array_column(Reservations\Core\Domain\Visibility::cases(), 'value'),
@@ -108,7 +123,6 @@ if ($rsvParam('rsv_statuses') === 1) {
             'active'     => $rsvEdit->active ?? true,
             'position'   => $rsvEdit->position ?? count($rsvStatusList),
         ],
-        'url_statuses' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_statuses' => 1]),
     ]);
     return;
 }
@@ -130,6 +144,7 @@ if ($rsvParam('rsv_types') === 1) {
     // the defaults shown as the rules of a resource that would take them
     $rsvDefaults = (new Reservations\Core\Domain\BookableResource(null, $rsvSection, 0, ''))->withRules($rsvEdit->defaults ?? []);
     ReservationsWbce::twig()->display('modify_types.twig', $rsvVars + [
+        'tab'        => 'types',
         'types'      => $rsvRows,
         'form'       => $rsvOld ?? [
             'type_id'  => $rsvEdit->id ?? 0,
@@ -137,7 +152,6 @@ if ($rsvParam('rsv_types') === 1) {
             'position' => $rsvEdit->position ?? count($rsvTypes),
         ] + ReservationsRules::toForm($rsvDefaults, $rsvWholeDays),
         'whole_days' => $rsvWholeDays,
-        'url_types' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_types' => 1]),
     ]);
     return;
 }
@@ -215,6 +229,7 @@ if ($rsvResource !== null) {
         ]);
 
     ReservationsWbce::twig()->display('modify_bookings.twig', $rsvVars + [
+        'tab'        => 'objects',
         'resource'   => ['id' => $rsvResource->id, 'title' => $rsvResource->title],
         'whole_days' => $rsvWholeDays,
         'bookings'   => $rsvRows,
@@ -270,6 +285,7 @@ foreach (range(1, 7) as $rsvDay) {
 }
 
 ReservationsWbce::twig()->display('modify_resources.twig', $rsvVars + [
+    'tab'          => 'objects',
     'resources'    => $rsvRows,
     'described'    => $rsvAdapter !== null,
     'descriptions' => $rsvAdapter === null ? [] : $rsvAdapter::choices($rsvSource),
@@ -277,7 +293,4 @@ ReservationsWbce::twig()->display('modify_resources.twig', $rsvVars + [
     'form'         => $rsvForm,
     'whole_days'   => ReservationsWbce::wholeDays($rsvSection),
     'weekdays'     => $rsvWeekdays,
-    'url_settings' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_settings' => 1]),
-    'url_types'    => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_types' => 1]),
-    'url_statuses' => ReservationsWbce::modifyUrl($rsvPage, $rsvSection, ['rsv_statuses' => 1]),
 ]);

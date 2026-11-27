@@ -2,7 +2,7 @@
     reservations/twig/modify_statuses.twig – booking statuses of a section
 #}
 <div class="mod_reservations">
-    <p><a href="{{ url_list }}">« {{ t('BACK_TO_RESOURCES') }}</a> | {% include '_help_link.twig' with {page: 'statuses'} %}</p>
+    {% include '_head.twig' with {help_page: 'statuses'} %}
     {% include '_messages.twig' %}
 
     <table class="rsv-table">
@@ -33,7 +33,7 @@
                     <a href="{{ s.url_edit }}">{{ t('EDIT') }}<span class="rsv-sr">: {{ s.title }}</span></a>
                     {# statuses with a role or with bookings cannot be deleted; the core checks it again #}
                     {% if not s.role and not s.used %}
-                        <form action="{{ action }}" method="post" class="rsv-inline" onsubmit="return confirm('{{ t('CONFIRM_DELETE_STATUS')|e('js') }}')">
+                        <form action="{{ action }}" method="post" class="rsv-inline" data-rsv-confirm="{{ t('CONFIRM_DELETE_STATUS') }}">
                             <input type="hidden" name="page_id" value="{{ page_id }}">
                             <input type="hidden" name="section_id" value="{{ section_id }}">
                             <input type="hidden" name="rsv_action" value="status_delete">
